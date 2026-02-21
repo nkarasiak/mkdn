@@ -1,3 +1,8 @@
+/* Hide the source link paragraph — markdown is preserved, only visuals hidden */
+.embed-hidden-link {
+  display: none;
+}
+
 /* Embed wrappers for YouTube and Twitter/X.com */
 
 .embed-wrapper {

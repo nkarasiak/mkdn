@@ -112,6 +112,11 @@ function buildDecorations(doc) {
     const tweetId = extractTweetId(url);
     if (!videoId && !tweetId) return;
 
+    // Hide the link paragraph visually
+    decorations.push(
+      Decoration.node(pos, pos + node.nodeSize, { class: 'embed-hidden-link' })
+    );
+
     // Place widget decoration at the end of the paragraph node
     const widgetPos = pos + node.nodeSize;
     decorations.push(
