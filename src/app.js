@@ -3,7 +3,7 @@ import { settingsStore } from './store/settings-store.js';
 import { eventBus } from './store/event-bus.js';
 import { milkdown } from './editor/milkdown-setup.js';
 import { createToolbar } from './toolbar/toolbar.js';
-import { createSidebar, toggleHistorySection } from './sidebar/sidebar.js';
+import { createSidebar, toggleHistorySection, toggleOutlineSection } from './sidebar/sidebar.js';
 import { createStatusBar } from './ui/status-bar.js';
 import { initKeyboardShortcuts } from './ui/keyboard-shortcuts.js';
 import { localSync } from './local/local-sync.js';
@@ -14,6 +14,8 @@ import { focusManager } from './focus/focus-manager.js';
 import { documentStore } from './store/document-store.js';
 import { registerBuiltinCommands } from './command-palette/command-registry.js';
 import { setMilkdownRef } from './command-palette/command-palette.js';
+import { setSourceTextarea } from './editor/source-formatter.js';
+import { initFindBar } from './find-replace/find-bar.js';
 
 let sidebarWrapper, sidebarOverlay;
 
@@ -111,20 +113,52 @@ export const App = {
     eventBus.on('settings:sidebarOpen', applySidebarState);
     eventBus.on('settings:theme', applyTheme);
 
-    // Source mode toggling
+    // Register textarea for source-formatter
+    setSourceTextarea(sourceEditor);
+
+    // Initialize Find & Replace
+    initFindBar({ editorContainer: main, milkdown });
+
+    // Source mode toggling with cursor sync
     eventBus.on('settings:sourceMode', (on) => {
       if (on) {
+        // WYSIWYG → Source: capture cursor position before switching
+        const markdown = documentStore.getMarkdown();
+        const cursorOffset = milkdown.getCursorAsMarkdownOffset(markdown);
+
         editorPane.style.display = 'none';
         sourceWrapper.style.display = 'block';
         sourceEditor.style.display = 'block';
-        sourceEditor.value = documentStore.getMarkdown();
+        sourceEditor.value = markdown;
+
+        // Restore cursor position in textarea
+        const clampedOffset = Math.min(cursorOffset, sourceEditor.value.length);
+        sourceEditor.setSelectionRange(clampedOffset, clampedOffset);
         sourceEditor.focus();
+
+        // Scroll to cursor position
+        // Use a temporary measurement to scroll the textarea
+        requestAnimationFrame(() => {
+          sourceEditor.blur();
+          sourceEditor.setSelectionRange(clampedOffset, clampedOffset);
+          sourceEditor.focus();
+        });
       } else {
+        // Source → WYSIWYG: capture cursor offset before switching
+        const cursorOffset = sourceEditor.selectionStart;
         const value = sourceEditor.value;
+
         sourceWrapper.style.display = 'none';
         sourceEditor.style.display = 'none';
         editorPane.style.display = '';
         documentStore.setMarkdown(value, 'source-editor');
+        // Explicitly sync milkdown (content:changed skips source-editor to prevent loops)
+        milkdown.setContent(value);
+
+        // Restore cursor in ProseMirror after Milkdown processes the content
+        requestAnimationFrame(() => {
+          milkdown.setCursorFromMarkdownOffset(value, cursorOffset);
+        });
       }
     });
 
@@ -152,6 +186,7 @@ export const App = {
     registerBuiltinCommands({
       toggleSidebar,
       toggleHistory: () => toggleHistorySection(),
+      toggleOutline: () => toggleOutlineSection(),
       milkdown,
       fileSaver,
       localSync,

@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+## [1.2.0] - 2026-02-21
+
+### Added
+
+- Toolbar buttons (Bold, Italic, lists, headings, blockquote, HR, code block) now work in source mode
+- Command palette formatting actions work in source mode
+- Ctrl+B, Ctrl+I, Ctrl+E keyboard shortcuts work in source mode textarea
+- Cursor position syncs when toggling between WYSIWYG and source view
+- Print / PDF export via Ctrl+P, toolbar More dropdown, and command palette
+- Table insertion via toolbar More dropdown and command palette (uses Milkdown Crepe built-in tables)
+- Table insertion in source mode generates GFM table template
+- Document outline sidebar panel with heading tree, click-to-scroll, and scroll spy highlighting
+- Find & Replace (Ctrl+F / Ctrl+H) with match highlighting, counter, prev/next navigation, case-sensitive toggle, replace and replace all
+- Find & Replace works in both WYSIWYG (ProseMirror decorations) and source mode (textarea selection)
+- New keyboard shortcuts shown in About modal (Ctrl+F, Ctrl+H, Ctrl+P)
+
+### Changed
+
+- Local folder subfolders now start collapsed by default in sidebar file tree
+
 ## [1.1.0] - 2026-02-21
 
 ### Added

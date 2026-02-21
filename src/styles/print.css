@@ -1,0 +1,216 @@
+/* ================================================================
+   Print / PDF Export styles
+   ================================================================ */
+
+@media print {
+  /* Page setup */
+  @page {
+    margin: 2cm 1.8cm;
+    size: A4;
+  }
+
+  /* Force light theme */
+  :root, [data-theme="dark"], [data-theme="light"] {
+    --bg-primary: #ffffff !important;
+    --bg-secondary: #ffffff !important;
+    --bg-tertiary: #f5f5f5 !important;
+    --text-primary: #1a1a1a !important;
+    --text-secondary: #333333 !important;
+    --text-muted: #666666 !important;
+    --border-color: #cccccc !important;
+    --border-light: #dddddd !important;
+    --editor-bg: #ffffff !important;
+    --accent: #E8850C !important;
+  }
+
+  /* Override Milkdown Crepe dark theme vars */
+  .milkdown, .ProseMirror {
+    --crepe-color-background: #ffffff !important;
+    --crepe-color-surface: #ffffff !important;
+    --crepe-color-on-background: #1a1a1a !important;
+    --crepe-color-on-surface: #1a1a1a !important;
+    color: #1a1a1a !important;
+    background: #ffffff !important;
+  }
+
+  /* Hide all chrome */
+  .app-toolbar,
+  .app-sidebar,
+  .app-statusbar,
+  .sidebar-overlay,
+  .source-editor-wrapper,
+  .find-bar,
+  .command-palette-overlay {
+    display: none !important;
+  }
+
+  /* Reset grid layout for print */
+  .app {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .app-main {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .editor-pane {
+    display: block !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  /* Show print title (injected by printDocument()) */
+  .print-title {
+    display: block !important;
+    font-family: var(--font-serif);
+    font-size: 28pt;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 24pt;
+    line-height: 1.2;
+  }
+
+  /* Typography */
+  .ProseMirror {
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Headings */
+  .ProseMirror h1 { font-size: 22pt !important; margin-top: 20pt !important; }
+  .ProseMirror h2 { font-size: 18pt !important; margin-top: 16pt !important; }
+  .ProseMirror h3 { font-size: 14pt !important; margin-top: 14pt !important; }
+  .ProseMirror h4 { font-size: 12pt !important; margin-top: 12pt !important; }
+  .ProseMirror h5 { font-size: 11pt !important; margin-top: 10pt !important; }
+  .ProseMirror h6 { font-size: 10pt !important; margin-top: 10pt !important; }
+
+  /* Page break control */
+  .ProseMirror h1,
+  .ProseMirror h2,
+  .ProseMirror h3,
+  .ProseMirror h4,
+  .ProseMirror h5,
+  .ProseMirror h6 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .ProseMirror pre,
+  .ProseMirror blockquote,
+  .ProseMirror img,
+  .ProseMirror table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Links: show URL */
+  .ProseMirror a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #666666;
+    font-style: italic;
+    word-break: break-all;
+  }
+
+  /* Don't show URL for anchor links or data URIs */
+  .ProseMirror a[href^="#"]::after,
+  .ProseMirror a[href^="data:"]::after,
+  .ProseMirror a[href^="javascript:"]::after {
+    content: none;
+  }
+
+  /* Code blocks */
+  .ProseMirror pre {
+    background: #f5f5f5 !important;
+    border: 1px solid #dddddd !important;
+    border-radius: 4px !important;
+    padding: 10pt !important;
+    font-size: 9pt !important;
+    line-height: 1.5 !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    color: #1a1a1a !important;
+  }
+
+  .ProseMirror code {
+    background: #f0f0f0 !important;
+    color: #1a1a1a !important;
+    font-size: 9.5pt !important;
+    padding: 1pt 3pt !important;
+    border-radius: 2px !important;
+  }
+
+  .ProseMirror pre code {
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Blockquotes */
+  .ProseMirror blockquote {
+    border-left: 3pt solid #cccccc !important;
+    padding-left: 12pt !important;
+    color: #444444 !important;
+    margin-left: 0 !important;
+  }
+
+  /* Tables */
+  .ProseMirror table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  .ProseMirror th,
+  .ProseMirror td {
+    border: 1px solid #cccccc !important;
+    padding: 6pt 10pt !important;
+    text-align: left !important;
+    color: #1a1a1a !important;
+    background: #ffffff !important;
+  }
+
+  .ProseMirror th {
+    background: #f5f5f5 !important;
+    font-weight: 600 !important;
+  }
+
+  /* Images */
+  .ProseMirror img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Horizontal rules */
+  .ProseMirror hr {
+    border: none !important;
+    border-top: 1px solid #cccccc !important;
+    margin: 12pt 0 !important;
+  }
+
+  /* Hide interactive elements */
+  .ProseMirror .milkdown-toolbar,
+  .ProseMirror [data-milkdown-tooltip],
+  .crepe-toolbar,
+  .milkdown-slash-menu,
+  .milkdown-link-tooltip {
+    display: none !important;
+  }
+
+  /* Find match highlights should not show in print */
+  .find-match,
+  .find-match-current {
+    background: transparent !important;
+    outline: none !important;
+  }
+}
+
+/* Print title is hidden on screen */
+.print-title {
+  display: none;
+}

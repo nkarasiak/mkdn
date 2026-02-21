@@ -173,6 +173,9 @@ function buildAboutContent() {
       shortcutRow(['Ctrl', 'B'], 'Bold'),
       shortcutRow(['Ctrl', 'I'], 'Italic'),
       shortcutRow(['Ctrl', 'E'], 'Inline code'),
+      shortcutRow(['Ctrl', 'F'], 'Find'),
+      shortcutRow(['Ctrl', 'H'], 'Find & Replace'),
+      shortcutRow(['Ctrl', 'P'], 'Print / PDF'),
       shortcutRow(['Ctrl', 'Shift', 'B'], 'Toggle sidebar'),
       shortcutRow(['Ctrl', 'Shift', 'H'], 'Toggle history'),
       shortcutRow(['Ctrl', 'U'], 'Toggle source view'),
@@ -196,7 +199,7 @@ function buildAboutContent() {
     el('p', {}, issueLink),
     el('h4', { className: 'about-section-title' }, 'Credits'),
     el('p', {}, 'Created by Nicolas Karasiak & Claude'),
-    el('p', { className: 'about-version' }, `v1.1.0`),
+    el('p', { className: 'about-version' }, `v1.2.0`),
   );
 }
 

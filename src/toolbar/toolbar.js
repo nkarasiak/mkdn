@@ -4,7 +4,7 @@ import { milkdown } from '../editor/milkdown-setup.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { openLinkPopover } from '../ui/link-popover.js';
-import { downloadMarkdown, copyHtml } from '../utils/export.js';
+import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
@@ -159,6 +159,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
 
   // More dropdown
   const moreDropdown = createDropdown('More', [
+    { label: 'Table', onClick: () => milkdown.insertTable() },
     { label: 'Horizontal rule', onClick: () =>
       milkdown.runCommand(milkdown.commands.insertHr) },
     { label: 'Code block', onClick: () => {
@@ -167,6 +168,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     }},
     { label: 'Download .md', onClick: () => downloadMarkdown() },
     { label: 'Copy as HTML', onClick: () => copyHtml() },
+    { label: 'Print / PDF', onClick: () => printDocument() },
   ]);
 
   const formattingRow = el('div', { className: 'toolbar-formatting' },
