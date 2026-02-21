@@ -79,11 +79,9 @@ export function renderTree(tree, opts) {
     const subTree = tree.dirs[dirName];
     const dirPath = getDirPath(tree, dirName, depth, opts);
 
-    // Root level (depth 0) folders are expanded, everything deeper is collapsed.
+    // All folders start collapsed by default.
     // When searching, expandedPaths forces ancestor folders open.
-    const shouldExpand = depth === 0
-      ? true
-      : (expandedPaths ? expandedPaths.has(dirPath) : false);
+    const shouldExpand = expandedPaths ? expandedPaths.has(dirPath) : false;
 
     const folderEl = renderFolder(dirName, subTree, {
       ...opts,

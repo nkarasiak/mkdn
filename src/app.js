@@ -3,7 +3,7 @@ import { settingsStore } from './store/settings-store.js';
 import { eventBus } from './store/event-bus.js';
 import { milkdown } from './editor/milkdown-setup.js';
 import { createToolbar } from './toolbar/toolbar.js';
-import { createSidebar, toggleHistorySection } from './sidebar/sidebar.js';
+import { createSidebar, toggleHistorySection, toggleOutlineSection } from './sidebar/sidebar.js';
 import { createStatusBar } from './ui/status-bar.js';
 import { initKeyboardShortcuts } from './ui/keyboard-shortcuts.js';
 import { localSync } from './local/local-sync.js';
@@ -15,6 +15,7 @@ import { documentStore } from './store/document-store.js';
 import { registerBuiltinCommands } from './command-palette/command-registry.js';
 import { setMilkdownRef } from './command-palette/command-palette.js';
 import { setSourceTextarea } from './editor/source-formatter.js';
+import { initFindBar } from './find-replace/find-bar.js';
 
 let sidebarWrapper, sidebarOverlay;
 
@@ -115,6 +116,9 @@ export const App = {
     // Register textarea for source-formatter
     setSourceTextarea(sourceEditor);
 
+    // Initialize Find & Replace
+    initFindBar({ editorContainer: main, milkdown });
+
     // Source mode toggling with cursor sync
     eventBus.on('settings:sourceMode', (on) => {
       if (on) {
@@ -182,6 +186,7 @@ export const App = {
     registerBuiltinCommands({
       toggleSidebar,
       toggleHistory: () => toggleHistorySection(),
+      toggleOutline: () => toggleOutlineSection(),
       milkdown,
       fileSaver,
       localSync,

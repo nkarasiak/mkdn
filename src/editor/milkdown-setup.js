@@ -18,13 +18,14 @@ import {
 } from '@milkdown/preset-commonmark';
 import { undoCommand, redoCommand } from '@milkdown/plugin-history';
 import { toggleLinkCommand } from '@milkdown/components/link-tooltip';
-import { toggleStrikethroughCommand } from '@milkdown/preset-gfm';
+import { toggleStrikethroughCommand, insertTableCommand } from '@milkdown/preset-gfm';
 import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { createParagraphFocusPlugin } from '../focus/paragraph-focus-plugin.js';
 import { createTypewriterPlugin } from '../focus/typewriter-plugin.js';
 import { createEmbedPlugin } from './embed-plugin.js';
+import { createFindReplacePlugin } from '../find-replace/find-replace-plugin.js';
 import { sourceFormat, getSourceTextarea } from './source-formatter.js';
 
 // Crepe CSS themes
@@ -57,6 +58,7 @@ export const milkdown = {
     crepe.editor.use($prose(() => createParagraphFocusPlugin()));
     crepe.editor.use($prose(() => createTypewriterPlugin()));
     crepe.editor.use($prose(() => createEmbedPlugin()));
+    crepe.editor.use($prose(() => createFindReplacePlugin()));
 
     await crepe.create();
 
@@ -248,6 +250,21 @@ export const milkdown = {
     get insertHr() { return insertHrCommand.key; },
     get createCodeBlock() { return createCodeBlockCommand.key; },
     get insertImage() { return insertImageCommand.key; },
+    get insertTable() { return insertTableCommand.key; },
+  },
+
+  /** Insert a table with the given number of rows and columns. */
+  insertTable(row = 3, col = 3) {
+    if (settingsStore.get('sourceMode')) {
+      sourceFormat.table(row, col);
+      return;
+    }
+    if (!crepe) return;
+    try {
+      const view = crepe.editor.ctx.get(editorViewCtx);
+      if (!view.hasFocus()) view.focus();
+      crepe.editor.action(callCommand(insertTableCommand.key, { row, col }));
+    } catch { /* ignore */ }
   },
 
   /** Find the position of a heading node by text and level. */
@@ -278,6 +295,29 @@ export const milkdown = {
       view.dispatch(tr.scrollIntoView());
       view.focus();
     } catch { /* ignore */ }
+  },
+
+  /** Return all heading positions in the ProseMirror document. */
+  getHeadingPositions() {
+    if (!crepe) return [];
+    try {
+      const view = crepe.editor.ctx.get(editorViewCtx);
+      const headings = [];
+      view.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'heading') {
+          headings.push({ pos: pos + 1, level: node.attrs.level, text: node.textContent.trim() });
+        }
+      });
+      return headings;
+    } catch { return []; }
+  },
+
+  /** Get the ProseMirror editor view. */
+  getView() {
+    if (!crepe) return null;
+    try {
+      return crepe.editor.ctx.get(editorViewCtx);
+    } catch { return null; }
   },
 
   getMarkdown() {

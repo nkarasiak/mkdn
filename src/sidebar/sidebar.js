@@ -10,11 +10,13 @@ import { eventBus } from '../store/event-bus.js';
 import { confirm as confirmModal, prompt as promptModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { createHistoryPanel } from '../history/history-panel.js';
+import { createOutlinePanel } from './outline-panel.js';
 
 let sidebarEl = null;
 let searchInput = null;
 let searchQuery = '';
 let historySectionEl = null;
+let outlineSectionEl = null;
 
 // Local state
 let localFiles = [];
@@ -160,6 +162,12 @@ export function createSidebar() {
     renderLocalSectionHeader();
   }
 
+  // Outline section
+  const outlinePanel = createOutlinePanel();
+  const outline = createSection('Outline', [outlinePanel], { collapsed: false });
+  outlineSectionEl = outline.sectionEl;
+  sectionsEl.appendChild(outlineSectionEl);
+
   // History section
   const historyPanel = createHistoryPanel();
   const history = createSection('History', [historyPanel], { collapsed: true });
@@ -209,6 +217,20 @@ export function createSidebar() {
   });
 
   return sidebarEl;
+}
+
+export function toggleOutlineSection() {
+  const sidebarOpen = settingsStore.get('sidebarOpen');
+  const outlineCollapsed = outlineSectionEl?.classList.contains('collapsed');
+
+  if (!sidebarOpen) {
+    settingsStore.set('sidebarOpen', true);
+    outlineSectionEl?.classList.remove('collapsed');
+  } else if (outlineCollapsed) {
+    outlineSectionEl?.classList.remove('collapsed');
+  } else {
+    settingsStore.set('sidebarOpen', false);
+  }
 }
 
 export function toggleHistorySection() {

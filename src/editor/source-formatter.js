@@ -199,6 +199,21 @@ export const sourceFormat = {
     const block = '```\n' + selected + '\n```';
     insertBlock(textarea, block);
   },
+  table(rows = 3, cols = 3) {
+    if (!textarea) return;
+    const headerCells = Array.from({ length: cols }, (_, i) => `Header ${i + 1}`);
+    const separators = Array.from({ length: cols }, () => '---');
+    const emptyCells = Array.from({ length: cols }, () => '   ');
+
+    const lines = [
+      '| ' + headerCells.join(' | ') + ' |',
+      '| ' + separators.join(' | ') + ' |',
+    ];
+    for (let r = 0; r < rows - 1; r++) {
+      lines.push('| ' + emptyCells.join(' | ') + ' |');
+    }
+    insertBlock(textarea, lines.join('\n'));
+  },
   insertLink(text, url) {
     if (!textarea) return;
     const start = textarea.selectionStart;

@@ -315,3 +315,41 @@
 .tree-folder.collapsed .tree-folder-children {
   display: none;
 }
+
+/* Outline panel */
+.outline-list {
+  padding: 4px 0;
+}
+
+.outline-item {
+  display: block;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  transition: background var(--transition-fast), color var(--transition-fast);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+  border-left: 2px solid transparent;
+}
+
+.outline-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.outline-item.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.outline-item[data-level="1"] {
+  font-weight: 600;
+}
+
+.outline-item[data-level="2"] {
+  font-weight: 500;
+}

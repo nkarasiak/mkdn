@@ -8,6 +8,7 @@ import './styles/wysiwyg.css';
 import './styles/responsive.css';
 import './styles/focus.css';
 import './styles/embed.css';
+import './styles/print.css';
 
 import { App } from './app.js';
 

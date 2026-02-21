@@ -29,7 +29,7 @@ export const commandRegistry = {
 /**
  * Register all built-in commands from existing app functionality.
  */
-export function registerBuiltinCommands({ toggleSidebar, toggleHistory, milkdown, fileSaver, localSync, documentStore, focusManager }) {
+export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOutline, milkdown, fileSaver, localSync, documentStore, focusManager }) {
   commandRegistry.registerMany([
     // --- File ---
     { id: 'file:save', label: 'Save', category: 'File', shortcut: 'Ctrl+S', keywords: ['save', 'write'], action: () => fileSaver.save() },
@@ -42,6 +42,7 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, milkdown
     { id: 'view:toggle-sidebar', label: 'Toggle Sidebar', category: 'View', shortcut: 'Ctrl+Shift+B', keywords: ['sidebar', 'panel'], action: toggleSidebar },
     { id: 'view:toggle-history', label: 'Toggle History', category: 'View', shortcut: 'Ctrl+Shift+H', keywords: ['history', 'versions'], action: toggleHistory },
     { id: 'view:source-mode', label: 'Toggle Source View', category: 'View', shortcut: 'Ctrl+U', keywords: ['source', 'raw', 'markdown', 'code', 'textarea'], action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
+    { id: 'view:toggle-outline', label: 'Toggle Outline', category: 'View', keywords: ['outline', 'toc', 'table of contents', 'headings', 'navigation'], action: toggleOutline },
 
     // --- Format ---
     { id: 'format:bold', label: 'Bold', category: 'Format', shortcut: 'Ctrl+B', keywords: ['bold', 'strong'], action: () => milkdown.runCommand(milkdown.commands.toggleBold) },
@@ -58,10 +59,17 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, milkdown
 
     // --- Insert ---
     { id: 'insert:link', label: 'Insert Link', category: 'Insert', shortcut: 'Ctrl+L', keywords: ['link', 'url', 'href'], action: () => milkdown.runCommand(milkdown.commands.toggleLink) },
+    { id: 'insert:table', label: 'Insert Table', category: 'Insert', keywords: ['table', 'grid', 'rows', 'columns'], action: () => milkdown.insertTable() },
     { id: 'insert:hr', label: 'Horizontal Rule', category: 'Insert', keywords: ['horizontal', 'rule', 'divider', 'separator'], action: () => milkdown.runCommand(milkdown.commands.insertHr) },
     { id: 'insert:code-block', label: 'Code Block', category: 'Insert', keywords: ['code', 'block', 'snippet'], action: () => milkdown.runCommand(milkdown.commands.createCodeBlock) },
 
     // --- Edit ---
+    { id: 'edit:find', label: 'Find', category: 'Edit', shortcut: 'Ctrl+F', keywords: ['find', 'search'], action: () => {
+      import('../find-replace/find-bar.js').then(m => m.openFindBar(false));
+    }},
+    { id: 'edit:find-replace', label: 'Find and Replace', category: 'Edit', shortcut: 'Ctrl+H', keywords: ['find', 'replace', 'search'], action: () => {
+      import('../find-replace/find-bar.js').then(m => m.openFindBar(true));
+    }},
     { id: 'edit:undo', label: 'Undo', category: 'Edit', shortcut: 'Ctrl+Z', keywords: ['undo', 'revert'], action: () => milkdown.runCommand(milkdown.commands.undo) },
     { id: 'edit:redo', label: 'Redo', category: 'Edit', shortcut: 'Ctrl+Shift+Z', keywords: ['redo'], action: () => milkdown.runCommand(milkdown.commands.redo) },
 
@@ -71,6 +79,9 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, milkdown
     }},
     { id: 'export:copy-html', label: 'Copy as HTML', category: 'Export', keywords: ['copy', 'html', 'clipboard'], action: () => {
       import('../utils/export.js').then(m => m.copyHtml());
+    }},
+    { id: 'export:print', label: 'Print / Export PDF', category: 'Export', shortcut: 'Ctrl+P', keywords: ['print', 'pdf', 'export'], action: () => {
+      import('../utils/export.js').then(m => m.printDocument());
     }},
 
     // --- Focus ---
