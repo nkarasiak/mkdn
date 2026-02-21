@@ -7,6 +7,7 @@ import './styles/sidebar.css';
 import './styles/wysiwyg.css';
 import './styles/responsive.css';
 import './styles/focus.css';
+import './styles/embed.css';
 
 import { App } from './app.js';
 

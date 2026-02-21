@@ -23,6 +23,7 @@ import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { createParagraphFocusPlugin } from '../focus/paragraph-focus-plugin.js';
 import { createTypewriterPlugin } from '../focus/typewriter-plugin.js';
+import { createEmbedPlugin } from './embed-plugin.js';
 
 // Crepe CSS themes
 import '@milkdown/crepe/theme/common/style.css';
@@ -50,9 +51,10 @@ export const milkdown = {
       });
     });
 
-    // Register focus mode ProseMirror plugins
+    // Register ProseMirror plugins
     crepe.editor.use($prose(() => createParagraphFocusPlugin()));
     crepe.editor.use($prose(() => createTypewriterPlugin()));
+    crepe.editor.use($prose(() => createEmbedPlugin()));
 
     await crepe.create();
 
@@ -110,6 +112,20 @@ export const milkdown = {
       const { from, to } = view.state.selection;
       return from === to ? '' : view.state.doc.textBetween(from, to);
     } catch { return ''; }
+  },
+
+  /** Insert a URL as a standalone link paragraph (triggers embed decoration). */
+  insertEmbedUrl(url) {
+    if (!crepe) return;
+    try {
+      const view = crepe.editor.ctx.get(editorViewCtx);
+      if (!view.hasFocus()) view.focus();
+      const { state, dispatch } = view;
+      const linkMark = state.schema.marks.link.create({ href: url });
+      const linkNode = state.schema.text(url, [linkMark]);
+      const paragraph = state.schema.nodes.paragraph.create(null, linkNode);
+      dispatch(state.tr.replaceSelectionWith(paragraph).scrollIntoView());
+    } catch { /* ignore */ }
   },
 
   /** Insert or replace selection with a link node. */

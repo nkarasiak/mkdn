@@ -146,11 +146,8 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   });
   const imageBtn = btn('image', 'Image', () => imageInput.click());
   const videoBtn = btn('video', 'Video embed', () => {
-    const url = window.prompt('Video URL:');
-    if (url) {
-      const md = milkdown.getMarkdown() || '';
-      milkdown.setContent(md + `\n[Video](${url})\n`);
-    }
+    const url = window.prompt('Video URL (YouTube or X.com):');
+    if (url) milkdown.insertEmbedUrl(url);
   });
   const commentBtn = btn('comment', 'Blockquote', () => milkdown.toggleBlockquote());
 
