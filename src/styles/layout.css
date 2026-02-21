@@ -82,6 +82,35 @@
   margin: 0 6px;
 }
 
+.statusbar-filename {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  transition: background var(--transition-fast);
+}
+
+.statusbar-filename:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.statusbar-filename-input {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  outline: none;
+  width: 140px;
+}
+
+.statusbar-filename-input:focus {
+  border-color: var(--accent);
+}
+
 .statusbar-focus-label {
   font-weight: 500;
   color: var(--accent);
