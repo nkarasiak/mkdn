@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Paragraph focus and typewriter mode ProseMirror plugins
 - Keyboard shortcuts: Ctrl+Shift+F (focus cycle), Ctrl+K (command palette)
 - Document title syncs with current file name
+- Auto-embed YouTube and X.com/Twitter URLs on paste (iframe for video, native tweet widget)
 
 ### Changed
 
