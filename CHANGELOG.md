@@ -11,8 +11,9 @@ All notable changes to this project will be documented in this file.
 - Enriched status bar: file name, word count, reading time, focus mode label
 - Export: "Download .md" and "Copy as HTML" in toolbar More dropdown
 - Export commands registered in command palette
-- Command palette with fuzzy search (commands, headings)
+- Command palette with fuzzy search (commands, headings) — Ctrl+K
 - Paragraph focus and typewriter mode ProseMirror plugins
+- Keyboard shortcuts: Ctrl+Shift+F (focus cycle), Ctrl+K (command palette)
 - Document title syncs with current file name
 
 ### Changed
