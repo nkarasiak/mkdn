@@ -294,6 +294,14 @@ export const milkdown = {
       const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, pos));
       view.dispatch(tr.scrollIntoView());
       view.focus();
+      // Fallback: also scroll the DOM node into view in case ProseMirror's
+      // scrollIntoView doesn't reach the correct scroll container
+      const domResult = view.domAtPos(pos);
+      const node = domResult.node.nodeType === 1 ? domResult.node : domResult.node.parentElement;
+      if (node) {
+        const block = node.closest('h1,h2,h3,h4,h5,h6,p,li,pre,blockquote') || node;
+        block.scrollIntoView({ block: 'nearest' });
+      }
     } catch { /* ignore */ }
   },
 
