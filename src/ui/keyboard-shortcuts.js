@@ -1,0 +1,75 @@
+import { documentStore } from '../store/document-store.js';
+import { fileSaver } from '../save/file-saver.js';
+import { localFs } from '../local/local-fs.js';
+import { closeModal } from '../ui/modal.js';
+import { openLinkPopover } from '../ui/link-popover.js';
+
+export function initKeyboardShortcuts({ toggleSidebar, toggleHistory }) {
+  document.addEventListener('keydown', (e) => {
+    const ctrl = e.ctrlKey || e.metaKey;
+    const shift = e.shiftKey;
+    const key = e.key.toLowerCase();
+
+    // Escape: close modal
+    if (key === 'escape') {
+      closeModal();
+      return;
+    }
+
+    if (!ctrl) return;
+
+    // Ctrl+S — Save
+    if (key === 's' && !shift) {
+      e.preventDefault();
+      fileSaver.save();
+      return;
+    }
+
+    // Ctrl+Shift+S — Save As
+    if (key === 's' && shift) {
+      e.preventDefault();
+      fileSaver.saveAs();
+      return;
+    }
+
+    // Ctrl+N — New document
+    if (key === 'n' && !shift) {
+      e.preventDefault();
+      documentStore.newDocument();
+      return;
+    }
+
+    // Ctrl+Shift+B — Toggle sidebar
+    if (key === 'b' && shift) {
+      e.preventDefault();
+      toggleSidebar();
+      return;
+    }
+
+    // Ctrl+Shift+H — Toggle history drawer
+    if (key === 'h' && shift) {
+      e.preventDefault();
+      toggleHistory();
+      return;
+    }
+
+    // Ctrl+O — Open file from disk (or toggle sidebar if unsupported)
+    if (key === 'o' && !shift) {
+      e.preventDefault();
+      if (localFs.isSupported()) {
+        fileSaver.openFile();
+      } else {
+        toggleSidebar();
+      }
+      return;
+    }
+
+    // Ctrl+L — Create link via popover
+    if (key === 'l' && !shift) {
+      e.preventDefault();
+      openLinkPopover();
+      return;
+    }
+
+  });
+}

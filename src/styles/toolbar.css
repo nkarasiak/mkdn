@@ -1,0 +1,373 @@
+/* ================================================================
+   Toolbar — Two-row header matching newsletter editor template
+   ================================================================ */
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  background: var(--toolbar-bg);
+}
+
+/* --- Header row: nav + status + action buttons --- */
+
+.toolbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 16px;
+}
+
+.toolbar-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Back / nav button */
+.toolbar-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.toolbar-nav-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.toolbar-nav-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Save status badge */
+.toolbar-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.toolbar-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.toolbar-status-dot.saved {
+  background: var(--success);
+}
+
+/* Secondary action button (Open) */
+.toolbar-secondary-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.toolbar-secondary-btn:hover {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.toolbar-btn-icon {
+  display: flex;
+  width: 14px;
+  height: 14px;
+}
+
+.toolbar-btn-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Primary action button (Save) */
+.toolbar-primary-btn {
+  padding: 8px 24px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--accent-text);
+  background: var(--accent);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.toolbar-primary-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* --- Formatting toolbar row --- */
+
+.toolbar-formatting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 16px;
+  gap: 2px;
+  overflow: visible;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 10px;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+/* Toolbar icon buttons */
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  transition: background var(--transition-fast), color var(--transition-fast), transform 0.1s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toolbar-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.toolbar-btn:active {
+  transform: scale(0.95);
+}
+
+.toolbar-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Tooltip */
+.toolbar-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  padding: 5px 12px;
+  background: #1a1a1a;
+  color: #ffffff;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  white-space: nowrap;
+  border-radius: var(--radius-md);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  z-index: 100;
+  letter-spacing: 0.01em;
+}
+
+.toolbar-btn:hover[data-tooltip]::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* --- Dropdown buttons (Style, More) --- */
+
+.toolbar-dropdown {
+  position: relative;
+}
+
+.toolbar-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.toolbar-dropdown-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.toolbar-chevron {
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+}
+
+.toolbar-chevron svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Dropdown menu */
+.toolbar-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 140px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  padding: 4px;
+}
+
+.toolbar-dropdown-menu.open {
+  display: block;
+}
+
+.toolbar-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.toolbar-dropdown-item:hover {
+  background: var(--bg-hover);
+}
+
+/* Legacy sync status (hidden, use badge instead) */
+.toolbar-sync {
+  display: none;
+}
+
+/* Legacy text button style */
+.toolbar-btn-text {
+  width: auto;
+  padding: 0 10px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  gap: 6px;
+}
+
+/* --- Link popover --- */
+
+.link-popover {
+  display: none;
+  position: fixed;
+  transform: translateX(-50%);
+  width: 260px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  z-index: 300;
+  padding: 12px;
+}
+
+.link-popover-open {
+  display: block;
+}
+
+.link-popover-header {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.link-popover-input {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.link-popover-input + .link-popover-input {
+  margin-top: 6px;
+}
+
+.link-popover-input:focus {
+  border-color: var(--accent);
+}
+
+.link-popover-footer {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.link-popover-btn {
+  padding: 4px 14px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: background var(--transition-fast);
+}
+
+.link-popover-btn:hover {
+  background: var(--bg-active);
+}
+
+.link-popover-btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.link-popover-btn-primary:hover {
+  background: var(--accent-hover);
+}

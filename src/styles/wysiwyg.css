@@ -1,0 +1,334 @@
+.editor-pane {
+  background: var(--editor-bg);
+}
+
+.editor-pane milkdown-crepe-editor,
+.editor-pane .crepe {
+  height: 100%;
+  overflow: auto;
+}
+
+.editor-pane .milkdown {
+  min-height: 100%;
+}
+
+/* Override Crepe theme colors to match app — light mode */
+[data-theme="light"] .milkdown {
+  --crepe-color-background: #ffffff;
+  --crepe-color-on-background: #363737;
+  --crepe-color-surface: #f9f9f9;
+  --crepe-color-surface-low: #f0f0f0;
+  --crepe-color-on-surface: #363737;
+  --crepe-color-on-surface-variant: #6b6b6b;
+  --crepe-color-outline: #b0b0b0;
+  --crepe-color-primary: #363737;
+  --crepe-color-secondary: #e6e6e6;
+  --crepe-color-on-secondary: #363737;
+  --crepe-color-inverse: #f0f0f0;
+  --crepe-color-on-inverse: #363737;
+  --crepe-color-inline-code: #d14;
+  --crepe-color-error: #dc2626;
+  --crepe-color-hover: #f5f5f5;
+  --crepe-color-selected: #b4d5fe;
+  --crepe-color-inline-area: #f5f5f5;
+  --crepe-color-border: #e6e6e6;
+  --crepe-font-family: var(--font-serif);
+  --crepe-font-family-code: 'JetBrains Mono', var(--font-mono);
+  --crepe-shadow-1: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+
+/* ================================================================
+   Main editor content area — Substack-style typography & spacing
+   Uses .milkdown selectors to override Crepe's built-in styles.
+   ================================================================ */
+.editor-pane .ProseMirror,
+.milkdown .ProseMirror {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 16px 0 120px !important;
+  outline: none;
+  min-height: 100%;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-lg);
+  line-height: 1.6;
+  color: var(--text-primary);
+  letter-spacing: -0.003em;
+  word-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Paragraphs — Substack spacing */
+.editor-pane .ProseMirror p,
+.milkdown .ProseMirror p {
+  font-size: var(--font-size-lg) !important;
+  margin-bottom: 0.86em;
+  line-height: 1.6 !important;
+}
+
+/* Headings — all use system-ui sans-serif */
+.editor-pane .ProseMirror h1,
+.milkdown .ProseMirror h1 {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--text-primary);
+  letter-spacing: normal !important;
+  -webkit-font-smoothing: antialiased;
+  font-size: 2em !important;
+  margin: 1em 0 0.625em !important;
+  line-height: 1.16 !important;
+  font-weight: 700 !important;
+}
+
+.editor-pane .ProseMirror h2,
+.editor-pane .ProseMirror h3,
+.editor-pane .ProseMirror h4,
+.milkdown .ProseMirror h2,
+.milkdown .ProseMirror h3,
+.milkdown .ProseMirror h4 {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  color: var(--text-primary);
+  letter-spacing: normal !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+.editor-pane .ProseMirror h2,
+.milkdown .ProseMirror h2 {
+  font-size: 1.625em !important;
+  margin: 1em 0 0.625em !important;
+  line-height: 1.16 !important;
+  font-weight: 700 !important;
+}
+
+.editor-pane .ProseMirror h3,
+.milkdown .ProseMirror h3 {
+  font-size: 1.375em !important;
+  margin: 1em 0 0.625em !important;
+  line-height: 1.16 !important;
+  font-weight: 700 !important;
+}
+
+/* Blockquote — accent-colored left border like Substack */
+.editor-pane .ProseMirror blockquote,
+.milkdown .ProseMirror blockquote {
+  border-left: 4px solid var(--accent) !important;
+  padding: 0 !important;
+  margin: 20px 0 !important;
+  color: var(--text-primary);
+  font-style: normal;
+  background: transparent !important;
+}
+
+.editor-pane .ProseMirror blockquote::before,
+.milkdown .ProseMirror blockquote::before {
+  display: none !important;
+}
+
+.editor-pane .ProseMirror blockquote p,
+.milkdown .ProseMirror blockquote p {
+  margin: 0 0 20px 20px !important;
+}
+
+/* Lists — matching Substack */
+.editor-pane .ProseMirror ul,
+.editor-pane .ProseMirror ol,
+.milkdown .ProseMirror ul,
+.milkdown .ProseMirror ol {
+  list-style-type: disc;
+  list-style-position: outside;
+  padding: 0 !important;
+  margin: 0 0 19px !important;
+}
+
+.editor-pane .ProseMirror ol,
+.milkdown .ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.editor-pane .ProseMirror li,
+.milkdown .ProseMirror li {
+  margin: 8px 0 0 8px !important;
+  padding: 0 !important;
+  line-height: 1.6;
+}
+
+.editor-pane .ProseMirror li p,
+.milkdown .ProseMirror li p {
+  margin: 0 !important;
+  padding: 0 0 0 4px !important;
+}
+
+/* Milkdown custom SVG bullets — force text color & tighten spacing */
+.milkdown .ProseMirror .milkdown-icon.label.bullet svg,
+.milkdown .ProseMirror .milkdown-icon.label.bullet circle {
+  fill: var(--text-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.milkdown .ProseMirror li.list-item {
+  gap: 0px !important;
+}
+
+.milkdown .ProseMirror li.list-item > .label-wrapper {
+  width: 18px !important;
+  min-width: 18px !important;
+  color: var(--text-primary) !important;
+}
+
+.milkdown .ProseMirror .milkdown-icon.label.bullet svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Horizontal rule */
+.editor-pane .ProseMirror hr,
+.milkdown .ProseMirror hr {
+  border: none;
+  border-top: 1px solid var(--text-muted);
+  margin: 1.8em 0;
+}
+
+/* Inline code */
+.editor-pane .ProseMirror code,
+.milkdown .ProseMirror code {
+  font-family: 'JetBrains Mono', var(--font-mono) !important;
+  font-size: 13px !important;
+  line-height: 20px !important;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+}
+
+/* Code blocks — matching Substack: 12px radius, 20px padding, 1px outline */
+.editor-pane .ProseMirror pre,
+.milkdown .ProseMirror pre {
+  background: var(--bg-primary);
+  border: none;
+  outline: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin: 0 0 20px;
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.editor-pane .ProseMirror pre code,
+.milkdown .ProseMirror pre code {
+  font-family: monospace !important;
+  font-size: 13px;
+  line-height: 24px;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+}
+
+/* Milkdown code block wrapper */
+.milkdown .milkdown-code-block {
+  background: var(--bg-primary) !important;
+  outline: 1px solid var(--border-color);
+  border-radius: 12px !important;
+  margin: 0 0 20px;
+  padding: 12px 20px 20px;
+  overflow: hidden;
+}
+
+/* Milkdown code block — smaller font, no dark active line gutter */
+.milkdown .milkdown-code-block .cm-editor {
+  font-family: monospace !important;
+  font-size: 13px !important;
+  background: transparent !important;
+}
+
+.milkdown .milkdown-code-block .cm-content {
+  font-family: monospace !important;
+  font-size: 13px !important;
+  line-height: 24px !important;
+}
+
+.milkdown .milkdown-code-block .cm-gutters {
+  font-size: 13px !important;
+  background: transparent !important;
+  border-right: none !important;
+}
+
+.milkdown .milkdown-code-block .cm-activeLineGutter {
+  background: transparent !important;
+  color: var(--text-muted) !important;
+}
+
+.milkdown .milkdown-code-block .cm-activeLine {
+  background: transparent !important;
+}
+
+/* Images — constrain to text width, preserve aspect ratio */
+.editor-pane .ProseMirror img,
+.milkdown .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0;
+}
+
+/* Links — Substack uses subtle underlines */
+.editor-pane .ProseMirror a,
+.milkdown .ProseMirror a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 0, 0, 0.3);
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+.editor-pane .ProseMirror a:hover,
+.milkdown .ProseMirror a:hover {
+  text-decoration-color: var(--accent);
+}
+
+/* Strong — Substack loads Spectral 600 (not 700), so bold renders as semibold */
+.editor-pane .ProseMirror strong,
+.milkdown .ProseMirror strong {
+  font-weight: 600;
+}
+
+/* Emphasis */
+.editor-pane .ProseMirror em,
+.milkdown .ProseMirror em {
+  font-style: italic;
+}
+
+/* ================================================================
+   Milkdown floating toolbar — fix invisible icons & modernize
+   ================================================================ */
+.milkdown .milkdown-toolbar {
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-color);
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 2px 4px;
+}
+
+.milkdown .milkdown-toolbar .toolbar-item svg {
+  color: var(--text-secondary) !important;
+  fill: var(--text-secondary) !important;
+}
+
+.milkdown .milkdown-toolbar .toolbar-item:hover svg {
+  color: var(--text-primary) !important;
+  fill: var(--text-primary) !important;
+}
+
+.milkdown .milkdown-toolbar .toolbar-item.active svg {
+  color: var(--accent) !important;
+  fill: var(--accent) !important;
+}
+
+.milkdown .milkdown-toolbar .toolbar-item {
+  border-radius: 6px !important;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.milkdown .milkdown-toolbar .toolbar-item:hover {
+  background: var(--bg-hover) !important;
+}
+
+.milkdown .milkdown-toolbar .divider {
+  background: var(--border-color) !important;
+  opacity: 0.5;
+}
