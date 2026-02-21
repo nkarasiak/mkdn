@@ -55,6 +55,13 @@
     padding: 0 8px;
     height: 40px;
     justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .toolbar-formatting::-webkit-scrollbar {
+    display: none;
   }
 
   .toolbar-btn {
@@ -90,6 +97,7 @@
   .editor-pane .ProseMirror {
     padding: 32px 16px 80px;
     font-size: var(--font-size-lg);
+    max-width: 100%;
   }
 
 }

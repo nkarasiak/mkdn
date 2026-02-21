@@ -87,6 +87,22 @@ export function prompt(message, { title = 'Input', defaultValue = '', placeholde
   });
 }
 
+export function showInfo(title, message) {
+  const o = ensureOverlay();
+  o.innerHTML = '';
+
+  const modal = el('div', { className: 'modal' },
+    el('div', { className: 'modal-header' }, title),
+    el('div', { className: 'modal-body' }, message),
+    el('div', { className: 'modal-footer' },
+      el('button', { className: 'modal-btn modal-btn-primary', onClick: closeModal }, 'OK'),
+    ),
+  );
+
+  o.appendChild(modal);
+  requestAnimationFrame(() => o.classList.add('modal-open'));
+}
+
 // Inject modal styles
 const style = document.createElement('style');
 style.textContent = `

@@ -189,8 +189,8 @@
   left: 50%;
   transform: translateX(-50%) translateY(2px);
   padding: 5px 12px;
-  background: #1a1a1a;
-  color: #ffffff;
+  background: var(--text-primary);
+  color: var(--bg-primary);
   font-size: var(--font-size-xs);
   font-family: var(--font-sans);
   font-weight: 500;

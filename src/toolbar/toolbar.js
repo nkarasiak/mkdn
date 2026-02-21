@@ -4,6 +4,7 @@ import { milkdown } from '../editor/milkdown-setup.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { openLinkPopover } from '../ui/link-popover.js';
+import { downloadMarkdown, copyHtml } from '../utils/export.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
@@ -167,6 +168,8 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
       milkdown.runCommand(milkdown.commands.wrapHeading, 0);
       milkdown.runCommand(milkdown.commands.createCodeBlock);
     }},
+    { label: 'Download .md', onClick: () => downloadMarkdown() },
+    { label: 'Copy as HTML', onClick: () => copyHtml() },
   ]);
 
   const formattingRow = el('div', { className: 'toolbar-formatting' },

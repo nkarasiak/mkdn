@@ -10,11 +10,19 @@ import { localSync } from './local/local-sync.js';
 import { fileSaver } from './save/file-saver.js';
 import { sessionStore } from './storage/session-store.js';
 import { historyManager } from './history/history-manager.js';
+import { focusManager } from './focus/focus-manager.js';
+import { documentStore } from './store/document-store.js';
 
 let sidebarWrapper, sidebarOverlay;
 
 function applyTheme() {
-  document.documentElement.setAttribute('data-theme', 'light');
+  const theme = settingsStore.getTheme();
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+function updateDocTitle({ name } = {}) {
+  const fileName = name || documentStore.getFileName() || 'Untitled.md';
+  document.title = `${fileName} — mkdn`;
 }
 
 function applySidebarState(open) {
@@ -57,6 +65,7 @@ export const App = {
     // Create status bar
     const statusbar = createStatusBar({
       onToggleHistory: () => toggleHistorySection(),
+      focusManager,
     });
 
     // Main content area
@@ -72,6 +81,9 @@ export const App = {
     );
 
     appEl.appendChild(app);
+
+    // Initialize focus manager
+    focusManager.init(app);
 
     // Restore session before Milkdown init so restored content is the initial value
     sessionStore.restoreSession();
@@ -91,8 +103,15 @@ export const App = {
 
     // Listen for settings changes
     eventBus.on('settings:sidebarOpen', applySidebarState);
+    eventBus.on('settings:theme', applyTheme);
+
+    // Document title sync
+    eventBus.on('file:renamed', updateDocTitle);
+    eventBus.on('file:opened', updateDocTitle);
+    eventBus.on('file:new', () => updateDocTitle({ name: 'Untitled.md' }));
+    updateDocTitle({ name: documentStore.getFileName() });
 
     // Init keyboard shortcuts
-    initKeyboardShortcuts({ toggleSidebar, toggleHistory: () => toggleHistorySection() });
+    initKeyboardShortcuts({ toggleSidebar, toggleHistory: () => toggleHistorySection(), focusManager });
   },
 };

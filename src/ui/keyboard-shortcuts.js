@@ -3,15 +3,22 @@ import { fileSaver } from '../save/file-saver.js';
 import { localFs } from '../local/local-fs.js';
 import { closeModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
+import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
 
-export function initKeyboardShortcuts({ toggleSidebar, toggleHistory }) {
+let focusManagerRef = null;
+
+export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManager }) {
+  focusManagerRef = focusManager;
+
   document.addEventListener('keydown', (e) => {
     const ctrl = e.ctrlKey || e.metaKey;
     const shift = e.shiftKey;
     const key = e.key.toLowerCase();
 
-    // Escape: close modal
+    // Escape: close palette → exit focus modes → close modal (priority chain)
     if (key === 'escape') {
+      if (closeCommandPalette()) return;
+      if (focusManagerRef?.exitAllModes()) return;
       closeModal();
       return;
     }
