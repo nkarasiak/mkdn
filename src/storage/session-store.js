@@ -3,7 +3,7 @@ import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { debounce } from '../utils/debounce.js';
 
-const SESSION_KEY = 'downtomark-session';
+const SESSION_KEY = 'mkdn-session';
 
 function save() {
   const s = documentStore.getState();

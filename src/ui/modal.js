@@ -16,14 +16,24 @@ function ensureOverlay() {
 let currentReject;
 
 export function closeModal() {
-  if (overlay) {
+  if (overlay && overlay.classList.contains('modal-open')) {
     overlay.classList.remove('modal-open');
     overlay.innerHTML = '';
+    if (currentReject) {
+      currentReject(new Error('cancelled'));
+      currentReject = null;
+    }
+    return true;
   }
-  if (currentReject) {
-    currentReject(new Error('cancelled'));
-    currentReject = null;
+  // Also close standalone modal overlays (save picker, history preview, etc.)
+  const standalone = document.querySelector('.modal-overlay.modal-open');
+  if (standalone && standalone !== overlay) {
+    standalone.dispatchEvent(new Event('modal:close'));
+    standalone.classList.remove('modal-open');
+    standalone.remove();
+    return true;
   }
+  return false;
 }
 
 export function confirm(message, { title = 'Confirm', okText = 'OK', cancelText = 'Cancel', danger = false } = {}) {
@@ -85,6 +95,23 @@ export function prompt(message, { title = 'Input', defaultValue = '', placeholde
       input.select();
     });
   });
+}
+
+export function showInfo(title, content) {
+  const o = ensureOverlay();
+  o.innerHTML = '';
+
+  const isNode = content instanceof Node;
+  const modal = el('div', { className: `modal${isNode ? ' modal-wide' : ''}` },
+    el('div', { className: 'modal-header' }, title),
+    el('div', { className: 'modal-body' }, ...(isNode ? [content] : [content])),
+    el('div', { className: 'modal-footer' },
+      el('button', { className: 'modal-btn modal-btn-primary', onClick: closeModal }, 'OK'),
+    ),
+  );
+
+  o.appendChild(modal);
+  requestAnimationFrame(() => o.classList.add('modal-open'));
 }
 
 // Inject modal styles
@@ -152,6 +179,55 @@ style.textContent = `
   width: 100%;
   padding: 8px 12px;
   font-size: var(--font-size-base);
+}
+.modal.modal-wide {
+  max-width: 560px;
+}
+.about-content { font-size: var(--font-size-sm); }
+.about-description {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+.about-section-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 14px 0 6px;
+}
+.about-section-title:first-child { margin-top: 0; }
+.about-shortcuts {
+  width: 100%;
+  border-collapse: collapse;
+}
+.about-shortcuts td {
+  padding: 3px 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+.about-shortcut-keys {
+  white-space: nowrap;
+  width: 1%;
+  padding-right: 16px !important;
+}
+.about-shortcut-keys kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  margin-right: 2px;
+}
+.about-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+.about-link:hover { text-decoration: underline; }
+.about-version {
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
 }
 `;
 document.head.appendChild(style);

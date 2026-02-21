@@ -10,15 +10,21 @@ function showSaveLocationPicker() {
   return new Promise((resolve) => {
     const overlay = el('div', { className: 'modal-overlay' });
 
+    let resolved = false;
     function pick(choice) {
+      if (resolved) return;
+      resolved = true;
       overlay.classList.remove('modal-open');
-      overlay.remove();
+      if (overlay.parentNode) overlay.remove();
       resolve(choice);
     }
 
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) pick(null);
     });
+
+    // Resolve as cancelled when closed externally (e.g. global Escape → closeModal)
+    overlay.addEventListener('modal:close', () => pick(null));
 
     const options = [];
 

@@ -1,12 +1,16 @@
 import { eventBus } from './event-bus.js';
 
-const STORAGE_KEY = 'downtomark-settings';
+const STORAGE_KEY = 'mkdn-settings';
 
 const defaults = {
   theme: 'light',
   fontSize: 15,
   sidebarOpen: false,
   autoSaveInterval: 30000,
+  zenMode: false,
+  paragraphFocus: false,
+  typewriterMode: false,
+  sourceMode: false,
 };
 
 function load() {
@@ -17,6 +21,11 @@ function load() {
     delete parsed.viewMode;
     // Sidebar always starts collapsed
     parsed.sidebarOpen = false;
+    // Focus modes never persist across reload
+    parsed.zenMode = false;
+    parsed.paragraphFocus = false;
+    parsed.typewriterMode = false;
+    parsed.sourceMode = false;
     return parsed;
   } catch {
     return { ...defaults };
@@ -49,6 +58,6 @@ export const settingsStore = {
   },
 
   getTheme() {
-    return 'light';
+    return settings.theme;
   },
 };

@@ -10,11 +10,21 @@ import { localSync } from './local/local-sync.js';
 import { fileSaver } from './save/file-saver.js';
 import { sessionStore } from './storage/session-store.js';
 import { historyManager } from './history/history-manager.js';
+import { focusManager } from './focus/focus-manager.js';
+import { documentStore } from './store/document-store.js';
+import { registerBuiltinCommands } from './command-palette/command-registry.js';
+import { setMilkdownRef } from './command-palette/command-palette.js';
 
 let sidebarWrapper, sidebarOverlay;
 
 function applyTheme() {
-  document.documentElement.setAttribute('data-theme', 'light');
+  const theme = settingsStore.getTheme();
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+function updateDocTitle({ name } = {}) {
+  const fileName = name || documentStore.getFileName() || 'Untitled.md';
+  document.title = `${fileName} — mkdn`;
 }
 
 function applySidebarState(open) {
@@ -37,6 +47,10 @@ export const App = {
     // Create editor pane
     const editorPane = el('div', { className: 'editor-pane' });
 
+    // Create source editor (raw markdown textarea)
+    const sourceEditor = el('textarea', { className: 'source-editor', spellcheck: false });
+    const sourceWrapper = el('div', { className: 'source-editor-wrapper' }, sourceEditor);
+
     // Create sidebar
     const sidebar = createSidebar();
     sidebarWrapper = el('div', { className: 'app-sidebar' }, sidebar);
@@ -57,10 +71,11 @@ export const App = {
     // Create status bar
     const statusbar = createStatusBar({
       onToggleHistory: () => toggleHistorySection(),
+      focusManager,
     });
 
     // Main content area
-    const main = el('div', { className: 'app-main' }, editorPane);
+    const main = el('div', { className: 'app-main' }, editorPane, sourceWrapper);
 
     // App shell
     const app = el('div', { className: 'app' },
@@ -72,6 +87,9 @@ export const App = {
     );
 
     appEl.appendChild(app);
+
+    // Initialize focus manager
+    focusManager.init(app);
 
     // Restore session before Milkdown init so restored content is the initial value
     sessionStore.restoreSession();
@@ -91,8 +109,54 @@ export const App = {
 
     // Listen for settings changes
     eventBus.on('settings:sidebarOpen', applySidebarState);
+    eventBus.on('settings:theme', applyTheme);
+
+    // Source mode toggling
+    eventBus.on('settings:sourceMode', (on) => {
+      if (on) {
+        editorPane.style.display = 'none';
+        sourceWrapper.style.display = 'block';
+        sourceEditor.style.display = 'block';
+        sourceEditor.value = documentStore.getMarkdown();
+        sourceEditor.focus();
+      } else {
+        const value = sourceEditor.value;
+        sourceWrapper.style.display = 'none';
+        sourceEditor.style.display = 'none';
+        editorPane.style.display = '';
+        documentStore.setMarkdown(value, 'source-editor');
+      }
+    });
+
+    sourceEditor.addEventListener('input', () => {
+      documentStore.setMarkdown(sourceEditor.value, 'source-editor');
+    });
+
+    eventBus.on('content:changed', ({ source } = {}) => {
+      if (source !== 'source-editor' && settingsStore.get('sourceMode')) {
+        sourceEditor.value = documentStore.getMarkdown();
+      }
+    });
+
+    // Document title sync
+    eventBus.on('file:renamed', updateDocTitle);
+    eventBus.on('file:opened', updateDocTitle);
+    eventBus.on('file:new', () => updateDocTitle({ name: 'Untitled.md' }));
+    updateDocTitle({ name: documentStore.getFileName() });
 
     // Init keyboard shortcuts
-    initKeyboardShortcuts({ toggleSidebar, toggleHistory: () => toggleHistorySection() });
+    initKeyboardShortcuts({ toggleSidebar, toggleHistory: () => toggleHistorySection(), focusManager });
+
+    // Register command palette commands and set milkdown reference
+    setMilkdownRef(milkdown);
+    registerBuiltinCommands({
+      toggleSidebar,
+      toggleHistory: () => toggleHistorySection(),
+      milkdown,
+      fileSaver,
+      localSync,
+      documentStore,
+      focusManager,
+    });
   },
 };

@@ -4,6 +4,7 @@ import { milkdown } from '../editor/milkdown-setup.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { openLinkPopover } from '../ui/link-popover.js';
+import { downloadMarkdown, copyHtml } from '../utils/export.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
@@ -145,11 +146,8 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   });
   const imageBtn = btn('image', 'Image', () => imageInput.click());
   const videoBtn = btn('video', 'Video embed', () => {
-    const url = window.prompt('Video URL:');
-    if (url) {
-      const md = milkdown.getMarkdown() || '';
-      milkdown.setContent(md + `\n[Video](${url})\n`);
-    }
+    const url = window.prompt('Video URL (YouTube or X.com):');
+    if (url) milkdown.insertEmbedUrl(url);
   });
   const commentBtn = btn('comment', 'Blockquote', () => milkdown.toggleBlockquote());
 
@@ -167,6 +165,8 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
       milkdown.runCommand(milkdown.commands.wrapHeading, 0);
       milkdown.runCommand(milkdown.commands.createCodeBlock);
     }},
+    { label: 'Download .md', onClick: () => downloadMarkdown() },
+    { label: 'Copy as HTML', onClick: () => copyHtml() },
   ]);
 
   const formattingRow = el('div', { className: 'toolbar-formatting' },

@@ -1,0 +1,82 @@
+/* ================================================================
+   Focus / Zen Mode
+   ================================================================ */
+
+/* --- Zen mode: hide chrome --- */
+.app.zen-mode {
+  grid-template-rows: 0px 1fr;
+}
+
+.app.zen-mode .app-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.app.zen-mode .app-toolbar.zen-reveal {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.app.zen-mode .app-sidebar {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app.zen-mode .app-statusbar {
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.app.zen-mode .sidebar-overlay {
+  display: none;
+}
+
+/* --- Paragraph Focus --- */
+.ProseMirror.paragraph-focus .pm-focus-dimmed {
+  opacity: 0.25;
+  transition: opacity 0.2s ease;
+}
+
+.ProseMirror.paragraph-focus .pm-focus-active {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+/* --- Typewriter mode --- */
+.ProseMirror.typewriter-mode {
+  padding-top: 45vh;
+  padding-bottom: 45vh;
+}
+
+/* --- Escape hint overlay --- */
+.zen-escape-hint {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  background: var(--bg-overlay);
+  color: var(--text-inverse);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  padding: 8px 20px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  animation: zen-hint-fade 3s ease forwards;
+}
+
+@keyframes zen-hint-fade {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  10%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  70%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(0); }
+}

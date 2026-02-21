@@ -1,4 +1,4 @@
-const DB_NAME = 'downtomark-handles';
+const DB_NAME = 'mkdn-handles';
 const DB_VERSION = 1;
 const STORE_NAME = 'handles';
 const HANDLE_KEY = 'localFolder';

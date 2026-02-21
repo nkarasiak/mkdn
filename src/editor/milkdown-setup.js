@@ -1,6 +1,7 @@
 import { Crepe } from '@milkdown/crepe';
 import { editorViewCtx, commandsCtx } from '@milkdown/core';
-import { replaceAll, callCommand } from '@milkdown/utils';
+import { replaceAll, callCommand, $prose } from '@milkdown/utils';
+import { TextSelection } from '@milkdown/prose/state';
 import {
   toggleStrongCommand,
   toggleEmphasisCommand,
@@ -20,6 +21,9 @@ import { toggleLinkCommand } from '@milkdown/components/link-tooltip';
 import { toggleStrikethroughCommand } from '@milkdown/preset-gfm';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
+import { createParagraphFocusPlugin } from '../focus/paragraph-focus-plugin.js';
+import { createTypewriterPlugin } from '../focus/typewriter-plugin.js';
+import { createEmbedPlugin } from './embed-plugin.js';
 
 // Crepe CSS themes
 import '@milkdown/crepe/theme/common/style.css';
@@ -47,7 +51,22 @@ export const milkdown = {
       });
     });
 
+    // Register ProseMirror plugins
+    crepe.editor.use($prose(() => createParagraphFocusPlugin()));
+    crepe.editor.use($prose(() => createTypewriterPlugin()));
+    crepe.editor.use($prose(() => createEmbedPlugin()));
+
     await crepe.create();
+
+    // Listen for focus mode toggle to refresh decorations
+    eventBus.on('focus:refresh-plugins', () => {
+      if (!crepe) return;
+      try {
+        const view = crepe.editor.ctx.get(editorViewCtx);
+        const tr = view.state.tr.setMeta('focus-mode-toggle', true);
+        view.dispatch(tr);
+      } catch { /* editor may not be ready */ }
+    });
 
     // Override toggleLinkCommand so all link triggers (floating toolbar,
     // keyboard shortcut) open our custom popover instead of Milkdown's default.
@@ -93,6 +112,20 @@ export const milkdown = {
       const { from, to } = view.state.selection;
       return from === to ? '' : view.state.doc.textBetween(from, to);
     } catch { return ''; }
+  },
+
+  /** Insert a URL as a standalone link paragraph (triggers embed decoration). */
+  insertEmbedUrl(url) {
+    if (!crepe) return;
+    try {
+      const view = crepe.editor.ctx.get(editorViewCtx);
+      if (!view.hasFocus()) view.focus();
+      const { state, dispatch } = view;
+      const linkMark = state.schema.marks.link.create({ href: url });
+      const linkNode = state.schema.text(url, [linkMark]);
+      const paragraph = state.schema.nodes.paragraph.create(null, linkNode);
+      dispatch(state.tr.replaceSelectionWith(paragraph).scrollIntoView());
+    } catch { /* ignore */ }
   },
 
   /** Insert or replace selection with a link node. */
@@ -176,6 +209,36 @@ export const milkdown = {
     get insertHr() { return insertHrCommand.key; },
     get createCodeBlock() { return createCodeBlockCommand.key; },
     get insertImage() { return insertImageCommand.key; },
+  },
+
+  /** Find the position of a heading node by text and level. */
+  findHeadingPos(text, level) {
+    if (!crepe) return null;
+    try {
+      const view = crepe.editor.ctx.get(editorViewCtx);
+      let found = null;
+      view.state.doc.descendants((node, pos) => {
+        if (found != null) return false;
+        if (node.type.name === 'heading' && node.attrs.level === level) {
+          const nodeText = node.textContent.trim();
+          if (nodeText === text) {
+            found = pos + 1; // inside the heading
+          }
+        }
+      });
+      return found;
+    } catch { return null; }
+  },
+
+  /** Scroll the editor to a given document position. */
+  scrollToPos(pos) {
+    if (!crepe) return;
+    try {
+      const view = crepe.editor.ctx.get(editorViewCtx);
+      const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, pos));
+      view.dispatch(tr.scrollIntoView());
+      view.focus();
+    } catch { /* ignore */ }
   },
 
   getMarkdown() {

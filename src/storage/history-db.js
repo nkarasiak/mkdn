@@ -1,4 +1,4 @@
-const DB_NAME = 'downtomark-history';
+const DB_NAME = 'mkdn-history';
 const DB_VERSION = 1;
 const STORE_NAME = 'snapshots';
 

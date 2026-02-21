@@ -1,17 +1,25 @@
 import { documentStore } from '../store/document-store.js';
 import { fileSaver } from '../save/file-saver.js';
 import { localFs } from '../local/local-fs.js';
+import { settingsStore } from '../store/settings-store.js';
 import { closeModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
+import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
 
-export function initKeyboardShortcuts({ toggleSidebar, toggleHistory }) {
+let focusManagerRef = null;
+
+export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManager }) {
+  focusManagerRef = focusManager;
+
   document.addEventListener('keydown', (e) => {
     const ctrl = e.ctrlKey || e.metaKey;
     const shift = e.shiftKey;
     const key = e.key.toLowerCase();
 
-    // Escape: close modal
+    // Escape: close palette → exit focus modes → close modal (priority chain)
     if (key === 'escape') {
+      if (closeCommandPalette()) return;
+      if (focusManagerRef?.exitAllModes()) return;
       closeModal();
       return;
     }
@@ -68,6 +76,27 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory }) {
     if (key === 'l' && !shift) {
       e.preventDefault();
       openLinkPopover();
+      return;
+    }
+
+    // Ctrl+Shift+F — Cycle focus/zen modes
+    if (key === 'f' && shift) {
+      e.preventDefault();
+      focusManagerRef?.cycleMode();
+      return;
+    }
+
+    // Ctrl+K — Open command palette
+    if (key === 'k' && !shift) {
+      e.preventDefault();
+      openCommandPalette();
+      return;
+    }
+
+    // Ctrl+U — Toggle source view
+    if (key === 'u' && !shift) {
+      e.preventDefault();
+      settingsStore.set('sourceMode', !settingsStore.get('sourceMode'));
       return;
     }
 

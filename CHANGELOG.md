@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-02-21
+
+### Added
+
+- Dark mode with toggle button in status bar (default: light)
+- Focus/zen mode: cycle through Zen, Zen+Focus, Zen+Focus+Typewriter via status bar or Ctrl+Shift+F
+- Enriched status bar: file name, word count, reading time, focus mode label
+- Inline-editable filename in status bar (click to rename)
+- Export: "Download .md" and "Copy as HTML" in toolbar More dropdown
+- Export commands registered in command palette
+- Command palette with fuzzy search (commands, headings) — Ctrl+K
+- Paragraph focus and typewriter mode ProseMirror plugins
+- Keyboard shortcuts: Ctrl+Shift+F (focus cycle), Ctrl+K (command palette)
+- Document title syncs with current file name
+- Auto-embed YouTube and X.com/Twitter URLs on paste (iframe for video, native tweet widget)
+- About dialog with keyboard shortcuts, credits, issue link, and version
+- Raw markdown source view toggle via Ctrl+U, command palette, and About modal
+
+### Changed
+
+- Tooltip colors use CSS variables instead of hardcoded values (dark mode compatible)
+- Link underline color uses `var(--text-muted)` instead of hardcoded rgba
+- Info button in status bar opens a modal instead of `alert()`
+- Mobile toolbar scrolls horizontally instead of overflowing
+- Mobile editor content uses full width at small breakpoints
+- Default welcome content updated with actual feature list
+
+### Fixed
+
+- All modals (save picker, history preview, info) now close with Escape key
+
+### Removed
+
+- Unused `history-drawer.js` (not imported anywhere)
+- Unused `indexeddb.js` (legacy Drive offline cache)
+- Unused `markdown-utils.js` (status bar has its own stats)
+
 ## [1.0.0] - 2026-02-21
 
 ### Added

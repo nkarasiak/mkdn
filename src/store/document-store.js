@@ -1,6 +1,6 @@
 import { eventBus } from './event-bus.js';
 
-const DEFAULT_CONTENT = `# Welcome to DownToMark
+const DEFAULT_CONTENT = `# Welcome to mkdn
 
 A beautiful markdown editor.
 
@@ -14,10 +14,13 @@ Select any text to see the **floating toolbar** for quick formatting.
 
 - **WYSIWYG editing** — what you see is what you get
 - **Dark mode** — easy on the eyes
+- **Local folder sync** — link a folder and work with your files directly
+- **Version history** — automatic snapshots you can browse and restore
+- **Focus & zen modes** — distraction-free writing
 - **Keyboard shortcuts** — fast and efficient
 
 \`\`\`javascript
-console.log('Hello, DownToMark!');
+console.log('Hello, mkdn!');
 \`\`\`
 
 > Markdown is a lightweight markup language that you can use to add formatting elements to plaintext text documents.
