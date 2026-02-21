@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.1.0] - 2026-02-21
 
 ### Added
 
@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - Document title syncs with current file name
 - Auto-embed YouTube and X.com/Twitter URLs on paste (iframe for video, native tweet widget)
 - About dialog with keyboard shortcuts, credits, issue link, and version
+- Raw markdown source view toggle via Ctrl+U, command palette, and About modal
 
 ### Changed
 
