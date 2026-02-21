@@ -14,6 +14,7 @@ import { focusManager } from './focus/focus-manager.js';
 import { documentStore } from './store/document-store.js';
 import { registerBuiltinCommands } from './command-palette/command-registry.js';
 import { setMilkdownRef } from './command-palette/command-palette.js';
+import { setSourceTextarea } from './editor/source-formatter.js';
 
 let sidebarWrapper, sidebarOverlay;
 
@@ -111,20 +112,49 @@ export const App = {
     eventBus.on('settings:sidebarOpen', applySidebarState);
     eventBus.on('settings:theme', applyTheme);
 
-    // Source mode toggling
+    // Register textarea for source-formatter
+    setSourceTextarea(sourceEditor);
+
+    // Source mode toggling with cursor sync
     eventBus.on('settings:sourceMode', (on) => {
       if (on) {
+        // WYSIWYG → Source: capture cursor position before switching
+        const markdown = documentStore.getMarkdown();
+        const cursorOffset = milkdown.getCursorAsMarkdownOffset(markdown);
+
         editorPane.style.display = 'none';
         sourceWrapper.style.display = 'block';
         sourceEditor.style.display = 'block';
-        sourceEditor.value = documentStore.getMarkdown();
+        sourceEditor.value = markdown;
+
+        // Restore cursor position in textarea
+        const clampedOffset = Math.min(cursorOffset, sourceEditor.value.length);
+        sourceEditor.setSelectionRange(clampedOffset, clampedOffset);
         sourceEditor.focus();
+
+        // Scroll to cursor position
+        // Use a temporary measurement to scroll the textarea
+        requestAnimationFrame(() => {
+          sourceEditor.blur();
+          sourceEditor.setSelectionRange(clampedOffset, clampedOffset);
+          sourceEditor.focus();
+        });
       } else {
+        // Source → WYSIWYG: capture cursor offset before switching
+        const cursorOffset = sourceEditor.selectionStart;
         const value = sourceEditor.value;
+
         sourceWrapper.style.display = 'none';
         sourceEditor.style.display = 'none';
         editorPane.style.display = '';
         documentStore.setMarkdown(value, 'source-editor');
+        // Explicitly sync milkdown (content:changed skips source-editor to prevent loops)
+        milkdown.setContent(value);
+
+        // Restore cursor in ProseMirror after Milkdown processes the content
+        requestAnimationFrame(() => {
+          milkdown.setCursorFromMarkdownOffset(value, cursorOffset);
+        });
       }
     });
 

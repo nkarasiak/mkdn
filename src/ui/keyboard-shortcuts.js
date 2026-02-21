@@ -5,6 +5,7 @@ import { settingsStore } from '../store/settings-store.js';
 import { closeModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
+import { sourceFormat } from '../editor/source-formatter.js';
 
 let focusManagerRef = null;
 
@@ -25,6 +26,26 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     }
 
     if (!ctrl) return;
+
+    // Source mode formatting shortcuts (Ctrl+B/I/E)
+    // ProseMirror doesn't see keys when textarea has focus, so we handle them here.
+    if (settingsStore.get('sourceMode')) {
+      if (key === 'b' && !shift) {
+        e.preventDefault();
+        sourceFormat.bold();
+        return;
+      }
+      if (key === 'i' && !shift) {
+        e.preventDefault();
+        sourceFormat.italic();
+        return;
+      }
+      if (key === 'e' && !shift) {
+        e.preventDefault();
+        sourceFormat.inlineCode();
+        return;
+      }
+    }
 
     // Ctrl+S — Save
     if (key === 's' && !shift) {
