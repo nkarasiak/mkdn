@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Toolbar buttons (Bold, Italic, lists, headings, blockquote, HR, code block) now work in source mode
+- Command palette formatting actions work in source mode
+- Ctrl+B, Ctrl+I, Ctrl+E keyboard shortcuts work in source mode textarea
+- Cursor position syncs when toggling between WYSIWYG and source view
+
 ## [1.1.0] - 2026-02-21
 
 ### Added
