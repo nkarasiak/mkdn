@@ -199,7 +199,7 @@ function buildAboutContent() {
     el('p', {}, issueLink),
     el('h4', { className: 'about-section-title' }, 'Credits'),
     el('p', {}, 'Created by Nicolas Karasiak & Claude'),
-    el('p', { className: 'about-version' }, `v1.1.0`),
+    el('p', { className: 'about-version' }, `v1.2.0`),
   );
 }
 

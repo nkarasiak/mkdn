@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-02-21
+
 ### Added
 
 - Toolbar buttons (Bold, Italic, lists, headings, blockquote, HR, code block) now work in source mode
