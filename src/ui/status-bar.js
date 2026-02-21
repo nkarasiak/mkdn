@@ -175,6 +175,7 @@ function buildAboutContent() {
       shortcutRow(['Ctrl', 'E'], 'Inline code'),
       shortcutRow(['Ctrl', 'Shift', 'B'], 'Toggle sidebar'),
       shortcutRow(['Ctrl', 'Shift', 'H'], 'Toggle history'),
+      shortcutRow(['Ctrl', 'U'], 'Toggle source view'),
       shortcutRow(['Ctrl', 'Shift', 'F'], 'Cycle focus modes'),
       shortcutRow(['Esc'], 'Close dialog / exit focus'),
     ),
@@ -188,7 +189,7 @@ function buildAboutContent() {
   }, 'github.com/nkarasiak/mkdn/issues');
 
   return el('div', { className: 'about-content' },
-    el('p', { className: 'about-description' }, 'A minimal, browser-based WYSIWYG markdown editor.'),
+    el('p', { className: 'about-description' }, 'A minimal, browser-based markdown editor.'),
     el('h4', { className: 'about-section-title' }, 'Keyboard shortcuts'),
     shortcuts,
     el('h4', { className: 'about-section-title' }, 'Report an issue'),

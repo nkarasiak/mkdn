@@ -10,6 +10,7 @@ const defaults = {
   zenMode: false,
   paragraphFocus: false,
   typewriterMode: false,
+  sourceMode: false,
 };
 
 function load() {
@@ -24,6 +25,7 @@ function load() {
     parsed.zenMode = false;
     parsed.paragraphFocus = false;
     parsed.typewriterMode = false;
+    parsed.sourceMode = false;
     return parsed;
   } catch {
     return { ...defaults };

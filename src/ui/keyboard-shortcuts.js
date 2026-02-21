@@ -1,6 +1,7 @@
 import { documentStore } from '../store/document-store.js';
 import { fileSaver } from '../save/file-saver.js';
 import { localFs } from '../local/local-fs.js';
+import { settingsStore } from '../store/settings-store.js';
 import { closeModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
@@ -89,6 +90,13 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     if (key === 'k' && !shift) {
       e.preventDefault();
       openCommandPalette();
+      return;
+    }
+
+    // Ctrl+U — Toggle source view
+    if (key === 'u' && !shift) {
+      e.preventDefault();
+      settingsStore.set('sourceMode', !settingsStore.get('sourceMode'));
       return;
     }
 
