@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Keyboard shortcuts: Ctrl+Shift+F (focus cycle), Ctrl+K (command palette)
 - Document title syncs with current file name
 - Auto-embed YouTube and X.com/Twitter URLs on paste (iframe for video, native tweet widget)
+- About dialog with keyboard shortcuts, credits, issue link, and version
 
 ### Changed
 
@@ -26,6 +27,10 @@ All notable changes to this project will be documented in this file.
 - Mobile toolbar scrolls horizontally instead of overflowing
 - Mobile editor content uses full width at small breakpoints
 - Default welcome content updated with actual feature list
+
+### Fixed
+
+- All modals (save picker, history preview, info) now close with Escape key
 
 ### Removed
 
