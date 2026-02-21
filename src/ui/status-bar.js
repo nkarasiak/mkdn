@@ -133,16 +133,14 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
     themeBtn.innerHTML = theme === 'dark' ? icons.sun : icons.moon;
   });
 
-  // Info button — modal instead of alert
+  // Info / About button
   const infoBtn = el('button', {
     className: 'statusbar-icon-btn',
     'data-tooltip': 'About',
     html: icons.infoCircle,
     onClick: async () => {
       const { showInfo } = await import('./modal.js');
-      const { words, lines } = getStats(documentStore.getMarkdown());
-      const readTime = Math.max(1, Math.ceil(words / 200));
-      showInfo(`${documentStore.getFileName()}`, `${words} words, ${lines} lines, ~${readTime} min read`);
+      showInfo('About mkdn', buildAboutContent());
     },
   });
 
@@ -152,6 +150,53 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   );
 
   return statusEl;
+}
+
+function shortcutRow(keys, desc) {
+  return el('tr', {},
+    el('td', { className: 'about-shortcut-keys' },
+      ...keys.map(k => el('kbd', {}, k)),
+    ),
+    el('td', {}, desc),
+  );
+}
+
+function buildAboutContent() {
+  const shortcuts = el('table', { className: 'about-shortcuts' },
+    el('tbody', {},
+      shortcutRow(['Ctrl', 'S'], 'Save'),
+      shortcutRow(['Ctrl', 'Shift', 'S'], 'Save as'),
+      shortcutRow(['Ctrl', 'N'], 'New document'),
+      shortcutRow(['Ctrl', 'O'], 'Open file'),
+      shortcutRow(['Ctrl', 'K'], 'Command palette'),
+      shortcutRow(['Ctrl', 'L'], 'Insert link'),
+      shortcutRow(['Ctrl', 'B'], 'Bold'),
+      shortcutRow(['Ctrl', 'I'], 'Italic'),
+      shortcutRow(['Ctrl', 'E'], 'Inline code'),
+      shortcutRow(['Ctrl', 'Shift', 'B'], 'Toggle sidebar'),
+      shortcutRow(['Ctrl', 'Shift', 'H'], 'Toggle history'),
+      shortcutRow(['Ctrl', 'Shift', 'F'], 'Cycle focus modes'),
+      shortcutRow(['Esc'], 'Close dialog / exit focus'),
+    ),
+  );
+
+  const issueLink = el('a', {
+    href: 'https://github.com/nkarasiak/mkdn/issues',
+    target: '_blank',
+    rel: 'noopener',
+    className: 'about-link',
+  }, 'github.com/nkarasiak/mkdn/issues');
+
+  return el('div', { className: 'about-content' },
+    el('p', { className: 'about-description' }, 'A minimal, browser-based WYSIWYG markdown editor.'),
+    el('h4', { className: 'about-section-title' }, 'Keyboard shortcuts'),
+    shortcuts,
+    el('h4', { className: 'about-section-title' }, 'Report an issue'),
+    el('p', {}, issueLink),
+    el('h4', { className: 'about-section-title' }, 'Credits'),
+    el('p', {}, 'Created by Nicolas Karasiak & Claude'),
+    el('p', { className: 'about-version' }, `v1.0.0`),
+  );
 }
 
 function getStats(md) {
