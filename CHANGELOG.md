@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Dark mode with toggle button in status bar (default: light)
 - Focus/zen mode: cycle through Zen, Zen+Focus, Zen+Focus+Typewriter via status bar or Ctrl+Shift+F
 - Enriched status bar: file name, word count, reading time, focus mode label
+- Inline-editable filename in status bar (click to rename)
 - Export: "Download .md" and "Copy as HTML" in toolbar More dropdown
 - Export commands registered in command palette
 - Command palette with fuzzy search (commands, headings) — Ctrl+K
