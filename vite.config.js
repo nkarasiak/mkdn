@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/downtomark/',
+  base: '/mkdn/',
   build: {
     outDir: 'dist',
     sourcemap: false,

@@ -15,6 +15,8 @@ function load() {
     const parsed = stored ? { ...defaults, ...JSON.parse(stored) } : { ...defaults };
     // Remove legacy viewMode if present
     delete parsed.viewMode;
+    // Sidebar always starts collapsed
+    parsed.sidebarOpen = false;
     return parsed;
   } catch {
     return { ...defaults };
