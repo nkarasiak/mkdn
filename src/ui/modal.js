@@ -16,14 +16,24 @@ function ensureOverlay() {
 let currentReject;
 
 export function closeModal() {
-  if (overlay) {
+  if (overlay && overlay.classList.contains('modal-open')) {
     overlay.classList.remove('modal-open');
     overlay.innerHTML = '';
+    if (currentReject) {
+      currentReject(new Error('cancelled'));
+      currentReject = null;
+    }
+    return true;
   }
-  if (currentReject) {
-    currentReject(new Error('cancelled'));
-    currentReject = null;
+  // Also close standalone modal overlays (save picker, history preview, etc.)
+  const standalone = document.querySelector('.modal-overlay.modal-open');
+  if (standalone && standalone !== overlay) {
+    standalone.dispatchEvent(new Event('modal:close'));
+    standalone.classList.remove('modal-open');
+    standalone.remove();
+    return true;
   }
+  return false;
 }
 
 export function confirm(message, { title = 'Confirm', okText = 'OK', cancelText = 'Cancel', danger = false } = {}) {

@@ -89,9 +89,11 @@ function showPreview(snap) {
     ),
   );
 
+  const close = () => overlay.remove();
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.remove();
+    if (e.target === overlay) close();
   });
+  overlay.addEventListener('modal:close', close);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 }
