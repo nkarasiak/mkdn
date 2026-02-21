@@ -12,6 +12,8 @@ import { sessionStore } from './storage/session-store.js';
 import { historyManager } from './history/history-manager.js';
 import { focusManager } from './focus/focus-manager.js';
 import { documentStore } from './store/document-store.js';
+import { registerBuiltinCommands } from './command-palette/command-registry.js';
+import { setMilkdownRef } from './command-palette/command-palette.js';
 
 let sidebarWrapper, sidebarOverlay;
 
@@ -113,5 +115,17 @@ export const App = {
 
     // Init keyboard shortcuts
     initKeyboardShortcuts({ toggleSidebar, toggleHistory: () => toggleHistorySection(), focusManager });
+
+    // Register command palette commands and set milkdown reference
+    setMilkdownRef(milkdown);
+    registerBuiltinCommands({
+      toggleSidebar,
+      toggleHistory: () => toggleHistorySection(),
+      milkdown,
+      fileSaver,
+      localSync,
+      documentStore,
+      focusManager,
+    });
   },
 };

@@ -78,5 +78,19 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
+    // Ctrl+Shift+F — Cycle focus/zen modes
+    if (key === 'f' && shift) {
+      e.preventDefault();
+      focusManagerRef?.cycleMode();
+      return;
+    }
+
+    // Ctrl+K — Open command palette
+    if (key === 'k' && !shift) {
+      e.preventDefault();
+      openCommandPalette();
+      return;
+    }
+
   });
 }
