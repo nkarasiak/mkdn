@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Sanitize `javascript:`, `data:`, and `vbscript:` URLs in link creation to prevent XSS
+- Whitelist settings keys when loading from localStorage to prevent prototype pollution
+- Replace `innerHTML = ''` clearing with `replaceChildren()` across all UI modules
+- Replace direct `innerHTML` SVG swap in theme toggle with safe `svgIcon()` helper
+
+### Changed
+
+- Rename `html` attribute to `unsafeHTML` in `el()` DOM helper to signal trusted-only usage
+- Add `Content-Security-Policy` meta tag to `index.html` for defense-in-depth
+
 ## [1.2.0] - 2026-02-21
 
 ### Added
