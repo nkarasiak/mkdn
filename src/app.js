@@ -14,6 +14,7 @@ import { focusManager } from './focus/focus-manager.js';
 import { documentStore } from './store/document-store.js';
 import { registerBuiltinCommands } from './command-palette/command-registry.js';
 import { setMilkdownRef } from './command-palette/command-palette.js';
+import { extractHeadings } from './command-palette/heading-utils.js';
 import { setSourceTextarea } from './editor/source-formatter.js';
 import { initFindBar } from './find-replace/find-bar.js';
 
@@ -24,9 +25,11 @@ function applyTheme() {
   document.documentElement.setAttribute('data-theme', theme);
 }
 
-function updateDocTitle({ name } = {}) {
-  const fileName = name || documentStore.getFileName() || 'Untitled.md';
-  document.title = fileName === 'Untitled.md' ? 'MKDN' : `${fileName} — MKDN`;
+function updateDocTitle() {
+  const md = documentStore.getMarkdown();
+  const headings = extractHeadings(md);
+  const h1 = headings.find(h => h.level === 1);
+  document.title = h1 ? `${h1.text} — MKDN` : 'MKDN';
 }
 
 function applySidebarState(open) {
@@ -172,11 +175,11 @@ export const App = {
       }
     });
 
-    // Document title sync
-    eventBus.on('file:renamed', updateDocTitle);
+    // Document title sync — derive from first H1
+    eventBus.on('content:changed', updateDocTitle);
     eventBus.on('file:opened', updateDocTitle);
-    eventBus.on('file:new', () => updateDocTitle({ name: 'Untitled.md' }));
-    updateDocTitle({ name: documentStore.getFileName() });
+    eventBus.on('file:new', updateDocTitle);
+    updateDocTitle();
 
     // Init keyboard shortcuts
     initKeyboardShortcuts({ toggleSidebar, toggleHistory: () => toggleHistorySection(), focusManager });

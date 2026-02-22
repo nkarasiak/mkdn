@@ -3,72 +3,8 @@ import { icons } from '../toolbar/toolbar-icons.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { settingsStore } from '../store/settings-store.js';
-import { localSync } from '../local/local-sync.js';
 
 export function createStatusBar({ onToggleHistory, focusManager } = {}) {
-  // Left side: editable file name + stats
-  const fileNameEl = el('span', {
-    className: 'statusbar-stats statusbar-filename',
-    'data-tooltip': 'Click to rename',
-  }, documentStore.getFileName());
-
-  const fileNameInput = el('input', {
-    type: 'text',
-    className: 'statusbar-filename-input',
-  });
-
-  let editing = false;
-
-  function startEditing() {
-    if (editing) return;
-    editing = true;
-    fileNameInput.value = documentStore.getFileName();
-    fileNameEl.style.display = 'none';
-    fileNameEl.parentNode.insertBefore(fileNameInput, fileNameEl);
-    fileNameInput.focus();
-    // Select the name part without extension
-    const dot = fileNameInput.value.lastIndexOf('.');
-    fileNameInput.setSelectionRange(0, dot > 0 ? dot : fileNameInput.value.length);
-  }
-
-  function commitRename() {
-    if (!editing) return;
-    editing = false;
-    const newName = fileNameInput.value.trim();
-    fileNameInput.remove();
-    fileNameEl.style.display = '';
-
-    if (newName && newName !== documentStore.getFileName()) {
-      const oldId = documentStore.getFileId();
-      const source = documentStore.getFileSource();
-
-      if (source === 'local' && oldId) {
-        // Rename on disk via localSync
-        localSync.renameFile(oldId, newName);
-      } else {
-        // Browser-only: just update the name in store
-        documentStore.setFileName(newName);
-      }
-    }
-  }
-
-  function cancelRename() {
-    if (!editing) return;
-    editing = false;
-    fileNameInput.remove();
-    fileNameEl.style.display = '';
-  }
-
-  fileNameEl.addEventListener('click', startEditing);
-
-  fileNameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); commitRename(); }
-    if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
-    e.stopPropagation(); // prevent keyboard shortcuts while editing
-  });
-
-  fileNameInput.addEventListener('blur', commitRename);
-
   const statsEl = el('span', { className: 'statusbar-stats' }, '0 words');
 
   const historyBtn = el('button', {
@@ -84,14 +20,9 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
     statsEl.textContent = `${words} word${words !== 1 ? 's' : ''}  ·  ${readTime} min read`;
   }
 
-  function updateFileName() {
-    fileNameEl.textContent = documentStore.getFileName();
-  }
-
   eventBus.on('content:changed', updateStats);
-  eventBus.on('file:opened', () => { updateStats(); updateFileName(); });
-  eventBus.on('file:new', () => { updateStats(); updateFileName(); });
-  eventBus.on('file:renamed', () => updateFileName());
+  eventBus.on('file:opened', updateStats);
+  eventBus.on('file:new', updateStats);
   updateStats();
 
   // Focus mode toggle
@@ -145,7 +76,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   });
 
   const statusEl = el('div', { className: 'statusbar' },
-    el('div', { className: 'statusbar-left' }, fileNameEl, statsEl),
+    el('div', { className: 'statusbar-left' }, statsEl),
     el('div', { className: 'statusbar-right' }, focusModeLabel, focusBtn, historyBtn, themeBtn, infoBtn),
   );
 
