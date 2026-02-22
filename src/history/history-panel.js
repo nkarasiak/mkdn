@@ -42,13 +42,13 @@ function createSnapshotItem(snap) {
     el('button', {
       className: 'toolbar-btn history-action-btn',
       'data-tooltip': 'Preview',
-      html: icons.eye,
+      unsafeHTML: icons.eye,
       onClick: (e) => { e.stopPropagation(); showPreview(snap); },
     }),
     el('button', {
       className: 'toolbar-btn history-action-btn',
       'data-tooltip': 'Restore',
-      html: icons.restore,
+      unsafeHTML: icons.restore,
       onClick: (e) => { e.stopPropagation(); restoreSnapshot(snap); },
     }),
   );
@@ -112,7 +112,7 @@ async function restoreSnapshot(snap) {
 
 async function renderList() {
   if (!listEl) return;
-  listEl.innerHTML = '';
+  listEl.replaceChildren();
 
   const fileKey = historyManager.getFileKey();
   const snapshots = await historyManager.getHistory(fileKey);

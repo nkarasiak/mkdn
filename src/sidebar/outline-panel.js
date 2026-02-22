@@ -69,7 +69,7 @@ function setActive(index) {
 
 function renderOutline() {
   if (!listEl) return;
-  listEl.innerHTML = '';
+  listEl.replaceChildren();
 
   const inSourceMode = settingsStore.get('sourceMode');
   let headings;

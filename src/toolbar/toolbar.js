@@ -10,7 +10,7 @@ function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
     className: `toolbar-btn ${extraClass}`.trim(),
     'data-tooltip': tooltip,
-    html: icons[icon],
+    unsafeHTML: icons[icon],
     onMousedown: (e) => e.preventDefault(), // keep editor focus
     onClick,
   });
@@ -43,7 +43,7 @@ function createDropdown(label, items) {
     },
   },
     el('span', {}, label),
-    el('span', { className: 'toolbar-chevron', html: icons.chevronDown }),
+    el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronDown }),
   );
 
   const wrapper = el('div', { className: 'toolbar-dropdown' }, trigger, menu);
@@ -64,7 +64,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const backBtn = el('button', {
     className: 'toolbar-nav-btn',
     'data-tooltip': 'Files (Ctrl+Shift+B)',
-    html: icons.arrowLeft,
+    unsafeHTML: icons.arrowLeft,
     onClick: onToggleSidebar,
   });
 
@@ -79,7 +79,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     'data-tooltip': 'Open file (Ctrl+O)',
     onClick: onOpen,
   },
-    el('span', { className: 'toolbar-btn-icon', html: icons.file }),
+    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.file }),
     'Open',
   );
 
@@ -89,7 +89,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     'data-tooltip': 'Open folder',
     onClick: onOpenFolder,
   },
-    el('span', { className: 'toolbar-btn-icon', html: icons.folderOpen }),
+    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.folderOpen }),
     'Folder',
   );
 

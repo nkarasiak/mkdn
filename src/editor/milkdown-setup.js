@@ -158,6 +158,12 @@ export const milkdown = {
 
   /** Insert or replace selection with a link node. */
   insertLink(text, url) {
+    // Reject dangerous URL protocols
+    try {
+      const normalized = url.trim().replace(/\s/g, '');
+      if (/^(javascript|data|vbscript):/i.test(normalized)) return;
+    } catch { return; }
+
     if (settingsStore.get('sourceMode')) {
       sourceFormat.insertLink(text, url);
       return;

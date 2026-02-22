@@ -8,7 +8,7 @@ export function el(tag, attrs = {}, ...children) {
       Object.assign(element.style, value);
     } else if (key.startsWith('on')) {
       element.addEventListener(key.slice(2).toLowerCase(), value);
-    } else if (key === 'html') {
+    } else if (key === 'unsafeHTML') {
       element.innerHTML = value;
     } else if (key === 'dataset') {
       Object.assign(element.dataset, value);
@@ -26,6 +26,12 @@ export function el(tag, attrs = {}, ...children) {
   }
 
   return element;
+}
+
+export function svgIcon(svgString) {
+  const t = document.createElement('template');
+  t.innerHTML = svgString;
+  return t.content.firstChild;
 }
 
 export function $(selector, parent = document) {

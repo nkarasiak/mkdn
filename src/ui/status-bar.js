@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, svgIcon } from '../utils/dom.js';
 import { icons } from '../toolbar/toolbar-icons.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
@@ -74,7 +74,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   const historyBtn = el('button', {
     className: 'statusbar-icon-btn',
     'data-tooltip': 'History (Ctrl+Shift+H)',
-    html: icons.clock,
+    unsafeHTML: icons.clock,
     onClick: () => onToggleHistory?.(),
   });
 
@@ -99,7 +99,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   const focusBtn = el('button', {
     className: 'statusbar-icon-btn',
     'data-tooltip': 'Focus mode (Ctrl+Shift+F)',
-    html: icons.focus,
+    unsafeHTML: icons.focus,
     onClick: () => focusManager?.cycleMode(),
   });
 
@@ -122,7 +122,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   const themeBtn = el('button', {
     className: 'statusbar-icon-btn',
     'data-tooltip': 'Toggle theme',
-    html: settingsStore.getTheme() === 'dark' ? icons.sun : icons.moon,
+    unsafeHTML: settingsStore.getTheme() === 'dark' ? icons.sun : icons.moon,
     onClick: () => {
       const next = settingsStore.getTheme() === 'dark' ? 'light' : 'dark';
       settingsStore.set('theme', next);
@@ -130,14 +130,14 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   });
 
   eventBus.on('settings:theme', (theme) => {
-    themeBtn.innerHTML = theme === 'dark' ? icons.sun : icons.moon;
+    themeBtn.replaceChildren(svgIcon(theme === 'dark' ? icons.sun : icons.moon));
   });
 
   // Info / About button
   const infoBtn = el('button', {
     className: 'statusbar-icon-btn',
     'data-tooltip': 'About',
-    html: icons.infoCircle,
+    unsafeHTML: icons.infoCircle,
     onClick: async () => {
       const { showInfo } = await import('./modal.js');
       showInfo('About mkdn', buildAboutContent());

@@ -28,7 +28,7 @@ export function openCommandPalette(initialMode) {
   selectedIndex = 0;
 
   ensureOverlay();
-  overlay.innerHTML = '';
+  overlay.replaceChildren();
 
   const input = el('input', {
     type: 'text',
@@ -87,7 +87,7 @@ export function closeCommandPalette() {
   isOpen = false;
   if (overlay) {
     overlay.classList.remove('cmd-palette-open');
-    overlay.innerHTML = '';
+    overlay.replaceChildren();
   }
   return true;
 }
@@ -121,7 +121,7 @@ function addRecent(id) {
 
 function renderResults(query, container) {
   const { mode, q } = detectMode(query);
-  container.innerHTML = '';
+  container.replaceChildren();
   currentResults = [];
   selectedIndex = 0;
 

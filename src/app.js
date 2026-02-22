@@ -26,7 +26,7 @@ function applyTheme() {
 
 function updateDocTitle({ name } = {}) {
   const fileName = name || documentStore.getFileName() || 'Untitled.md';
-  document.title = `${fileName} — mkdn`;
+  document.title = fileName === 'Untitled.md' ? 'MKDN' : `${fileName} — MKDN`;
 }
 
 function applySidebarState(open) {
