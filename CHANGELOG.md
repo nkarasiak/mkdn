@@ -4,10 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Drag & drop file open: drop `.md`, `.markdown`, or `.txt` files onto the editor to open them, with visual overlay and toast feedback
+- Table size picker: visual 6×6 grid flyout in the More dropdown for choosing table dimensions before inserting
+- History diff view: compare any history snapshot against the current document with colored line-level additions, removals, and collapsible unchanged context
+- PWA support: web app manifest, service worker with offline caching, and installability (icon, theme-color, apple-touch-icon)
+
 ### Changed
 
 - Browser tab title now derives from the first `# heading` in the document, updating live as you type
 - "Save As" dialog suggests a filename based on the H1 heading for untitled documents
+- History action button tooltips use native `title` attributes to avoid sidebar overflow clipping
 
 ### Removed
 
