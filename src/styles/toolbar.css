@@ -279,6 +279,36 @@
   background: var(--bg-hover);
 }
 
+/* Table picker flyout */
+.table-picker-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: default;
+}
+
+.table-picker-item .toolbar-chevron svg {
+  width: 10px;
+  height: 10px;
+}
+
+.table-picker-flyout {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: -4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 210;
+}
+
+.table-picker-item:hover .table-picker-flyout {
+  display: block;
+}
+
 /* Legacy sync status (hidden, use badge instead) */
 .toolbar-sync {
   display: none;

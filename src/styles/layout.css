@@ -115,6 +115,25 @@
 .sync-progress { color: var(--accent); }
 .sync-error { color: var(--error); }
 
+/* Drag & drop overlay */
+.app.drag-over .app-main::after {
+  content: 'Drop markdown file here';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-md);
+  color: var(--accent);
+  font-size: var(--font-size-lg, 18px);
+  font-weight: 600;
+  font-family: var(--font-sans);
+  z-index: 100;
+  pointer-events: none;
+}
+
 /* Editor pane */
 .editor-pane {
   flex: 1;

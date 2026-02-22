@@ -4,6 +4,7 @@ import { historyManager } from './history-manager.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { confirm as confirmModal } from '../ui/modal.js';
+import { computeDiff, collapseDiff } from './diff.js';
 
 let listEl = null;
 
@@ -41,13 +42,19 @@ function createSnapshotItem(snap) {
   const actions = el('div', { className: 'history-item-actions' },
     el('button', {
       className: 'toolbar-btn history-action-btn',
-      'data-tooltip': 'Preview',
+      title: 'Diff',
+      unsafeHTML: icons.diff,
+      onClick: (e) => { e.stopPropagation(); showDiff(snap); },
+    }),
+    el('button', {
+      className: 'toolbar-btn history-action-btn',
+      title: 'Preview',
       unsafeHTML: icons.eye,
       onClick: (e) => { e.stopPropagation(); showPreview(snap); },
     }),
     el('button', {
       className: 'toolbar-btn history-action-btn',
-      'data-tooltip': 'Restore',
+      title: 'Restore',
       unsafeHTML: icons.restore,
       onClick: (e) => { e.stopPropagation(); restoreSnapshot(snap); },
     }),
@@ -66,6 +73,44 @@ function createSnapshotItem(snap) {
     el('div', { className: 'history-item-info' }, ...infoChildren),
     actions,
   );
+}
+
+function showDiff(snap) {
+  const oldText = snap.content;
+  const newText = documentStore.getMarkdown();
+  const raw = computeDiff(oldText, newText);
+  const entries = collapseDiff(raw, 3);
+
+  const diffBody = el('div', { className: 'diff-body' });
+  for (const entry of entries) {
+    if (entry.type === 'collapse') {
+      diffBody.appendChild(el('div', { className: 'diff-line diff-collapse' },
+        `... ${entry.count} unchanged line${entry.count !== 1 ? 's' : ''} ...`));
+    } else {
+      const prefix = entry.type === 'add' ? '+' : entry.type === 'remove' ? '-' : ' ';
+      diffBody.appendChild(el('div', { className: `diff-line diff-${entry.type}` },
+        `${prefix} ${entry.line}`));
+    }
+  }
+
+  const overlay = el('div', { className: 'modal-overlay modal-open' });
+  const modal = el('div', { className: 'modal diff-modal' },
+    el('div', { className: 'modal-header' },
+      `Changes since ${formatTime(snap.timestamp)}`),
+    el('div', { className: 'modal-body' }, diffBody),
+    el('div', { className: 'modal-footer' },
+      el('button', {
+        className: 'modal-btn',
+        onClick: () => overlay.remove(),
+      }, 'Close'),
+    ),
+  );
+
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.addEventListener('modal:close', close);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
 }
 
 function showPreview(snap) {
@@ -226,6 +271,43 @@ style.textContent = `
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.diff-modal {
+  max-width: 720px;
+  width: 90vw;
+}
+.diff-body {
+  max-height: 400px;
+  overflow: auto;
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+}
+.diff-line {
+  padding: 1px 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.diff-add {
+  background: color-mix(in srgb, #22c55e 15%, transparent);
+  color: var(--text-primary);
+}
+.diff-remove {
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+  color: var(--text-primary);
+}
+.diff-same {
+  color: var(--text-secondary);
+}
+.diff-collapse {
+  color: var(--text-tertiary);
+  font-style: italic;
+  text-align: center;
+  padding: 4px 12px;
+  background: var(--bg-tertiary, var(--bg-secondary));
 }
 `;
 document.head.appendChild(style);
