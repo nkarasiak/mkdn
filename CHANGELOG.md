@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Browser tab title now derives from the first `# heading` in the document, updating live as you type
+- "Save As" dialog suggests a filename based on the H1 heading for untitled documents
+
+### Removed
+
+- Filename display and inline rename from the status bar (rename still available via sidebar context menu)
+
 ### Fixed
 
 - Sanitize `javascript:`, `data:`, and `vbscript:` URLs in link creation to prevent XSS
