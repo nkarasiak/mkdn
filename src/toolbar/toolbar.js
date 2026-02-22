@@ -5,12 +5,13 @@ import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
+import { createTablePicker } from './table-picker.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
     className: `toolbar-btn ${extraClass}`.trim(),
     'data-tooltip': tooltip,
-    html: icons[icon],
+    unsafeHTML: icons[icon],
     onMousedown: (e) => e.preventDefault(), // keep editor focus
     onClick,
   });
@@ -43,7 +44,7 @@ function createDropdown(label, items) {
     },
   },
     el('span', {}, label),
-    el('span', { className: 'toolbar-chevron', html: icons.chevronDown }),
+    el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronDown }),
   );
 
   const wrapper = el('div', { className: 'toolbar-dropdown' }, trigger, menu);
@@ -64,7 +65,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const backBtn = el('button', {
     className: 'toolbar-nav-btn',
     'data-tooltip': 'Files (Ctrl+Shift+B)',
-    html: icons.arrowLeft,
+    unsafeHTML: icons.arrowLeft,
     onClick: onToggleSidebar,
   });
 
@@ -79,7 +80,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     'data-tooltip': 'Open file (Ctrl+O)',
     onClick: onOpen,
   },
-    el('span', { className: 'toolbar-btn-icon', html: icons.file }),
+    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.file }),
     'Open',
   );
 
@@ -89,7 +90,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     'data-tooltip': 'Open folder',
     onClick: onOpenFolder,
   },
-    el('span', { className: 'toolbar-btn-icon', html: icons.folderOpen }),
+    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.folderOpen }),
     'Folder',
   );
 
@@ -157,9 +158,23 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const olBtn = btn('ol', 'Numbered List', () =>
     milkdown.toggleList('ordered_list', milkdown.commands.wrapOrderedList));
 
-  // More dropdown
-  const moreDropdown = createDropdown('More', [
-    { label: 'Table', onClick: () => milkdown.insertTable() },
+  // More dropdown with table picker flyout
+  const moreMenu = el('div', { className: 'toolbar-dropdown-menu' });
+
+  // Table item with picker flyout
+  const tablePicker = createTablePicker((rows, cols) => {
+    milkdown.insertTable(rows, cols);
+    closeAllDropdowns();
+  });
+  const tableItem = el('div', { className: 'toolbar-dropdown-item table-picker-item' });
+  tableItem.appendChild(el('span', {}, 'Table'));
+  tableItem.appendChild(el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronRight }));
+  const tableFlyout = el('div', { className: 'table-picker-flyout' }, tablePicker);
+  tableItem.appendChild(tableFlyout);
+  moreMenu.appendChild(tableItem);
+
+  // Other items
+  [
     { label: 'Horizontal rule', onClick: () =>
       milkdown.runCommand(milkdown.commands.insertHr) },
     { label: 'Code block', onClick: () => {
@@ -169,7 +184,27 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'Download .md', onClick: () => downloadMarkdown() },
     { label: 'Copy as HTML', onClick: () => copyHtml() },
     { label: 'Print / PDF', onClick: () => printDocument() },
-  ]);
+  ].forEach(({ label, onClick }) => {
+    moreMenu.appendChild(el('button', {
+      className: 'toolbar-dropdown-item',
+      onClick: () => { onClick(); closeAllDropdowns(); },
+    }, label));
+  });
+
+  const moreTrigger = el('button', {
+    className: 'toolbar-dropdown-btn',
+    onClick: (e) => {
+      e.stopPropagation();
+      const wasOpen = moreMenu.classList.contains('open');
+      closeAllDropdowns();
+      if (!wasOpen) moreMenu.classList.add('open');
+    },
+  },
+    el('span', {}, 'More'),
+    el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronDown }),
+  );
+
+  const moreDropdown = el('div', { className: 'toolbar-dropdown' }, moreTrigger, moreMenu);
 
   const formattingRow = el('div', { className: 'toolbar-formatting' },
     group(undoBtn, redoBtn),

@@ -2,7 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.3.0] - 2026-02-22
+
+### Added
+
+- Drag & drop file open: drop `.md`, `.markdown`, or `.txt` files onto the editor to open them, with visual overlay and toast feedback
+- Table size picker: visual 6×6 grid flyout in the More dropdown for choosing table dimensions before inserting
+- History diff view: compare any history snapshot against the current document with colored line-level additions, removals, and collapsible unchanged context
+- PWA support: web app manifest, service worker with offline caching, and installability (icon, theme-color, apple-touch-icon)
+
+### Changed
+
+- Browser tab title now derives from the first `# heading` in the document, updating live as you type
+- "Save As" dialog suggests a filename based on the H1 heading for untitled documents
+- History action button tooltips use native `title` attributes to avoid sidebar overflow clipping
+
+### Removed
+
+- Filename display and inline rename from the status bar (rename still available via sidebar context menu)
+
+### Fixed
+
+- Sanitize `javascript:`, `data:`, and `vbscript:` URLs in link creation to prevent XSS
+- Whitelist settings keys when loading from localStorage to prevent prototype pollution
+- Replace `innerHTML = ''` clearing with `replaceChildren()` across all UI modules
+- Replace direct `innerHTML` SVG swap in theme toggle with safe `svgIcon()` helper
+
+### Changed
+
+- Rename `html` attribute to `unsafeHTML` in `el()` DOM helper to signal trusted-only usage
+- Add `Content-Security-Policy` meta tag to `index.html` for defense-in-depth
 
 ## [1.2.0] - 2026-02-21
 

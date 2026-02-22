@@ -26,7 +26,7 @@ let localBodyEl = null;
 
 function renderLocalFileList() {
   if (!localFileListEl) return;
-  localFileListEl.innerHTML = '';
+  localFileListEl.replaceChildren();
 
   if (!localSync.isLinked()) {
     localFileListEl.appendChild(
@@ -34,7 +34,7 @@ function renderLocalFileList() {
         className: 'local-link-btn',
         onClick: () => localSync.linkFolder(),
       },
-        el('span', { html: icons.folder }),
+        el('span', { unsafeHTML: icons.folder }),
         'Open Folder',
       ),
     );
@@ -89,14 +89,14 @@ function renderLocalSectionHeader() {
   // Update folder name and action buttons in the header
   const actionsEl = localSectionEl.querySelector('.sidebar-section-actions');
   if (!actionsEl) return;
-  actionsEl.innerHTML = '';
+  actionsEl.replaceChildren();
 
   if (localSync.isLinked()) {
     actionsEl.appendChild(
       el('button', {
         className: 'toolbar-btn',
         'data-tooltip': 'Refresh',
-        html: icons.refresh,
+        unsafeHTML: icons.refresh,
         onClick: (e) => { e.stopPropagation(); localSync.refreshFileList(); },
       }),
     );
@@ -104,7 +104,7 @@ function renderLocalSectionHeader() {
       el('button', {
         className: 'toolbar-btn',
         'data-tooltip': 'Unlink folder',
-        html: icons.unlink,
+        unsafeHTML: icons.unlink,
         onClick: (e) => { e.stopPropagation(); localSync.unlinkFolder(); },
       }),
     );
@@ -130,7 +130,7 @@ function createSection(title, bodyChildren, { collapsed = false } = {}) {
       className: 'sidebar-section-header',
       onClick: () => sectionEl.classList.toggle('collapsed'),
     },
-      el('span', { className: 'sidebar-section-chevron', html: icons.chevronDown }),
+      el('span', { className: 'sidebar-section-chevron', unsafeHTML: icons.chevronDown }),
       el('span', { className: 'sidebar-section-title' }, title),
       actionsEl,
     ),
@@ -181,7 +181,7 @@ export function createSidebar() {
         el('button', {
           className: 'toolbar-btn',
           'data-tooltip': 'New File',
-          html: icons.plus,
+          unsafeHTML: icons.plus,
           onClick: () => {
             documentStore.newDocument();
             toast('New document created', 'info');

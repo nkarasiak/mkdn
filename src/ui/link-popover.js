@@ -17,11 +17,18 @@ function close() {
   popover.classList.remove('link-popover-open');
 }
 
+function isUnsafeUrl(url) {
+  try {
+    const normalized = url.trim().replace(/\s/g, '');
+    return /^(javascript|data|vbscript):/i.test(normalized);
+  } catch { return true; }
+}
+
 function submit() {
   const text = textInput.value.trim();
   const url = urlInput.value.trim();
   close();
-  if (url) milkdown.insertLink(text || url, url);
+  if (url && !isUnsafeUrl(url)) milkdown.insertLink(text || url, url);
 }
 
 /**

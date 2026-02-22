@@ -16,9 +16,15 @@ const defaults = {
 function load() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    const parsed = stored ? { ...defaults, ...JSON.parse(stored) } : { ...defaults };
-    // Remove legacy viewMode if present
-    delete parsed.viewMode;
+    const parsed = { ...defaults };
+    if (stored) {
+      const raw = JSON.parse(stored);
+      for (const key of Object.keys(defaults)) {
+        if (Object.prototype.hasOwnProperty.call(raw, key)) {
+          parsed[key] = raw[key];
+        }
+      }
+    }
     // Sidebar always starts collapsed
     parsed.sidebarOpen = false;
     // Focus modes never persist across reload

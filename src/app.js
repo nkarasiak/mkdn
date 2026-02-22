@@ -12,8 +12,10 @@ import { sessionStore } from './storage/session-store.js';
 import { historyManager } from './history/history-manager.js';
 import { focusManager } from './focus/focus-manager.js';
 import { documentStore } from './store/document-store.js';
+import { toast } from './ui/toast.js';
 import { registerBuiltinCommands } from './command-palette/command-registry.js';
 import { setMilkdownRef } from './command-palette/command-palette.js';
+import { extractHeadings } from './command-palette/heading-utils.js';
 import { setSourceTextarea } from './editor/source-formatter.js';
 import { initFindBar } from './find-replace/find-bar.js';
 
@@ -24,9 +26,11 @@ function applyTheme() {
   document.documentElement.setAttribute('data-theme', theme);
 }
 
-function updateDocTitle({ name } = {}) {
-  const fileName = name || documentStore.getFileName() || 'Untitled.md';
-  document.title = `${fileName} — mkdn`;
+function updateDocTitle() {
+  const md = documentStore.getMarkdown();
+  const headings = extractHeadings(md);
+  const h1 = headings.find(h => h.level === 1);
+  document.title = h1 ? `${h1.text} — MKDN` : 'MKDN';
 }
 
 function applySidebarState(open) {
@@ -78,6 +82,44 @@ export const App = {
 
     // Main content area
     const main = el('div', { className: 'app-main' }, editorPane, sourceWrapper);
+
+    // Drag & drop file open
+    let dragCounter = 0;
+    main.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dragCounter++;
+      app.classList.add('drag-over');
+    });
+    main.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    main.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        app.classList.remove('drag-over');
+      }
+    });
+    main.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      app.classList.remove('drag-over');
+      const file = [...e.dataTransfer.files].find(f =>
+        /\.(md|markdown|txt)$/i.test(f.name)
+      );
+      if (!file) {
+        toast('Only .md, .markdown, and .txt files are supported', 'warning');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        documentStore.setFile(file.name, file.name, reader.result, 'local');
+        toast(`Opened ${file.name}`, 'success');
+      };
+      reader.readAsText(file);
+    });
 
     // App shell
     const app = el('div', { className: 'app' },
@@ -172,11 +214,11 @@ export const App = {
       }
     });
 
-    // Document title sync
-    eventBus.on('file:renamed', updateDocTitle);
+    // Document title sync — derive from first H1
+    eventBus.on('content:changed', updateDocTitle);
     eventBus.on('file:opened', updateDocTitle);
-    eventBus.on('file:new', () => updateDocTitle({ name: 'Untitled.md' }));
-    updateDocTitle({ name: documentStore.getFileName() });
+    eventBus.on('file:new', updateDocTitle);
+    updateDocTitle();
 
     // Init keyboard shortcuts
     initKeyboardShortcuts({ toggleSidebar, toggleHistory: () => toggleHistorySection(), focusManager });

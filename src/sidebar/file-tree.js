@@ -108,8 +108,8 @@ function renderFolder(name, subTree, opts) {
       wrapper.classList.toggle('collapsed');
     },
   },
-    el('span', { className: 'tree-folder-chevron', html: icons.chevronDown }),
-    el('span', { className: 'tree-folder-icon', html: icons.folder }),
+    el('span', { className: 'tree-folder-chevron', unsafeHTML: icons.chevronDown }),
+    el('span', { className: 'tree-folder-icon', unsafeHTML: icons.folder }),
     el('span', { className: 'tree-folder-name', title: name }, name),
   );
 

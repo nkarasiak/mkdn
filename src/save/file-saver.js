@@ -5,6 +5,7 @@ import { localSync } from '../local/local-sync.js';
 import { localFs } from '../local/local-fs.js';
 import { prompt as promptModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
+import { extractHeadings } from '../command-palette/heading-utils.js';
 
 function showSaveLocationPicker() {
   return new Promise((resolve) => {
@@ -35,7 +36,7 @@ function showSaveLocationPicker() {
           className: 'save-picker-option',
           onClick: () => pick('local-file'),
         },
-          el('span', { className: 'save-picker-icon', html: icons.download }),
+          el('span', { className: 'save-picker-icon', unsafeHTML: icons.download }),
           el('span', { className: 'save-picker-label' }, 'Save to local file'),
           el('span', { className: 'save-picker-desc' }, 'Pick a location on your computer'),
         ),
@@ -50,7 +51,7 @@ function showSaveLocationPicker() {
           className: 'save-picker-option',
           onClick: () => pick('local-folder'),
         },
-          el('span', { className: 'save-picker-icon', html: icons.folder }),
+          el('span', { className: 'save-picker-icon', unsafeHTML: icons.folder }),
           el('span', { className: 'save-picker-label' }, `Save to ${folderName}`),
           el('span', { className: 'save-picker-desc' }, 'Save in your linked local folder'),
         ),
@@ -63,7 +64,7 @@ function showSaveLocationPicker() {
         className: 'save-picker-option',
         onClick: () => pick('browser'),
       },
-        el('span', { className: 'save-picker-icon', html: icons.clock }),
+        el('span', { className: 'save-picker-icon', unsafeHTML: icons.clock }),
         el('span', { className: 'save-picker-label' }, 'Browser only'),
         el('span', { className: 'save-picker-desc' }, 'Keep in this browser session (no file created)'),
       ),
@@ -80,11 +81,23 @@ function showSaveLocationPicker() {
   });
 }
 
+function suggestFileName() {
+  const current = documentStore.getFileName();
+  if (current && current !== 'Untitled.md') return current;
+  const headings = extractHeadings(documentStore.getMarkdown());
+  const h1 = headings.find(h => h.level === 1);
+  if (h1) {
+    const sanitized = h1.text.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim();
+    if (sanitized) return `${sanitized}.md`;
+  }
+  return 'Untitled.md';
+}
+
 async function askFileName() {
   try {
     return await promptModal('File name:', {
       title: 'Save As',
-      defaultValue: documentStore.getFileName(),
+      defaultValue: suggestFileName(),
     });
   } catch {
     return null; // cancelled

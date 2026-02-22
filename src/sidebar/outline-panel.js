@@ -36,16 +36,26 @@ function navigateToHeading(heading, index) {
     const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
     ta.scrollTop = Math.max(0, heading.line * lineHeight - ta.clientHeight / 3);
   } else {
-    // WYSIWYG mode: use ProseMirror position
-    if (heading.pos != null) {
-      milkdown.scrollToPos(heading.pos);
-    } else {
-      // Fallback: find by text/level
-      const pos = milkdown.findHeadingPos(heading.text, heading.level);
-      if (pos != null) milkdown.scrollToPos(pos);
+    // WYSIWYG mode: set cursor via ProseMirror position
+    const pos = heading.pos ?? milkdown.findHeadingPos(heading.text, heading.level);
+    if (pos != null) {
+      milkdown.scrollToPos(pos);
     }
+    // Reliable DOM-based scroll (ProseMirror scrollIntoView can silently fail)
+    scrollToHeadingElement(heading.text, heading.level);
   }
   setActive(index);
+}
+
+function scrollToHeadingElement(text, level) {
+  const editorPane = document.querySelector('.editor-pane');
+  if (!editorPane) return;
+  for (const h of editorPane.querySelectorAll(`h${level}`)) {
+    if (h.textContent.trim() === text) {
+      h.scrollIntoView({ block: 'start' });
+      return;
+    }
+  }
 }
 
 function setActive(index) {
@@ -59,7 +69,7 @@ function setActive(index) {
 
 function renderOutline() {
   if (!listEl) return;
-  listEl.innerHTML = '';
+  listEl.replaceChildren();
 
   const inSourceMode = settingsStore.get('sourceMode');
   let headings;

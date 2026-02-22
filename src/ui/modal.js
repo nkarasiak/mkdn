@@ -18,7 +18,7 @@ let currentReject;
 export function closeModal() {
   if (overlay && overlay.classList.contains('modal-open')) {
     overlay.classList.remove('modal-open');
-    overlay.innerHTML = '';
+    overlay.replaceChildren();
     if (currentReject) {
       currentReject(new Error('cancelled'));
       currentReject = null;
@@ -40,7 +40,7 @@ export function confirm(message, { title = 'Confirm', okText = 'OK', cancelText 
   return new Promise((resolve, reject) => {
     currentReject = reject;
     const o = ensureOverlay();
-    o.innerHTML = '';
+    o.replaceChildren();
 
     const modal = el('div', { className: 'modal' },
       el('div', { className: 'modal-header' }, title),
@@ -60,7 +60,7 @@ export function prompt(message, { title = 'Input', defaultValue = '', placeholde
   return new Promise((resolve, reject) => {
     currentReject = reject;
     const o = ensureOverlay();
-    o.innerHTML = '';
+    o.replaceChildren();
 
     const input = el('input', { type: 'text', value: defaultValue, placeholder, className: 'modal-input' });
 
@@ -99,7 +99,7 @@ export function prompt(message, { title = 'Input', defaultValue = '', placeholde
 
 export function showInfo(title, content) {
   const o = ensureOverlay();
-  o.innerHTML = '';
+  o.replaceChildren();
 
   const isNode = content instanceof Node;
   const modal = el('div', { className: `modal${isNode ? ' modal-wide' : ''}` },
