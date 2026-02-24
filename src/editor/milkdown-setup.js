@@ -26,7 +26,6 @@ import { createParagraphFocusPlugin } from '../focus/paragraph-focus-plugin.js';
 import { createTypewriterPlugin } from '../focus/typewriter-plugin.js';
 import { createEmbedPlugin } from './embed-plugin.js';
 import { createFindReplacePlugin } from '../find-replace/find-replace-plugin.js';
-import { createAiInlinePlugin } from '../ai/ai-inline.js';
 import { sourceFormat, getSourceTextarea } from './source-formatter.js';
 
 // Crepe CSS themes
@@ -60,8 +59,6 @@ export const milkdown = {
     crepe.editor.use($prose(() => createTypewriterPlugin()));
     crepe.editor.use($prose(() => createEmbedPlugin()));
     crepe.editor.use($prose(() => createFindReplacePlugin()));
-    crepe.editor.use($prose(() => createAiInlinePlugin()));
-
     await crepe.create();
 
     // Listen for focus mode toggle to refresh decorations

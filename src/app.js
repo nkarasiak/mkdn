@@ -18,7 +18,6 @@ import { setMilkdownRef } from './command-palette/command-palette.js';
 import { extractHeadings } from './command-palette/heading-utils.js';
 import { setSourceTextarea } from './editor/source-formatter.js';
 import { initFindBar } from './find-replace/find-bar.js';
-import { registerAiCommands } from './ai/ai-commands.js';
 import { registerExportCommands } from './export/export-commands.js';
 import { registerCollabCommands } from './collab/collab-commands.js';
 import { registerPluginCommands } from './plugins/plugin-commands.js';
@@ -242,7 +241,6 @@ export const App = {
     });
 
     // Register feature commands
-    registerAiCommands();
     registerExportCommands();
     registerCollabCommands();
     registerSearchCommands();

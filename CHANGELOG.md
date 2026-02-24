@@ -6,12 +6,6 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- **On-Device AI Writing Assistant** — Chrome Built-in AI (Gemini Nano) with OpenAI/Anthropic API fallback
-  - Inline autocomplete with ghost text suggestions (Tab to accept)
-  - Selection actions: Rewrite, Shorten, Expand, Fix Grammar, Formal, Casual, Translate (10 languages)
-  - AI prompt panel (Ctrl+Space) for free-form generation with document context
-  - Summarize document and suggest title commands
-  - AI settings panel for API provider/key configuration
 - **Publish & Export Pipeline** — all transforms run in-browser
   - Styled HTML export with 4 themes (Minimal, Academic, Newspaper, Dark)
   - DOCX (Word) export via `docx` library with full formatting support

@@ -7,7 +7,6 @@ import { openLinkPopover } from '../ui/link-popover.js';
 import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
 import { openFindBar, closeFindBar, isFindBarOpen } from '../find-replace/find-bar.js';
 import { sourceFormat } from '../editor/source-formatter.js';
-import { openAiPanel, closeAiPanel, isAiPanelOpen } from '../ai/ai-panel.js';
 
 let focusManagerRef = null;
 
@@ -19,9 +18,8 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     const shift = e.shiftKey;
     const key = e.key.toLowerCase();
 
-    // Escape: close AI panel → close find bar → close palette → exit focus modes → close modal (priority chain)
+    // Escape: close find bar → close palette → exit focus modes → close modal (priority chain)
     if (key === 'escape') {
-      if (isAiPanelOpen()) { closeAiPanel(); return; }
       if (closeFindBar()) return;
       if (closeCommandPalette()) return;
       if (focusManagerRef?.exitAllModes()) return;
@@ -143,13 +141,6 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     if (key === 'u' && !shift) {
       e.preventDefault();
       settingsStore.set('sourceMode', !settingsStore.get('sourceMode'));
-      return;
-    }
-
-    // Ctrl+Space — Open AI panel
-    if (e.code === 'Space' && !shift) {
-      e.preventDefault();
-      openAiPanel();
       return;
     }
 

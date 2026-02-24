@@ -7,7 +7,6 @@ import { openLinkPopover } from '../ui/link-popover.js';
 import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
 import { createTablePicker } from './table-picker.js';
 import { openCollabDialog } from '../collab/collab-ui.js';
-import { openAiPanel } from '../ai/ai-panel.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
@@ -96,16 +95,6 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     'Folder',
   );
 
-  // AI button
-  const aiBtn = el('button', {
-    className: 'toolbar-secondary-btn',
-    'data-tooltip': 'AI Assistant (Ctrl+Space)',
-    onClick: () => openAiPanel(),
-  },
-    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.sparkle }),
-    'AI',
-  );
-
   // Share / Collab button
   const shareBtn = el('button', {
     className: 'toolbar-secondary-btn',
@@ -130,7 +119,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
 
   const headerRow = el('div', { className: 'toolbar-header' },
     el('div', { className: 'toolbar-header-left' }, backBtn, statusBadge),
-    el('div', { className: 'toolbar-header-right' }, aiBtn, shareBtn, openBtn, openFolderBtn),
+    el('div', { className: 'toolbar-header-right' }, shareBtn, openBtn, openFolderBtn),
   );
 
   // === FORMATTING TOOLBAR ROW ===
