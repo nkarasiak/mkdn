@@ -85,7 +85,7 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     }},
 
     // --- Tools ---
-    { id: 'tools:writing-stats', label: 'Writing Statistics', category: 'Tools', keywords: ['stats', 'words', 'readability', 'goal', 'streak', 'writing', 'dashboard'], action: () => {
+    { id: 'tools:writing-stats', label: 'Writing Statistics', category: 'Tools', keywords: ['stats', 'words', 'readability', 'writing', 'dashboard'], action: () => {
       import('../stats/writing-stats.js').then(m => m.openWritingStats());
     }},
     { id: 'tools:theme-editor', label: 'Theme Editor', category: 'Tools', keywords: ['theme', 'color', 'accent', 'font', 'customize', 'appearance', 'style'], action: () => {

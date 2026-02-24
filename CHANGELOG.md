@@ -14,9 +14,7 @@ All notable changes to this project will be documented in this file.
 - **Writing Statistics Dashboard** — click word count in status bar to open
   - Word, character, sentence, and paragraph counts
   - Flesch-Kincaid readability score with level indicator
-  - Configurable daily word goal with progress bar
-  - Writing streak tracking (persisted across sessions)
-  - Session duration timer
+  - Read time estimate and session duration timer
 - **Theme Editor** — customize editor appearance beyond light/dark
   - 6 color presets: Default, Ocean Blue, Forest Green, Sunset, Lavender, Monochrome
   - Accent color picker with live preview
@@ -51,6 +49,11 @@ All notable changes to this project will be documented in this file.
 - **Theme editor CSS injection prevention** — font values whitelisted, hex colors validated, numeric ranges enforced; imported themes sanitized
 - **Mermaid SVG rendered safely** — uses `DOMParser` + `document.importNode()` instead of `innerHTML`
 - **innerHTML clearing replaced** — `replaceChildren()` used across collab UI, search UI, and plugin manager
+
+### Removed
+
+- Daily word goal (progress bar and configurable target) from Writing Statistics
+- Writing streak tracking from Writing Statistics
 
 ### Fixed
 
