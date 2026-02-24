@@ -11,6 +11,10 @@ const defaults = {
   paragraphFocus: false,
   typewriterMode: false,
   sourceMode: false,
+  sidebarSections: { localFolder: true, outline: true, history: true, backlinks: true },
+  sidebarOrder: ['localFolder', 'outline', 'backlinks', 'history'],
+  accentColor: null,
+  customFont: null,
 };
 
 function load() {

@@ -26,6 +26,9 @@ import { createParagraphFocusPlugin } from '../focus/paragraph-focus-plugin.js';
 import { createTypewriterPlugin } from '../focus/typewriter-plugin.js';
 import { createEmbedPlugin } from './embed-plugin.js';
 import { createFindReplacePlugin } from '../find-replace/find-replace-plugin.js';
+import { createWikilinkPlugin } from '../backlinks/wikilink-plugin.js';
+import { createImagePastePlugin } from './image-paste-plugin.js';
+import { createMermaidPlugin } from './mermaid-plugin.js';
 import { sourceFormat, getSourceTextarea } from './source-formatter.js';
 
 // Crepe CSS themes
@@ -59,6 +62,9 @@ export const milkdown = {
     crepe.editor.use($prose(() => createTypewriterPlugin()));
     crepe.editor.use($prose(() => createEmbedPlugin()));
     crepe.editor.use($prose(() => createFindReplacePlugin()));
+    crepe.editor.use($prose(() => createWikilinkPlugin()));
+    crepe.editor.use($prose(() => createImagePastePlugin()));
+    crepe.editor.use($prose(() => createMermaidPlugin()));
     await crepe.create();
 
     // Listen for focus mode toggle to refresh decorations

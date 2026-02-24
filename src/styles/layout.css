@@ -83,6 +83,18 @@
   margin: 0 6px;
 }
 
+.statusbar-stats-clickable {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  transition: background var(--transition-fast);
+}
+
+.statusbar-stats-clickable:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
 .statusbar-focus-label {
   font-weight: 500;
   color: var(--accent);

@@ -10,7 +10,7 @@ export function registerSearchCommands() {
       id: 'search:semantic',
       label: 'Semantic Search',
       category: 'Search',
-      keywords: ['search', 'semantic', 'meaning', 'find', 'similar', 'natural', 'language', 'ai'],
+      keywords: ['search', 'semantic', 'meaning', 'find', 'similar', 'natural', 'language'],
       action: openSearchPanel,
     },
     {

@@ -6,7 +6,11 @@ import { settingsStore } from '../store/settings-store.js';
 import { createPeerIndicator } from '../collab/collab-ui.js';
 
 export function createStatusBar({ onToggleHistory, focusManager } = {}) {
-  const statsEl = el('span', { className: 'statusbar-stats' }, '0 words');
+  const statsEl = el('span', {
+    className: 'statusbar-stats statusbar-stats-clickable',
+    onClick: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()),
+    'data-tooltip': 'Writing statistics',
+  }, '0 words');
 
   const historyBtn = el('button', {
     className: 'statusbar-icon-btn',
@@ -112,7 +116,6 @@ function buildAboutContent() {
       shortcutRow(['Ctrl', 'Shift', 'H'], 'Toggle history'),
       shortcutRow(['Ctrl', 'U'], 'Toggle source view'),
       shortcutRow(['Ctrl', 'Shift', 'F'], 'Cycle focus modes'),
-      shortcutRow(['Ctrl', 'Space'], 'AI Assistant'),
       shortcutRow(['Esc'], 'Close dialog / exit focus'),
     ),
   );

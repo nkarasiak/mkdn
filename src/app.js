@@ -22,6 +22,9 @@ import { registerExportCommands } from './export/export-commands.js';
 import { registerCollabCommands } from './collab/collab-commands.js';
 import { registerPluginCommands } from './plugins/plugin-commands.js';
 import { registerSearchCommands } from './search/search-commands.js';
+import { initBacklinks } from './backlinks/backlinks-ui.js';
+import { initWritingStats } from './stats/writing-stats.js';
+import { initThemeEditor } from './themes/theme-editor.js';
 
 let sidebarWrapper, sidebarOverlay;
 
@@ -136,6 +139,9 @@ export const App = {
 
     appEl.appendChild(app);
 
+    // Swipe gestures for sidebar on touch devices
+    initSwipeGestures(app);
+
     // Initialize focus manager
     focusManager.init(app);
 
@@ -245,5 +251,41 @@ export const App = {
     registerCollabCommands();
     registerSearchCommands();
     registerPluginCommands();
+
+    // Initialize backlinks, writing stats, and custom theme
+    initBacklinks();
+    initWritingStats();
+    initThemeEditor();
   },
 };
+
+function initSwipeGestures(appEl) {
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  appEl.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    tracking = true;
+  }, { passive: true });
+
+  appEl.addEventListener('touchend', (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    // Only trigger if horizontal swipe is dominant and long enough
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
+    if (window.innerWidth >= 1024) return; // Desktop doesn't need swipe
+    if (dx > 0 && startX < 40) {
+      // Swipe right from left edge → open sidebar
+      settingsStore.set('sidebarOpen', true);
+    } else if (dx < 0 && settingsStore.get('sidebarOpen')) {
+      // Swipe left while sidebar open → close sidebar
+      settingsStore.set('sidebarOpen', false);
+    }
+  }, { passive: true });
+}

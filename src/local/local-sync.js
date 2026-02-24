@@ -240,6 +240,17 @@ export const localSync = {
     }
   },
 
+  async readFileContent(filePath) {
+    if (!dirHandle) return null;
+    try {
+      const fileHandle = await localFs.getFileHandle(dirHandle, filePath);
+      const { content } = await localFs.readFile(fileHandle);
+      return content;
+    } catch {
+      return null;
+    }
+  },
+
   getFiles() {
     return fileList;
   },

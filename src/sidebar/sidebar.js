@@ -17,12 +17,17 @@ let searchInput = null;
 let searchQuery = '';
 let historySectionEl = null;
 let outlineSectionEl = null;
+let backlinksSectionEl = null;
+let sectionsEl = null;
 
 // Local state
 let localFiles = [];
 let localFileListEl = null;
 let localSectionEl = null;
 let localBodyEl = null;
+
+// Section registry for reordering
+const sectionRegistry = {};
 
 function renderLocalFileList() {
   if (!localFileListEl) return;
@@ -122,7 +127,7 @@ function renderLocalSectionHeader() {
   }
 }
 
-function createSection(title, bodyChildren, { collapsed = false } = {}) {
+function createSection(title, bodyChildren, { collapsed = false, sectionKey = null } = {}) {
   const bodyEl = el('div', { className: 'sidebar-section-body' }, ...bodyChildren);
   const actionsEl = el('div', { className: 'sidebar-section-actions' });
   const sectionEl = el('div', { className: `sidebar-section${collapsed ? ' collapsed' : ''}` },
@@ -136,7 +141,32 @@ function createSection(title, bodyChildren, { collapsed = false } = {}) {
     ),
     bodyEl,
   );
+  if (sectionKey) {
+    sectionEl.dataset.sectionKey = sectionKey;
+    sectionRegistry[sectionKey] = sectionEl;
+  }
   return { sectionEl, bodyEl, actionsEl };
+}
+
+function applySectionVisibility() {
+  const visible = settingsStore.get('sidebarSections') || {};
+  for (const [key, sectionEl] of Object.entries(sectionRegistry)) {
+    if (sectionEl) {
+      sectionEl.style.display = visible[key] === false ? 'none' : '';
+    }
+  }
+}
+
+function applySectionOrder() {
+  if (!sectionsEl) return;
+  const order = settingsStore.get('sidebarOrder') || ['localFolder', 'outline', 'backlinks', 'history'];
+  // Re-append sections in configured order
+  for (const key of order) {
+    const sectionEl = sectionRegistry[key];
+    if (sectionEl && sectionEl.parentNode === sectionsEl) {
+      sectionsEl.appendChild(sectionEl);
+    }
+  }
 }
 
 export function createSidebar() {
@@ -149,12 +179,12 @@ export function createSidebar() {
     },
   });
 
-  const sectionsEl = el('div', { className: 'sidebar-sections' });
+  sectionsEl = el('div', { className: 'sidebar-sections' });
 
   // Local Folder section (only if browser supports File System Access API)
   if (localFs.isSupported()) {
     localFileListEl = el('div', { className: 'file-list' });
-    const local = createSection('Local Folder', [localFileListEl]);
+    const local = createSection('Local Folder', [localFileListEl], { sectionKey: 'localFolder' });
     localSectionEl = local.sectionEl;
     localBodyEl = local.bodyEl;
     sectionsEl.appendChild(localSectionEl);
@@ -164,15 +194,29 @@ export function createSidebar() {
 
   // Outline section
   const outlinePanel = createOutlinePanel();
-  const outline = createSection('Outline', [outlinePanel], { collapsed: false });
+  const outline = createSection('Outline', [outlinePanel], { collapsed: false, sectionKey: 'outline' });
   outlineSectionEl = outline.sectionEl;
   sectionsEl.appendChild(outlineSectionEl);
 
+  // Backlinks section (placeholder — populated by backlinks module)
+  const backlinksBody = el('div', { className: 'backlinks-list' });
+  const backlinks = createSection('Backlinks', [backlinksBody], { collapsed: false, sectionKey: 'backlinks' });
+  backlinksSectionEl = backlinks.sectionEl;
+  sectionsEl.appendChild(backlinksSectionEl);
+
   // History section
   const historyPanel = createHistoryPanel();
-  const history = createSection('History', [historyPanel], { collapsed: true });
+  const history = createSection('History', [historyPanel], { collapsed: true, sectionKey: 'history' });
   historySectionEl = history.sectionEl;
   sectionsEl.appendChild(historySectionEl);
+
+  // Sidebar config button
+  const configBtn = el('button', {
+    className: 'toolbar-btn',
+    'data-tooltip': 'Configure sections',
+    unsafeHTML: icons.settings || icons.cog || `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+    onClick: () => openSidebarConfig(),
+  });
 
   sidebarEl = el('div', { className: 'sidebar' },
     el('div', { className: 'sidebar-header' },
@@ -187,11 +231,20 @@ export function createSidebar() {
             toast('New document created', 'info');
           },
         }),
+        configBtn,
       ),
     ),
     el('div', { className: 'sidebar-search' }, searchInput),
     sectionsEl,
   );
+
+  // Apply initial section visibility and order
+  applySectionVisibility();
+  applySectionOrder();
+
+  // Listen for section setting changes
+  eventBus.on('settings:sidebarSections', applySectionVisibility);
+  eventBus.on('settings:sidebarOrder', applySectionOrder);
 
   // Local events
   eventBus.on('local:files-updated', ({ files }) => {
@@ -217,6 +270,62 @@ export function createSidebar() {
   });
 
   return sidebarEl;
+}
+
+async function openSidebarConfig() {
+  const { showInfo } = await import('../ui/modal.js');
+  const sections = settingsStore.get('sidebarSections') || {};
+  const sectionNames = {
+    localFolder: 'Local Folder',
+    outline: 'Outline',
+    backlinks: 'Backlinks',
+    history: 'History',
+  };
+
+  const checkboxes = {};
+  const items = Object.entries(sectionNames).map(([key, label]) => {
+    const cb = el('input', { type: 'checkbox' });
+    cb.checked = sections[key] !== false;
+    checkboxes[key] = cb;
+    cb.addEventListener('change', () => {
+      const current = { ...settingsStore.get('sidebarSections') };
+      current[key] = cb.checked;
+      settingsStore.set('sidebarSections', current);
+    });
+    return el('label', { className: 'sidebar-config-item' }, cb, ` ${label}`);
+  });
+
+  const content = el('div', { className: 'sidebar-config' },
+    el('p', { style: { marginBottom: '12px', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' } },
+      'Choose which sections to show in the sidebar.',
+    ),
+    ...items,
+  );
+
+  // Add inline styles for the config checkboxes
+  const style = document.createElement('style');
+  style.textContent = `
+    .sidebar-config-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+    }
+    .sidebar-config-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+    }
+  `;
+  content.prepend(style);
+
+  showInfo('Sidebar Sections', content);
+}
+
+export function getBacklinksBody() {
+  return backlinksSectionEl?.querySelector('.backlinks-list') || null;
 }
 
 export function toggleOutlineSection() {
