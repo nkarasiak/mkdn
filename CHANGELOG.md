@@ -18,13 +18,14 @@ All notable changes to this project will be documented in this file.
   - Slide deck presentation mode (split on `---`, fullscreen, keyboard nav)
   - Export slides as standalone HTML file
   - Publish to GitHub via Personal Access Token (browser → GitHub REST API)
-  - Share as URL — encode document in URL fragment for zero-server sharing
 - **Real-Time P2P Collaboration** — Yjs CRDT + WebRTC
-  - Share a document via room URL with random ID
+  - One-click Share button starts session instantly (no modal)
+  - Encrypted rooms with 256-bit password and 16-char room IDs
+  - Obfuscated share URL (`#s=<token>`) persists in address bar
+  - Auto-copies share URL to clipboard on session start
   - Live colored cursors with name labels
   - Conflict-free concurrent editing via Yjs
   - Presence indicator in status bar showing connected peers
-  - Configurable signaling servers (public defaults included)
 - **Semantic Search Across All Documents** — in-browser ML
   - Natural language search via Transformers.js (all-MiniLM-L6-v2, ~23MB, cached)
   - Vector embeddings stored in IndexedDB for instant queries
