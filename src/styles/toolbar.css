@@ -99,6 +99,15 @@
   color: var(--text-primary);
 }
 
+.toolbar-btn-active {
+  background: #4ECDC4;
+  color: #000;
+}
+.toolbar-btn-active:hover {
+  background: #45b8b0;
+  color: #000;
+}
+
 .toolbar-btn-icon {
   display: flex;
   width: 14px;

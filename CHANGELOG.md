@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-02-24
+
+### Added
+
+- **On-Device AI Writing Assistant** — Chrome Built-in AI (Gemini Nano) with OpenAI/Anthropic API fallback
+  - Inline autocomplete with ghost text suggestions (Tab to accept)
+  - Selection actions: Rewrite, Shorten, Expand, Fix Grammar, Formal, Casual, Translate (10 languages)
+  - AI prompt panel (Ctrl+Space) for free-form generation with document context
+  - Summarize document and suggest title commands
+  - AI settings panel for API provider/key configuration
+- **Publish & Export Pipeline** — all transforms run in-browser
+  - Styled HTML export with 4 themes (Minimal, Academic, Newspaper, Dark)
+  - DOCX (Word) export via `docx` library with full formatting support
+  - Slide deck presentation mode (split on `---`, fullscreen, keyboard nav)
+  - Export slides as standalone HTML file
+  - Publish to GitHub via Personal Access Token (browser → GitHub REST API)
+  - Share as URL — encode document in URL fragment for zero-server sharing
+- **Real-Time P2P Collaboration** — Yjs CRDT + WebRTC
+  - Share a document via room URL with random ID
+  - Live colored cursors with name labels
+  - Conflict-free concurrent editing via Yjs
+  - Presence indicator in status bar showing connected peers
+  - Configurable signaling servers (public defaults included)
+- **Semantic Search Across All Documents** — in-browser ML
+  - Natural language search via Transformers.js (all-MiniLM-L6-v2, ~23MB, cached)
+  - Vector embeddings stored in IndexedDB for instant queries
+  - Find Related Documents command for discovering connections
+  - Auto-indexes current document on save when model is loaded
+  - One-click index all files in linked folder
+- **Plugin & Extension System** — ES module-based extensibility
+  - Load trusted plugins from URLs (ES modules with `init(api)` pattern)
+  - Sandboxed plugin execution in iframes with postMessage API bridge
+  - Built-in plugins: Date Inserter, Lorem Ipsum, Word Frequency, Table of Contents
+  - Plugin Manager UI for enabling/disabling/adding/removing plugins
+  - Public plugin API: event bus, document access, command registration, slash commands, editor operations, namespaced storage
+
+### Changed
+
+- Major version bump to 2.0.0 for five new feature additions
+- New npm dependencies: `docx`, `yjs`, `y-webrtc`, `y-prosemirror`, `@huggingface/transformers`
+
 ## [1.3.0] - 2026-02-22
 
 ### Added

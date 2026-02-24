@@ -3,6 +3,7 @@ import { icons } from '../toolbar/toolbar-icons.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { settingsStore } from '../store/settings-store.js';
+import { createPeerIndicator } from '../collab/collab-ui.js';
 
 export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   const statsEl = el('span', { className: 'statusbar-stats' }, '0 words');
@@ -77,7 +78,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
 
   const statusEl = el('div', { className: 'statusbar' },
     el('div', { className: 'statusbar-left' }, statsEl),
-    el('div', { className: 'statusbar-right' }, focusModeLabel, focusBtn, historyBtn, themeBtn, infoBtn),
+    el('div', { className: 'statusbar-right' }, createPeerIndicator(), focusModeLabel, focusBtn, historyBtn, themeBtn, infoBtn),
   );
 
   return statusEl;
@@ -111,6 +112,7 @@ function buildAboutContent() {
       shortcutRow(['Ctrl', 'Shift', 'H'], 'Toggle history'),
       shortcutRow(['Ctrl', 'U'], 'Toggle source view'),
       shortcutRow(['Ctrl', 'Shift', 'F'], 'Cycle focus modes'),
+      shortcutRow(['Ctrl', 'Space'], 'AI Assistant'),
       shortcutRow(['Esc'], 'Close dialog / exit focus'),
     ),
   );
@@ -130,7 +132,7 @@ function buildAboutContent() {
     el('p', {}, issueLink),
     el('h4', { className: 'about-section-title' }, 'Credits'),
     el('p', {}, 'Created by Nicolas Karasiak & Claude'),
-    el('p', { className: 'about-version' }, `v1.2.0`),
+    el('p', { className: 'about-version' }, `v2.0.0`),
   );
 }
 

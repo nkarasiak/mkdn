@@ -6,6 +6,8 @@ import { eventBus } from '../store/event-bus.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
 import { createTablePicker } from './table-picker.js';
+import { openCollabDialog } from '../collab/collab-ui.js';
+import { openAiPanel } from '../ai/ai-panel.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
@@ -94,9 +96,41 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     'Folder',
   );
 
+  // AI button
+  const aiBtn = el('button', {
+    className: 'toolbar-secondary-btn',
+    'data-tooltip': 'AI Assistant (Ctrl+Space)',
+    onClick: () => openAiPanel(),
+  },
+    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.sparkle }),
+    'AI',
+  );
+
+  // Share / Collab button
+  const shareBtn = el('button', {
+    className: 'toolbar-secondary-btn',
+    'data-tooltip': 'Collaborate',
+    onClick: () => openCollabDialog(),
+  },
+    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.share }),
+    'Share',
+  );
+
+  // Update share button label when collab is active
+  eventBus.on('collab:started', () => {
+    shareBtn.querySelector('span:last-child')?.remove();
+    shareBtn.appendChild(document.createTextNode('Live'));
+    shareBtn.classList.add('toolbar-btn-active');
+  });
+  eventBus.on('collab:stopped', () => {
+    shareBtn.classList.remove('toolbar-btn-active');
+    while (shareBtn.childNodes.length > 1) shareBtn.lastChild.remove();
+    shareBtn.appendChild(document.createTextNode('Share'));
+  });
+
   const headerRow = el('div', { className: 'toolbar-header' },
     el('div', { className: 'toolbar-header-left' }, backBtn, statusBadge),
-    el('div', { className: 'toolbar-header-right' }, openBtn, openFolderBtn),
+    el('div', { className: 'toolbar-header-right' }, aiBtn, shareBtn, openBtn, openFolderBtn),
   );
 
   // === FORMATTING TOOLBAR ROW ===
@@ -184,6 +218,12 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'Download .md', onClick: () => downloadMarkdown() },
     { label: 'Copy as HTML', onClick: () => copyHtml() },
     { label: 'Print / PDF', onClick: () => printDocument() },
+    { label: 'Export as HTML', onClick: () => import('../export/html-export.js').then(m => m.exportStyledHtml()) },
+    { label: 'Export as DOCX', onClick: () => import('../export/docx-export.js').then(m => m.exportDocx()) },
+    { label: 'Present as Slides', onClick: () => import('../export/slides.js').then(m => m.enterSlideMode()) },
+    { label: 'Publish to GitHub', onClick: () => import('../export/github-publish.js').then(m => m.openGithubPublish()) },
+    { label: 'Semantic Search', onClick: () => import('../search/semantic-search-ui.js').then(m => m.openSearchPanel()) },
+    { label: 'Plugins', onClick: () => import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager()) },
   ].forEach(({ label, onClick }) => {
     moreMenu.appendChild(el('button', {
       className: 'toolbar-dropdown-item',
