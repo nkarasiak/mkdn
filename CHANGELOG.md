@@ -40,6 +40,18 @@ All notable changes to this project will be documented in this file.
   - Preferences persist in settings store
 - Swipe gestures for sidebar on touch devices (swipe right from left edge to open, swipe left to close)
 
+### Security
+
+- **Plugin sandbox hardened** — plugin code is no longer interpolated into HTML template literals; delivered via `postMessage` instead, preventing `</script>` breakout attacks
+- **Plugin ID validation** — only alphanumeric, dashes, underscores, dots allowed (max 128 chars)
+- **postMessage source verification** — message handlers now verify `e.source` matches the expected iframe
+- **GitHub publish input validation** — repo, path, and branch are validated before constructing API URLs; uses `URL` constructor with `encodeURI`
+- **GitHub token moved to sessionStorage** — cleared when tab closes instead of persisting in localStorage; old tokens migrated and removed
+- **URL sanitization in exports** — `javascript:`, `data:`, `vbscript:` schemes blocked in markdown-to-HTML link/image conversion (slides & HTML export)
+- **Theme editor CSS injection prevention** — font values whitelisted, hex colors validated, numeric ranges enforced; imported themes sanitized
+- **Mermaid SVG rendered safely** — uses `DOMParser` + `document.importNode()` instead of `innerHTML`
+- **innerHTML clearing replaced** — `replaceChildren()` used across collab UI, search UI, and plugin manager
+
 ### Fixed
 
 - Mobile horizontal overflow — text, lists, and blockquotes now wrap correctly on 375px viewports
