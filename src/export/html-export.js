@@ -195,12 +195,26 @@ function escapeHtml(text) {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Only allow safe URL schemes (block javascript:, data:, vbscript:, etc.)
+function sanitizeUrl(url) {
+  const decoded = url.replace(/&amp;/g, '&').trim();
+  if (/^(?:https?|mailto|tel|#)/i.test(decoded)) return url;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(decoded)) return ''; // Block other schemes
+  return url; // Relative URLs are fine
+}
+
 function inlineFormat(text) {
   let result = escapeHtml(text);
-  // Images (before links)
-  result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
-  // Links
-  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  // Images (before links) — sanitize src
+  result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => {
+    const safe = sanitizeUrl(src);
+    return safe ? `<img src="${safe}" alt="${alt}">` : `[image: ${alt}]`;
+  });
+  // Links — sanitize href
+  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, href) => {
+    const safe = sanitizeUrl(href);
+    return safe ? `<a href="${safe}">${text}</a>` : text;
+  });
   // Bold + Italic
   result = result.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
   // Bold

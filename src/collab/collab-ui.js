@@ -175,7 +175,7 @@ export function createPeerIndicator() {
 }
 
 function updatePeerIndicator(peers) {
-  peerIndicator.innerHTML = '';
+  peerIndicator.replaceChildren();
 
   // Show colored dots for each peer
   for (const peer of peers.slice(0, 5)) {

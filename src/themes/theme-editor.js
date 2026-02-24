@@ -29,6 +29,31 @@ function saveCustomTheme(theme) {
   } catch { /* quota exceeded */ }
 }
 
+// Validate hex color: #RRGGBB only
+function isValidHexColor(val) {
+  return typeof val === 'string' && /^#[0-9a-fA-F]{6}$/.test(val);
+}
+
+// Validate numeric CSS value within bounds
+function isValidNumber(val, min, max) {
+  const n = typeof val === 'string' ? parseFloat(val) : val;
+  return typeof n === 'number' && !isNaN(n) && n >= min && n <= max;
+}
+
+// Allowed font-family values (whitelist) — blocks CSS injection via font property
+const ALLOWED_FONTS = new Set([
+  '',
+  'system-ui, -apple-system, sans-serif',
+  "'Georgia', serif",
+  "'Palatino Linotype', serif",
+  "'Courier New', monospace",
+  'var(--font-mono)',
+]);
+
+function isValidFont(val) {
+  return typeof val === 'string' && ALLOWED_FONTS.has(val);
+}
+
 function applyCustomTheme(theme = null) {
   if (!theme) theme = loadCustomTheme();
   if (!customStyleEl) {
@@ -39,7 +64,7 @@ function applyCustomTheme(theme = null) {
 
   const rules = [];
 
-  if (theme.accent) {
+  if (theme.accent && isValidHexColor(theme.accent)) {
     // Generate accent variants
     rules.push(`
       [data-theme="light"] {
@@ -55,7 +80,7 @@ function applyCustomTheme(theme = null) {
     `);
   }
 
-  if (theme.font) {
+  if (theme.font && isValidFont(theme.font)) {
     rules.push(`
       .editor-pane .ProseMirror,
       .milkdown .ProseMirror {
@@ -64,27 +89,27 @@ function applyCustomTheme(theme = null) {
     `);
   }
 
-  if (theme.fontSize) {
+  if (theme.fontSize && isValidNumber(theme.fontSize, 10, 32)) {
     rules.push(`
       :root {
-        --font-size-lg: ${theme.fontSize}px;
+        --font-size-lg: ${parseInt(theme.fontSize)}px;
       }
     `);
   }
 
-  if (theme.contentWidth) {
+  if (theme.contentWidth && isValidNumber(theme.contentWidth, 400, 1600)) {
     rules.push(`
       :root {
-        --content-max-width: ${theme.contentWidth}px;
+        --content-max-width: ${parseInt(theme.contentWidth)}px;
       }
     `);
   }
 
-  if (theme.lineHeight) {
+  if (theme.lineHeight && isValidNumber(theme.lineHeight, 1.0, 3.0)) {
     rules.push(`
       .editor-pane .ProseMirror,
       .milkdown .ProseMirror {
-        line-height: ${theme.lineHeight} !important;
+        line-height: ${parseFloat(theme.lineHeight)} !important;
       }
     `);
   }
@@ -248,7 +273,14 @@ export function openThemeEditor() {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const imported = JSON.parse(reader.result);
+        const raw = JSON.parse(reader.result);
+        // Only allow known safe keys
+        const imported = {};
+        if (raw.accent && isValidHexColor(raw.accent)) imported.accent = raw.accent;
+        if (raw.font && isValidFont(raw.font)) imported.font = raw.font;
+        if (raw.fontSize && isValidNumber(raw.fontSize, 10, 32)) imported.fontSize = raw.fontSize;
+        if (raw.contentWidth && isValidNumber(raw.contentWidth, 400, 1600)) imported.contentWidth = raw.contentWidth;
+        if (raw.lineHeight && isValidNumber(raw.lineHeight, 1.0, 3.0)) imported.lineHeight = raw.lineHeight;
         saveCustomTheme(imported);
         applyCustomTheme(imported);
         if (imported.accent) accentInput.value = imported.accent;

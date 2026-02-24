@@ -152,10 +152,24 @@ function markdownSlideToHtml(md) {
 
 function esc(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+// Only allow safe URL schemes (block javascript:, data:, vbscript:, etc.)
+function sanitizeUrl(url) {
+  const decoded = url.replace(/&amp;/g, '&').trim();
+  if (/^(?:https?|mailto|tel|#)/i.test(decoded)) return url;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(decoded)) return ''; // Block other schemes
+  return url; // Relative URLs are fine
+}
+
 function fmt(t) {
   let r = esc(t);
-  r = r.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
-  r = r.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  r = r.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => {
+    const safe = sanitizeUrl(src);
+    return safe ? `<img src="${safe}" alt="${alt}">` : `[image: ${alt}]`;
+  });
+  r = r.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, href) => {
+    const safe = sanitizeUrl(href);
+    return safe ? `<a href="${safe}">${text}</a>` : text;
+  });
   r = r.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
   r = r.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   r = r.replace(/\*(.+?)\*/g, '<em>$1</em>');

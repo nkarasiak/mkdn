@@ -45,11 +45,22 @@ export async function loadPlugin(url) {
   }
 }
 
+// Validate plugin ID: only allow alphanumeric, dashes, underscores, dots
+function isValidPluginId(id) {
+  return typeof id === 'string' && /^[a-zA-Z0-9._-]+$/.test(id) && id.length <= 128;
+}
+
 /**
  * Load an untrusted plugin in a sandboxed iframe.
  * The plugin communicates via postMessage.
+ * Code is delivered via postMessage (never interpolated into HTML).
  */
 export async function loadSandboxedPlugin(id, name, code) {
+  if (!isValidPluginId(id)) {
+    toast('Invalid plugin ID', 'error');
+    return null;
+  }
+
   if (loadedPlugins.has(id)) {
     toast(`Plugin "${name}" is already loaded`, 'warning');
     return null;
@@ -62,11 +73,14 @@ export async function loadSandboxedPlugin(id, name, code) {
   iframe.sandbox = 'allow-scripts';
   iframe.style.display = 'none';
 
-  // Build the sandbox HTML with a postMessage-based API bridge
+  // Build sandbox HTML — plugin code is NOT interpolated here.
+  // The iframe receives code via postMessage after loading.
   const sandboxHtml = `
     <!DOCTYPE html>
     <html>
     <head><script>
+      let _pluginId = null;
+
       const mkdn = {
         _pending: new Map(),
         _nextId: 0,
@@ -75,7 +89,7 @@ export async function loadSandboxedPlugin(id, name, code) {
           return new Promise((resolve, reject) => {
             const id = this._nextId++;
             this._pending.set(id, { resolve, reject });
-            parent.postMessage({ type: 'plugin-call', pluginId: '${id}', callId: id, method, args }, '*');
+            parent.postMessage({ type: 'plugin-call', pluginId: _pluginId, callId: id, method, args }, '*');
           });
         },
 
@@ -100,21 +114,25 @@ export async function loadSandboxedPlugin(id, name, code) {
             if (e.data.error) pending.reject(new Error(e.data.error));
             else pending.resolve(e.data.result);
           }
+        } else if (e.data.type === 'plugin-init') {
+          // Receive plugin ID and code safely via postMessage
+          _pluginId = e.data.pluginId;
+          try {
+            const fn = new Function('mkdn', e.data.code);
+            fn(mkdn);
+          } catch(err) {
+            parent.postMessage({ type: 'plugin-error', pluginId: _pluginId, error: err.message }, '*');
+          }
         }
       });
     <\/script></head>
-    <body><script>
-      try {
-        ${code}
-      } catch(e) {
-        parent.postMessage({ type: 'plugin-error', pluginId: '${id}', error: e.message }, '*');
-      }
-    <\/script></body>
+    <body></body>
     </html>
   `;
 
-  // Listen for messages from the sandbox
+  // Listen for messages from the sandbox — verify source is this iframe
   const messageHandler = async (e) => {
+    if (e.source !== iframe.contentWindow) return;
     if (e.data?.type !== 'plugin-call' || e.data.pluginId !== id) return;
 
     const { callId, method, args } = e.data;
@@ -132,7 +150,7 @@ export async function loadSandboxedPlugin(id, name, code) {
           // Sandboxed commands execute via postMessage
           const cmd = args[0];
           cmd.action = () => {
-            iframe.contentWindow.postMessage({ type: 'command-execute', commandId: cmd.id }, '*');
+            iframe.contentWindow?.postMessage({ type: 'command-execute', commandId: cmd.id }, '*');
           };
           result = api.registerCommand(cmd);
           break;
@@ -152,12 +170,30 @@ export async function loadSandboxedPlugin(id, name, code) {
     }, '*');
   };
 
-  window.addEventListener('message', messageHandler);
+  // Also handle plugin errors — verify source
+  const errorHandler = (e) => {
+    if (e.source !== iframe.contentWindow) return;
+    if (e.data?.type === 'plugin-error' && e.data.pluginId === id) {
+      toast(`Plugin "${name}" error: ${e.data.error}`, 'error');
+    }
+  };
 
-  // Set iframe content
+  window.addEventListener('message', messageHandler);
+  window.addEventListener('message', errorHandler);
+
+  // Set iframe content, then send code after load
   const blob = new Blob([sandboxHtml], { type: 'text/html' });
   iframe.src = URL.createObjectURL(blob);
   document.body.appendChild(iframe);
+
+  // Send plugin code via postMessage once iframe loads
+  iframe.addEventListener('load', () => {
+    iframe.contentWindow?.postMessage({
+      type: 'plugin-init',
+      pluginId: id,
+      code,
+    }, '*');
+  });
 
   const pluginInfo = {
     id,
@@ -167,6 +203,7 @@ export async function loadSandboxedPlugin(id, name, code) {
     api,
     iframe,
     messageHandler,
+    errorHandler,
     trusted: false,
   };
 
@@ -191,9 +228,10 @@ export function unloadPlugin(id) {
   // Cleanup API registrations
   plugin.api._cleanup();
 
-  // Remove sandboxed iframe
+  // Remove sandboxed iframe and message handlers
   if (plugin.iframe) {
     window.removeEventListener('message', plugin.messageHandler);
+    if (plugin.errorHandler) window.removeEventListener('message', plugin.errorHandler);
     plugin.iframe.remove();
     if (plugin.iframe.src.startsWith('blob:')) {
       URL.revokeObjectURL(plugin.iframe.src);

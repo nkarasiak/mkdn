@@ -117,7 +117,15 @@ function renderAllMermaidBlocks(view) {
       const id = `mermaid-${pos}-${Date.now()}`;
       renderMermaidDiagram(code, id).then(svg => {
         if (svg) {
-          preview.innerHTML = svg;
+          // Parse SVG safely via DOMParser instead of innerHTML
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(svg, 'image/svg+xml');
+          const svgEl = doc.documentElement;
+          if (svgEl && svgEl.tagName === 'svg') {
+            preview.replaceChildren(document.importNode(svgEl, true));
+          } else {
+            preview.textContent = 'Invalid diagram output';
+          }
           preview.classList.remove('mermaid-error');
         } else {
           preview.textContent = 'Invalid Mermaid diagram';

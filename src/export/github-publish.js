@@ -6,7 +6,15 @@ import { toast } from '../ui/toast.js';
 export function openGithubPublish() {
   const overlay = el('div', { className: 'ai-settings-overlay' });
 
-  const savedToken = settingsStore.get('githubToken') || '';
+  // Migrate: remove token from persistent localStorage if it was stored there before
+  if (settingsStore.get('githubToken')) {
+    sessionStorage.setItem('mkdn-github-token', settingsStore.get('githubToken'));
+    settingsStore.set('githubToken', undefined);
+    try { localStorage.removeItem('mkdn-settings-githubToken'); } catch {}
+  }
+
+  // Token uses sessionStorage (cleared on tab close) for security
+  const savedToken = sessionStorage.getItem('mkdn-github-token') || '';
   const savedRepo = settingsStore.get('githubRepo') || '';
   const savedBranch = settingsStore.get('githubBranch') || 'main';
 
@@ -53,8 +61,8 @@ export function openGithubPublish() {
         return;
       }
 
-      // Save for next time
-      settingsStore.set('githubToken', token);
+      // Save repo/branch persistently, token only for this session
+      sessionStorage.setItem('mkdn-github-token', token);
       settingsStore.set('githubRepo', repo);
       settingsStore.set('githubBranch', branch);
 
@@ -82,7 +90,7 @@ export function openGithubPublish() {
     el('h3', {}, 'Publish to GitHub'),
     el('label', {}, 'Personal Access Token'),
     tokenInput,
-    el('p', { className: 'ai-settings-hint' }, 'Needs "repo" or "contents:write" scope. Stored locally.'),
+    el('p', { className: 'ai-settings-hint' }, 'Needs "repo" or "contents:write" scope. Token is stored only for this session.'),
     el('label', {}, 'Repository (owner/repo)'),
     repoInput,
     el('label', {}, 'Branch'),
@@ -101,8 +109,37 @@ export function openGithubPublish() {
   document.body.appendChild(overlay);
 }
 
+// Validate repo format: "owner/repo" with safe characters only
+function isValidRepo(repo) {
+  return /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(repo);
+}
+
+// Validate file path: no traversal, no control chars, no double dots
+function isValidPath(path) {
+  if (!path || path.includes('..') || path.startsWith('/')) return false;
+  if (/[\x00-\x1f\x7f]/.test(path)) return false;
+  return /^[a-zA-Z0-9._\-/]+$/.test(path);
+}
+
+// Validate branch name: safe git ref characters
+function isValidBranch(branch) {
+  return /^[a-zA-Z0-9._\-/]+$/.test(branch) && !branch.includes('..');
+}
+
+// Build a safe GitHub API URL using URL constructor
+function buildGithubUrl(repo, path, params = {}) {
+  const url = new URL(`https://api.github.com/repos/${encodeURI(repo)}/contents/${encodeURI(path)}`);
+  for (const [k, v] of Object.entries(params)) {
+    url.searchParams.set(k, v);
+  }
+  return url.href;
+}
+
 async function publishToGithub(token, repo, branch, path, content) {
-  const apiBase = 'https://api.github.com';
+  if (!isValidRepo(repo)) throw new Error('Invalid repository format. Use "owner/repo".');
+  if (!isValidPath(path)) throw new Error('Invalid file path. Avoid "..", leading "/", or special characters.');
+  if (!isValidBranch(branch)) throw new Error('Invalid branch name.');
+
   const headers = {
     'Authorization': `Bearer ${token}`,
     'Accept': 'application/vnd.github+json',
@@ -112,7 +149,7 @@ async function publishToGithub(token, repo, branch, path, content) {
   // Check if file already exists (to get SHA for update)
   let sha = null;
   try {
-    const resp = await fetch(`${apiBase}/repos/${repo}/contents/${path}?ref=${branch}`, { headers });
+    const resp = await fetch(buildGithubUrl(repo, path, { ref: branch }), { headers });
     if (resp.ok) {
       const data = await resp.json();
       sha = data.sha;
@@ -127,7 +164,7 @@ async function publishToGithub(token, repo, branch, path, content) {
   };
   if (sha) body.sha = sha;
 
-  const resp = await fetch(`${apiBase}/repos/${repo}/contents/${path}`, {
+  const resp = await fetch(buildGithubUrl(repo, path), {
     method: 'PUT',
     headers,
     body: JSON.stringify(body),

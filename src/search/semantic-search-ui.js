@@ -120,7 +120,7 @@ async function indexAllDocuments(statusEl) {
 
 async function performSearch(query, resultsContainer, statusEl) {
   if (!query.trim()) {
-    resultsContainer.innerHTML = '';
+    resultsContainer.replaceChildren();
     return;
   }
 
@@ -160,7 +160,7 @@ async function performSearch(query, resultsContainer, statusEl) {
     statusEl.textContent = `${results.length} results found`;
 
     // Render results
-    resultsContainer.innerHTML = '';
+    resultsContainer.replaceChildren();
 
     if (results.length === 0) {
       resultsContainer.appendChild(el('div', {
@@ -329,7 +329,7 @@ export async function findRelatedDocuments() {
 
   if (resultsContainer && statusEl) {
     statusEl.textContent = `${results.length} related documents:`;
-    resultsContainer.innerHTML = '';
+    resultsContainer.replaceChildren();
 
     for (const result of results) {
       const scorePercent = Math.round(result.score * 100);

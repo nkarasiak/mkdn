@@ -9,7 +9,7 @@ export function openPluginManager() {
   const content = el('div', { className: 'plugin-manager-content' });
 
   function renderPluginList() {
-    content.innerHTML = '';
+    content.replaceChildren();
 
     // Builtin plugins
     const builtins = pluginRegistry.getBuiltinPlugins();
