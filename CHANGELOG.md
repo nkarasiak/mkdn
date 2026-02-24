@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **Backlinks / Wiki-style Linking** — `[[page-name]]` syntax for linking between notes
+  - ProseMirror decoration plugin highlights wiki-links with accent color
+  - Supports `[[page]]` and `[[page|display text]]` syntax
+  - Sidebar backlinks panel showing incoming and outgoing links
+  - Click-to-navigate on resolved links across linked folder
+- **Writing Statistics Dashboard** — click word count in status bar to open
+  - Word, character, sentence, and paragraph counts
+  - Flesch-Kincaid readability score with level indicator
+  - Configurable daily word goal with progress bar
+  - Writing streak tracking (persisted across sessions)
+  - Session duration timer
+- **Theme Editor** — customize editor appearance beyond light/dark
+  - 6 color presets: Default, Ocean Blue, Forest Green, Sunset, Lavender, Monochrome
+  - Accent color picker with live preview
+  - Editor font selector (Spectral, System Sans, Georgia, Palatino, Courier, Monospace)
+  - Font size, content width, and line height sliders
+  - Export/import theme files as JSON
+- **Template System** — create documents from pre-built templates
+  - 8 built-in templates: Blank, Blog Post, Meeting Notes, Daily Journal, README, To-Do List, Weekly Review, Technical Spec
+  - Save current document as custom template
+  - Delete custom templates
+- **Image Paste & Drop** — paste images from clipboard or drag-and-drop
+  - Images stored inline as base64 data URIs
+  - 5MB file size limit with warning toast
+- **Mermaid Diagram Support** — render diagrams from `mermaid` code blocks
+  - Lazy-loads Mermaid library from CDN on first use
+  - Renders preview below code block with caching
+  - Respects light/dark theme
+- **Customizable Sidebar Layout** — configure which sections are visible
+  - Settings gear button in sidebar header opens config modal
+  - Toggle visibility of Local Folder, Outline, Backlinks, and History sections
+  - Preferences persist in settings store
+- Swipe gestures for sidebar on touch devices (swipe right from left edge to open, swipe left to close)
+
+### Fixed
+
+- Mobile horizontal overflow — text, lists, and blockquotes now wrap correctly on 375px viewports
+- Stale "AI Assistant" keyboard shortcut removed from About modal
+- Vue feature flags console warning suppressed via Vite `define` config
+
 ## [2.0.0] - 2026-02-24
 
 ### Added
