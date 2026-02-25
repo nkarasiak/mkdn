@@ -4,11 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
-
-- **Print / PDF export** — removed redundant file name title injection that produced unwanted text (e.g. "Shared Document") above content when printing
-
 ### Added
+
+- **Knowledge Graph** — force-directed canvas visualization of wiki-link connections between notes
+- **Collab Session History** — server-side snapshots pushed on save/checkpoint
+- **Callout Blocks** — `[!NOTE]`, `[!TIP]`, `[!WARNING]`, `[!CAUTION]`, `[!IMPORTANT]` rendered with icons
+- **Details/Summary Blocks** — collapsible `<details>` sections in the editor
+- **Emoji Picker** — type `:` to search and insert emoji inline
 
 - **Backlinks / Wiki-style Linking** — `[[page-name]]` syntax for linking between notes
   - ProseMirror decoration plugin highlights wiki-links with accent color
@@ -53,6 +55,21 @@ All notable changes to this project will be documented in this file.
 - **Theme editor CSS injection prevention** — font values whitelisted, hex colors validated, numeric ranges enforced; imported themes sanitized
 - **Mermaid SVG rendered safely** — uses `DOMParser` + `document.importNode()` instead of `innerHTML`
 - **innerHTML clearing replaced** — `replaceChildren()` used across collab UI, search UI, and plugin manager
+- **HTTPS enforcement for collab** — non-HTTPS server URLs rejected (localhost exempt for development)
+
+### Changed
+
+- **Vite code splitting** — milkdown (1.4MB) and collab (112KB) split into separate chunks for faster initial load
+- **Lazy search indexing** — 23MB transformer model deferred until first search invocation
+- **Debounced sidebar file search** — 150ms debounce prevents excessive re-renders on keystroke
+- **Backlinks file caching** — content cache avoids re-reading all files on every backlink scan
+- **Service worker cache** — version bumped to `mkdn-v2.0.0`
+- **`injectStyles()` utility** — extracted common 3-line style injection pattern into shared helper (18 files)
+- **Centralized storage keys** — all `mkdn-*` localStorage/sessionStorage/IndexedDB keys in `constants.js` (13 files)
+- **Deduplicated collab username** — `getUserName()` exported from collab-manager, reused in collab-ui
+- **Outline panel debounce** — imports shared `debounce()` instead of local copy
+- **Removed unused exports** — `embedKey`, `extractYouTubeId`, `extractTweetId` made module-private
+- **Removed stale Vue defines** — cleaned up `__VUE_OPTIONS_API__` flags from vite.config.js
 
 ### Removed
 
@@ -61,9 +78,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Print / PDF export** — removed redundant file name title injection that produced unwanted text above content when printing
 - Mobile horizontal overflow — text, lists, and blockquotes now wrap correctly on 375px viewports
 - Stale "AI Assistant" keyboard shortcut removed from About modal
-- Vue feature flags console warning suppressed via Vite `define` config
 
 ## [2.0.0] - 2026-02-24
 
