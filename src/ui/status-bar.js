@@ -68,13 +68,16 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
     themeBtn.replaceChildren(svgIcon(theme === 'dark' ? icons.sun : icons.moon));
   });
 
-  // Graph button
+  // Graph button — only visible when a local folder with wiki-links is linked
   const graphBtn = el('button', {
     className: 'statusbar-icon-btn',
+    style: { display: 'none' },
     'data-tooltip': 'Knowledge Graph (Ctrl+Shift+G)',
     unsafeHTML: icons.graph,
     onClick: () => import('../graph/graph-view.js').then(m => m.openGraphView()),
   });
+  eventBus.on('local:folder-linked', () => { graphBtn.style.display = ''; });
+  eventBus.on('local:folder-unlinked', () => { graphBtn.style.display = 'none'; });
 
   // Info / About button
   const infoBtn = el('button', {

@@ -1,6 +1,7 @@
 import { documentStore } from '../store/document-store.js';
 import { fileSaver } from '../save/file-saver.js';
 import { localFs } from '../local/local-fs.js';
+import { localSync } from '../local/local-sync.js';
 import { settingsStore } from '../store/settings-store.js';
 import { closeModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
@@ -137,10 +138,12 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+Shift+G — Knowledge graph
+    // Ctrl+Shift+G — Knowledge graph (only when folder linked)
     if (key === 'g' && shift) {
       e.preventDefault();
-      import('../graph/graph-view.js').then(m => m.openGraphView());
+      if (localSync.isLinked()) {
+        import('../graph/graph-view.js').then(m => m.openGraphView());
+      }
       return;
     }
 
