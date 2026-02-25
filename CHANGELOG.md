@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Print / PDF export** — removed redundant file name title injection that produced unwanted text (e.g. "Shared Document") above content when printing
+
 ### Added
 
 - **Backlinks / Wiki-style Linking** — `[[page-name]]` syntax for linking between notes
