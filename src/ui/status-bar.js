@@ -3,7 +3,6 @@ import { icons } from '../toolbar/toolbar-icons.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { settingsStore } from '../store/settings-store.js';
-import { createPeerIndicator } from '../collab/collab-ui.js';
 
 export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   const statsEl = el('span', {
@@ -90,7 +89,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
 
   const statusEl = el('div', { className: 'statusbar' },
     el('div', { className: 'statusbar-left' }, statsEl),
-    el('div', { className: 'statusbar-right' }, createPeerIndicator(), focusModeLabel, focusBtn, historyBtn, graphBtn, themeBtn, infoBtn),
+    el('div', { className: 'statusbar-right' }, focusModeLabel, focusBtn, historyBtn, graphBtn, themeBtn, infoBtn),
   );
 
   return statusEl;

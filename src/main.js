@@ -15,3 +15,7 @@ import './styles/search.css';
 import { App } from './app.js';
 
 App.init();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}

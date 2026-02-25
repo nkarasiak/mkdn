@@ -14,7 +14,7 @@ const defaults = {
   sidebarOrder: ['localFolder', 'outline', 'backlinks', 'history'],
   accentColor: null,
   customFont: null,
-  collabServerUrl: 'http://localhost:1999',
+  collabServerUrl: __PARTYKIT_URL__,
 };
 
 function load() {
