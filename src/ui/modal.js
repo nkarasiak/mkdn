@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 
 let overlay;
 
@@ -115,8 +115,7 @@ export function showInfo(title, content) {
 }
 
 // Inject modal styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
 .modal-overlay {
   display: none;
   position: fixed;
@@ -229,5 +228,4 @@ style.textContent = `
   color: var(--text-muted);
   font-size: var(--font-size-xs);
 }
-`;
-document.head.appendChild(style);
+`);

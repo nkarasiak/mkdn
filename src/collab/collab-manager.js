@@ -1,11 +1,12 @@
 import * as Y from 'yjs';
-import { WebrtcProvider } from 'y-webrtc';
+import YPartyKitProvider from 'y-partykit/provider';
 import { ySyncPlugin, yCursorPlugin, yUndoPlugin, undo, redo } from 'y-prosemirror';
 import { milkdown } from '../editor/milkdown-setup.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { toast } from '../ui/toast.js';
 import { settingsStore } from '../store/settings-store.js';
+import { STORAGE_COLLAB_NAME, SESSION_COLLAB, PARTYKIT_ROOM_PREFIX } from '../constants.js';
 
 let ydoc = null;
 let provider = null;
@@ -37,13 +38,34 @@ function generatePassword() {
   return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 }
 
-function getUserName() {
-  let name = localStorage.getItem('mkdn-collab-name');
+export function getUserName() {
+  let name = localStorage.getItem(STORAGE_COLLAB_NAME);
   if (!name) {
     name = `User-${Math.floor(Math.random() * 1000)}`;
-    localStorage.setItem('mkdn-collab-name', name);
+    localStorage.setItem(STORAGE_COLLAB_NAME, name);
   }
   return name;
+}
+
+function saveSession() {
+  if (roomId && roomPassword) {
+    sessionStorage.setItem(SESSION_COLLAB, JSON.stringify({ roomId, roomPassword }));
+  }
+}
+
+function clearSession() {
+  sessionStorage.removeItem(SESSION_COLLAB);
+}
+
+export function getSavedSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_COLLAB);
+    if (!raw) return null;
+    const { roomId, roomPassword } = JSON.parse(raw);
+    return roomId ? { roomId, roomPassword } : null;
+  } catch {
+    return null;
+  }
 }
 
 export const collabManager = {
@@ -53,6 +75,10 @@ export const collabManager = {
 
   getRoomId() {
     return roomId;
+  },
+
+  getRoomPassword() {
+    return roomPassword;
   },
 
   getConnectedPeers() {
@@ -68,7 +94,7 @@ export const collabManager = {
   },
 
   setUserName(name) {
-    localStorage.setItem('mkdn-collab-name', name);
+    localStorage.setItem(STORAGE_COLLAB_NAME, name);
     if (awareness) {
       awareness.setLocalStateField('user', {
         name,
@@ -89,26 +115,29 @@ export const collabManager = {
       return;
     }
 
+    const serverUrl = settingsStore.get('collabServerUrl');
+    if (!serverUrl) {
+      toast('Set a PartyKit server URL in settings before collaborating', 'error');
+      return;
+    }
+
+    // Enforce HTTPS for non-local servers
+    if (!/^https:/.test(serverUrl) && !/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(serverUrl)) {
+      toast('Collaboration requires an HTTPS server URL', 'error');
+      return;
+    }
+
     roomId = existingRoomId || generateRoomId();
     roomPassword = existingPassword || generatePassword();
     ydoc = new Y.Doc();
 
-    const signalingServers = [
-      'wss://signaling.yjs.dev',
-      'wss://y-webrtc-signaling-eu.herokuapp.com',
-      'wss://y-webrtc-signaling-us.herokuapp.com',
-    ];
-
-    // Custom signaling server from settings
-    const customSignaling = settingsStore.get('collabSignalingServer');
-    if (customSignaling) {
-      signalingServers.unshift(customSignaling);
+    const params = {};
+    if (roomPassword) {
+      params.key = roomPassword;
     }
 
-    provider = new WebrtcProvider(`mkdn-${roomId}`, ydoc, {
-      signaling: signalingServers,
-      password: roomPassword,
-      maxConns: 20,
+    provider = new YPartyKitProvider(serverUrl, `${PARTYKIT_ROOM_PREFIX}${roomId}`, ydoc, {
+      params,
     });
 
     awareness = provider.awareness;
@@ -126,7 +155,7 @@ export const collabManager = {
 
     // If we're starting a new room (not joining), initialize with current content
     if (!existingRoomId) {
-      // Wait a moment to see if there's already content from peers
+      // Wait a moment to see if there's already content from the server
       await new Promise(resolve => setTimeout(resolve, 500));
 
       if (yXmlFragment.length === 0) {
@@ -140,7 +169,6 @@ export const collabManager = {
     }
 
     // Apply Yjs plugins to the ProseMirror editor
-    // We need to reconfigure the editor with Yjs plugins
     const syncPlugin = ySyncPlugin(yXmlFragment);
     const cursorPlugin = yCursorPlugin(awareness);
     const undoPlugin = yUndoPlugin();
@@ -156,7 +184,6 @@ export const collabManager = {
 
     // If starting new room, insert current content
     if (!existingRoomId && yXmlFragment.length === 0) {
-      // Trigger a replaceAll to sync current content into Yjs
       setTimeout(() => {
         const currentMarkdown = documentStore.getMarkdown();
         if (currentMarkdown) {
@@ -167,6 +194,9 @@ export const collabManager = {
 
     isCollaborating = true;
 
+    // Persist session so page refresh auto-reconnects
+    saveSession();
+
     // Listen for awareness changes
     awareness.on('change', () => {
       eventBus.emit('collab:peers-changed', {
@@ -174,7 +204,7 @@ export const collabManager = {
       });
     });
 
-    provider.on('synced', () => {
+    provider.on('sync', () => {
       eventBus.emit('collab:synced');
     });
 
@@ -212,6 +242,7 @@ export const collabManager = {
     isCollaborating = false;
     this._yjsPlugins = null;
 
+    clearSession();
     eventBus.emit('collab:stopped');
   },
 

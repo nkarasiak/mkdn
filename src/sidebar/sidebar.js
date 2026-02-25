@@ -11,6 +11,7 @@ import { confirm as confirmModal, prompt as promptModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { createHistoryPanel } from '../history/history-panel.js';
 import { createOutlinePanel } from './outline-panel.js';
+import { debounce } from '../utils/debounce.js';
 
 let sidebarEl = null;
 let searchInput = null;
@@ -170,12 +171,13 @@ function applySectionOrder() {
 }
 
 export function createSidebar() {
+  const debouncedSearch = debounce(() => renderLocalFileList(), 150);
   searchInput = el('input', {
     type: 'text',
     placeholder: 'Search files...',
     onInput: (e) => {
       searchQuery = e.target.value;
-      renderLocalFileList();
+      debouncedSearch();
     },
   });
 

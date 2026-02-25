@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 import { icons } from '../toolbar/toolbar-icons.js';
 import { documentStore } from '../store/document-store.js';
 import { localSync } from '../local/local-sync.js';
@@ -164,8 +164,7 @@ export const fileSaver = {
 };
 
 // Inject save picker styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
 .save-picker-modal {
   max-width: 400px;
 }
@@ -222,5 +221,4 @@ style.textContent = `
     display: none;
   }
 }
-`;
-document.head.appendChild(style);
+`);

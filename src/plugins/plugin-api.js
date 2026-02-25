@@ -1,4 +1,5 @@
 import { eventBus } from '../store/event-bus.js';
+import { PLUGIN_STORAGE_PREFIX } from '../constants.js';
 import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 import { commandRegistry } from '../command-palette/command-registry.js';
@@ -127,17 +128,17 @@ export function createPluginAPI(pluginId) {
     storage: {
       get(key) {
         try {
-          const val = localStorage.getItem(`mkdn-plugin-${pluginId}-${key}`);
+          const val = localStorage.getItem(`${PLUGIN_STORAGE_PREFIX}${pluginId}-${key}`);
           return val ? JSON.parse(val) : null;
         } catch { return null; }
       },
       set(key, value) {
         try {
-          localStorage.setItem(`mkdn-plugin-${pluginId}-${key}`, JSON.stringify(value));
+          localStorage.setItem(`${PLUGIN_STORAGE_PREFIX}${pluginId}-${key}`, JSON.stringify(value));
         } catch { /* quota exceeded */ }
       },
       remove(key) {
-        localStorage.removeItem(`mkdn-plugin-${pluginId}-${key}`);
+        localStorage.removeItem(`${PLUGIN_STORAGE_PREFIX}${pluginId}-${key}`);
       },
     },
 

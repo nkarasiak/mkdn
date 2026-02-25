@@ -1,8 +1,7 @@
 import { el } from '../utils/dom.js';
 import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
-
-const STORAGE_KEY = 'mkdn-custom-theme';
+import { STORAGE_CUSTOM_THEME, CUSTOM_THEME_STYLE_ID } from '../constants.js';
 const PRESETS = {
   default: { label: 'Default', accent: null, font: null },
   ocean: { label: 'Ocean Blue', accent: '#2563eb', font: null },
@@ -16,7 +15,7 @@ let customStyleEl = null;
 
 function loadCustomTheme() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_CUSTOM_THEME);
     return stored ? JSON.parse(stored) : {};
   } catch {
     return {};
@@ -25,7 +24,7 @@ function loadCustomTheme() {
 
 function saveCustomTheme(theme) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
+    localStorage.setItem(STORAGE_CUSTOM_THEME, JSON.stringify(theme));
   } catch { /* quota exceeded */ }
 }
 
@@ -58,7 +57,7 @@ function applyCustomTheme(theme = null) {
   if (!theme) theme = loadCustomTheme();
   if (!customStyleEl) {
     customStyleEl = document.createElement('style');
-    customStyleEl.id = 'mkdn-custom-theme';
+    customStyleEl.id = CUSTOM_THEME_STYLE_ID;
     document.head.appendChild(customStyleEl);
   }
 

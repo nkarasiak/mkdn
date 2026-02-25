@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'mkdn-plugins';
+import { STORAGE_PLUGINS, STORAGE_PLUGINS_ENABLED } from '../constants.js';
 
 // Built-in plugin catalog (could be fetched from a static JSON on GitHub Pages)
 const builtinPlugins = [
@@ -102,7 +102,7 @@ const builtinPlugins = [
 
 function getInstalledPlugins() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_PLUGINS);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
@@ -111,7 +111,7 @@ function getInstalledPlugins() {
 
 function saveInstalledPlugins(plugins) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(plugins));
+    localStorage.setItem(STORAGE_PLUGINS, JSON.stringify(plugins));
   } catch {}
 }
 
@@ -146,7 +146,7 @@ export const pluginRegistry = {
 
   getEnabledPluginIds() {
     try {
-      const stored = localStorage.getItem(`${STORAGE_KEY}-enabled`);
+      const stored = localStorage.getItem(STORAGE_PLUGINS_ENABLED);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -162,7 +162,7 @@ export const pluginRegistry = {
       enabledIds.splice(idx, 1);
     }
     try {
-      localStorage.setItem(`${STORAGE_KEY}-enabled`, JSON.stringify(enabledIds));
+      localStorage.setItem(STORAGE_PLUGINS_ENABLED, JSON.stringify(enabledIds));
     } catch {}
   },
 

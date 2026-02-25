@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mkdn-v1';
+const CACHE_VERSION = 'mkdn-v2.0.0';
 const STATIC_ASSETS = [
   './',
   './index.html',

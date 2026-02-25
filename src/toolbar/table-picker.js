@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 
 const MAX_ROWS = 6;
 const MAX_COLS = 6;
@@ -51,8 +51,7 @@ export function createTablePicker(onSelect) {
 }
 
 // Inject styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
 .table-picker {
   padding: 8px;
   display: flex;
@@ -85,5 +84,4 @@ style.textContent = `
   background: color-mix(in srgb, var(--accent) 25%, transparent);
   border-color: var(--accent);
 }
-`;
-document.head.appendChild(style);
+`);

@@ -130,14 +130,24 @@ function markdownToHtml(markdown) {
       continue;
     }
 
-    // Blockquote
+    // Blockquote (with callout detection)
     if (line.startsWith('> ')) {
       const quoteLines = [];
       while (i < lines.length && (lines[i].startsWith('> ') || lines[i].startsWith('>'))) {
         quoteLines.push(lines[i].replace(/^>\s?/, ''));
         i++;
       }
-      blocks.push(`<blockquote><p>${inlineFormat(quoteLines.join(' '))}</p></blockquote>`);
+      const content = quoteLines.join(' ');
+      const calloutMatch = content.match(/^\[!(NOTE|TIP|WARNING|CAUTION|IMPORTANT)\]\s*/i);
+      if (calloutMatch) {
+        const type = calloutMatch[1].toLowerCase();
+        const body = content.slice(calloutMatch[0].length);
+        const colors = { note: '#4493f8', tip: '#3fb950', warning: '#d29922', caution: '#f85149', important: '#a371f7' };
+        const bgColors = { note: 'rgba(68,147,248,0.08)', tip: 'rgba(63,185,80,0.08)', warning: 'rgba(210,153,34,0.08)', caution: 'rgba(248,81,73,0.08)', important: 'rgba(163,113,247,0.08)' };
+        blocks.push(`<div class="callout callout-${type}" style="border-left:4px solid ${colors[type]};background:${bgColors[type]};padding:12px 16px;border-radius:6px;margin:1em 0"><strong style="color:${colors[type]}">${calloutMatch[1]}</strong><br>${inlineFormat(body)}</div>`);
+      } else {
+        blocks.push(`<blockquote><p>${inlineFormat(content)}</p></blockquote>`);
+      }
       continue;
     }
 

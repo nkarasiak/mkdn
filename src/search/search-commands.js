@@ -1,17 +1,19 @@
 import { commandRegistry } from '../command-palette/command-registry.js';
 import { openSearchPanel, closeSearchPanel, findRelatedDocuments, initAutoIndex } from './semantic-search-ui.js';
 
-export function registerSearchCommands() {
-  // Initialize auto-indexing
-  initAutoIndex();
+let autoIndexed = false;
 
+export function registerSearchCommands() {
   commandRegistry.registerMany([
     {
       id: 'search:semantic',
       label: 'Semantic Search',
       category: 'Search',
       keywords: ['search', 'semantic', 'meaning', 'find', 'similar', 'natural', 'language'],
-      action: openSearchPanel,
+      action: () => {
+        if (!autoIndexed) { initAutoIndex(); autoIndexed = true; }
+        openSearchPanel();
+      },
     },
     {
       id: 'search:related',

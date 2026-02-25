@@ -57,7 +57,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   // Theme toggle
   const themeBtn = el('button', {
     className: 'statusbar-icon-btn',
-    'data-tooltip': 'Toggle theme',
+    'data-tooltip': 'Toggle Theme (Light/Dark)',
     unsafeHTML: settingsStore.getTheme() === 'dark' ? icons.sun : icons.moon,
     onClick: () => {
       const next = settingsStore.getTheme() === 'dark' ? 'light' : 'dark';
@@ -69,10 +69,18 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
     themeBtn.replaceChildren(svgIcon(theme === 'dark' ? icons.sun : icons.moon));
   });
 
+  // Graph button
+  const graphBtn = el('button', {
+    className: 'statusbar-icon-btn',
+    'data-tooltip': 'Knowledge Graph (Ctrl+Shift+G)',
+    unsafeHTML: icons.graph,
+    onClick: () => import('../graph/graph-view.js').then(m => m.openGraphView()),
+  });
+
   // Info / About button
   const infoBtn = el('button', {
     className: 'statusbar-icon-btn',
-    'data-tooltip': 'About',
+    'data-tooltip': 'About & Shortcuts',
     unsafeHTML: icons.infoCircle,
     onClick: async () => {
       const { showInfo } = await import('./modal.js');
@@ -82,7 +90,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
 
   const statusEl = el('div', { className: 'statusbar' },
     el('div', { className: 'statusbar-left' }, statsEl),
-    el('div', { className: 'statusbar-right' }, createPeerIndicator(), focusModeLabel, focusBtn, historyBtn, themeBtn, infoBtn),
+    el('div', { className: 'statusbar-right' }, createPeerIndicator(), focusModeLabel, focusBtn, historyBtn, graphBtn, themeBtn, infoBtn),
   );
 
   return statusEl;
@@ -116,6 +124,7 @@ function buildAboutContent() {
       shortcutRow(['Ctrl', 'Shift', 'H'], 'Toggle history'),
       shortcutRow(['Ctrl', 'U'], 'Toggle source view'),
       shortcutRow(['Ctrl', 'Shift', 'F'], 'Cycle focus modes'),
+      shortcutRow(['Ctrl', 'Shift', 'G'], 'Knowledge graph'),
       shortcutRow(['Esc'], 'Close dialog / exit focus'),
     ),
   );

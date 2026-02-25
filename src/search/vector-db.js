@@ -1,10 +1,10 @@
-const DB_NAME = 'mkdn-vectors';
+import { DB_VECTORS } from '../constants.js';
 const DB_VERSION = 1;
 const STORE_NAME = 'embeddings';
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(DB_VECTORS, DB_VERSION);
 
     request.onupgradeneeded = (e) => {
       const db = e.target.result;

@@ -4,6 +4,16 @@ import { localSync } from '../local/local-sync.js';
 
 const WIKILINK_RE = /\[\[([^\]]+)\]\]/g;
 
+// Cache file contents to avoid re-reading all files on every backlink scan.
+// Invalidated on local:files-updated events.
+const contentCache = new Map();
+let cacheValid = false;
+
+eventBus.on('local:files-updated', () => {
+  contentCache.clear();
+  cacheValid = false;
+});
+
 /**
  * Extract all [[wiki-link]] references from markdown content.
  * Returns an array of { raw, target, display } objects.
@@ -77,7 +87,11 @@ export async function findBacklinks(currentFileName, files) {
     if (file.name.replace(/\.md$/i, '').toLowerCase() === currentBase) continue;
 
     try {
-      const content = await localSync.readFileContent(file.path);
+      let content = contentCache.get(file.path);
+      if (content === undefined) {
+        content = await localSync.readFileContent(file.path);
+        if (content != null) contentCache.set(file.path, content);
+      }
       if (!content) continue;
 
       const links = extractWikiLinks(content);

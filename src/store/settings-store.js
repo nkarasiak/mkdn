@@ -1,6 +1,5 @@
 import { eventBus } from './event-bus.js';
-
-const STORAGE_KEY = 'mkdn-settings';
+import { STORAGE_SETTINGS } from '../constants.js';
 
 const defaults = {
   theme: 'light',
@@ -15,11 +14,12 @@ const defaults = {
   sidebarOrder: ['localFolder', 'outline', 'backlinks', 'history'],
   accentColor: null,
   customFont: null,
+  collabServerUrl: 'http://localhost:1999',
 };
 
 function load() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_SETTINGS);
     const parsed = { ...defaults };
     if (stored) {
       const raw = JSON.parse(stored);
@@ -44,7 +44,7 @@ function load() {
 
 function save(settings) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(settings));
   } catch { /* quota exceeded, ignore */ }
 }
 

@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 import { documentStore } from '../store/document-store.js';
 import { toast } from '../ui/toast.js';
 
@@ -214,10 +214,8 @@ export function enterSlideMode() {
   currentSlide = 0;
 
   // Inject styles
-  const style = document.createElement('style');
+  const style = injectStyles(slideCSS);
   style.id = 'slide-styles';
-  style.textContent = slideCSS;
-  document.head.appendChild(style);
 
   // Create container
   slideContainer = el('div', { className: 'slide-container' },

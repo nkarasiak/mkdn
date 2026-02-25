@@ -2,19 +2,20 @@ import { el } from '../utils/dom.js';
 import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 import { toast } from '../ui/toast.js';
+import { SESSION_GITHUB_TOKEN } from '../constants.js';
 
 export function openGithubPublish() {
   const overlay = el('div', { className: 'ai-settings-overlay' });
 
   // Migrate: remove token from persistent localStorage if it was stored there before
   if (settingsStore.get('githubToken')) {
-    sessionStorage.setItem('mkdn-github-token', settingsStore.get('githubToken'));
+    sessionStorage.setItem(SESSION_GITHUB_TOKEN, settingsStore.get('githubToken'));
     settingsStore.set('githubToken', undefined);
     try { localStorage.removeItem('mkdn-settings-githubToken'); } catch {}
   }
 
   // Token uses sessionStorage (cleared on tab close) for security
-  const savedToken = sessionStorage.getItem('mkdn-github-token') || '';
+  const savedToken = sessionStorage.getItem(SESSION_GITHUB_TOKEN) || '';
   const savedRepo = settingsStore.get('githubRepo') || '';
   const savedBranch = settingsStore.get('githubBranch') || 'main';
 
@@ -62,7 +63,7 @@ export function openGithubPublish() {
       }
 
       // Save repo/branch persistently, token only for this session
-      sessionStorage.setItem('mkdn-github-token', token);
+      sessionStorage.setItem(SESSION_GITHUB_TOKEN, token);
       settingsStore.set('githubRepo', repo);
       settingsStore.set('githubBranch', branch);
 

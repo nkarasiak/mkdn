@@ -1,3 +1,4 @@
+import { injectStyles } from '../utils/dom.js';
 import { Plugin } from '@milkdown/prose/state';
 import { Decoration, DecorationSet } from '@milkdown/prose/view';
 
@@ -35,8 +36,7 @@ export function createWikilinkPlugin() {
 }
 
 // Inject wikilink styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
   .wikilink {
     color: var(--accent);
     cursor: pointer;
@@ -46,5 +46,4 @@ style.textContent = `
   .wikilink:hover {
     opacity: 0.8;
   }
-`;
-document.head.appendChild(style);
+`);

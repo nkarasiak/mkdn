@@ -115,7 +115,12 @@ export async function loadSandboxedPlugin(id, name, code) {
             else pending.resolve(e.data.result);
           }
         } else if (e.data.type === 'plugin-init') {
-          // Receive plugin ID and code safely via postMessage
+          // Receive plugin ID and code safely via postMessage.
+          // Security model: new Function() runs inside iframe sandbox="allow-scripts",
+          // which blocks DOM access, cookie access, and navigation. The plugin can
+          // only interact with the host via the postMessage API above, whose methods
+          // are whitelisted (getMarkdown, insertText, toast, etc.). The parent
+          // verifies e.source === iframe.contentWindow on all incoming messages.
           _pluginId = e.data.pluginId;
           try {
             const fn = new Function('mkdn', e.data.code);

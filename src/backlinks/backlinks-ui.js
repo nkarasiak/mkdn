@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 import { icons } from '../toolbar/toolbar-icons.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
@@ -103,8 +103,7 @@ export function initBacklinks() {
 }
 
 // Inject backlinks CSS
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
   .backlinks-section {
     padding: 4px 0;
   }
@@ -153,5 +152,4 @@ style.textContent = `
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-`;
-document.head.appendChild(style);
+`);

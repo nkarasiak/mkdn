@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { createProseMirrorEngine, createTextareaEngine } from './find-replace-engine.js';
@@ -21,11 +21,10 @@ let searchTimer = null;
 
 // Inject styles once
 let stylesInjected = false;
-function injectStyles() {
+function injectFindBarStyles() {
   if (stylesInjected) return;
   stylesInjected = true;
-  const style = document.createElement('style');
-  style.textContent = `
+  injectStyles(`
     .find-bar {
       position: absolute;
       top: 8px;
@@ -153,8 +152,7 @@ function injectStyles() {
     [data-theme="dark"] .find-match-current {
       background: rgba(255, 152, 0, 0.35);
     }
-  `;
-  document.head.appendChild(style);
+  `);
 }
 
 function getEngine() {
@@ -186,7 +184,7 @@ function debouncedSearch() {
 }
 
 function buildBar(container) {
-  injectStyles();
+  injectFindBarStyles();
 
   // Arrows
   const prevIcon = '\u2191'; // up arrow

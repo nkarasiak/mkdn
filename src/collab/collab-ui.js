@@ -1,15 +1,21 @@
-import { el } from '../utils/dom.js';
-import { collabManager } from './collab-manager.js';
+import { el, injectStyles } from '../utils/dom.js';
+import { collabManager, getSavedSession, getUserName } from './collab-manager.js';
 import { eventBus } from '../store/event-bus.js';
 import { toast } from '../ui/toast.js';
 import { settingsStore } from '../store/settings-store.js';
-
 let peerIndicator = null;
+let dialogOverlay = null;
+
+function closeSetupDialog() {
+  if (dialogOverlay) {
+    dialogOverlay.remove();
+    dialogOverlay = null;
+  }
+}
 
 export function createCollabUI() {
   // Inject styles
-  const style = document.createElement('style');
-  style.textContent = `
+  injectStyles(`
     .collab-peers {
       display: flex;
       align-items: center;
@@ -91,6 +97,13 @@ export function createCollabUI() {
       font-size: 12px;
       color: var(--text-secondary);
     }
+    .collab-server-warning {
+      font-size: 12px;
+      color: #e67e22;
+      padding: 8px 12px;
+      background: rgba(230, 126, 34, 0.1);
+      border-radius: var(--radius);
+    }
     .collab-actions {
       display: flex;
       justify-content: flex-end;
@@ -151,8 +164,7 @@ export function createCollabUI() {
       background: inherit;
       background-color: inherit;
     }
-  `;
-  document.head.appendChild(style);
+  `);
 }
 
 export function createPeerIndicator() {
@@ -203,8 +215,16 @@ export async function openCollabDialog() {
     return;
   }
 
+  const serverUrl = settingsStore.get('collabServerUrl');
+
+  // No server URL configured — show setup dialog
+  if (!serverUrl) {
+    showServerSetupDialog();
+    return;
+  }
+
   // Start session immediately
-  const name = localStorage.getItem('mkdn-collab-name') || `User-${Math.floor(Math.random() * 1000)}`;
+  const name = getUserName();
   collabManager.setUserName(name);
   await collabManager.startSession();
 
@@ -218,6 +238,59 @@ export async function openCollabDialog() {
   }
 }
 
+function showServerSetupDialog() {
+  const currentUrl = settingsStore.get('collabServerUrl') || '';
+
+  const urlInput = el('input', {
+    type: 'text',
+    placeholder: 'https://my-project.username.partykit.dev',
+    value: currentUrl,
+    style: { width: '100%', boxSizing: 'border-box' },
+  });
+
+  const warning = el('div', { className: 'collab-server-warning' },
+    'A PartyKit server URL is required for collaboration. Deploy the included party/server.js with "npx partykit deploy" and paste the URL here.'
+  );
+
+  const dialog = el('div', { className: 'collab-dialog' },
+    el('h3', {}, 'Collaboration Server'),
+    warning,
+    el('label', {}, 'PartyKit Server URL'),
+    urlInput,
+    el('div', { className: 'collab-settings-hint' },
+      'This URL is saved in your settings. You only need to set it once.'
+    ),
+    el('div', { className: 'collab-actions' },
+      el('button', {
+        className: 'collab-btn-secondary',
+        onclick: () => closeSetupDialog(),
+      }, 'Cancel'),
+      el('button', {
+        className: 'collab-btn-primary',
+        onclick: async () => {
+          const url = urlInput.value.trim();
+          if (!url) {
+            toast('Please enter a server URL', 'warning');
+            return;
+          }
+          settingsStore.set('collabServerUrl', url);
+          closeSetupDialog();
+          toast('Server URL saved', 'success');
+          // Now start the session
+          await openCollabDialog();
+        },
+      }, 'Save & Start'),
+    ),
+  );
+
+  dialogOverlay = el('div', {
+    className: 'modal-overlay modal-open',
+    onclick: (e) => { if (e.target === dialogOverlay) closeSetupDialog(); },
+  }, dialog);
+  document.body.appendChild(dialogOverlay);
+  urlInput.focus();
+}
+
 // Check URL for collaboration room on load
 export function checkUrlForCollabRoom() {
   const hash = window.location.hash;
@@ -228,10 +301,21 @@ export function checkUrlForCollabRoom() {
     const key = dotIdx > 0 ? token.slice(dotIdx + 1) : null;
     if (room) {
       setTimeout(async () => {
-        const name = localStorage.getItem('mkdn-collab-name') || `User-${Math.floor(Math.random() * 1000)}`;
+        const name = getUserName();
         collabManager.setUserName(name);
         await collabManager.startSession(room, key);
       }, 1500);
     }
+    return;
+  }
+
+  // Restore session from sessionStorage (page refresh reconnect)
+  const saved = getSavedSession();
+  if (saved) {
+    setTimeout(async () => {
+      const name = getUserName();
+      collabManager.setUserName(name);
+      await collabManager.startSession(saved.roomId, saved.roomPassword);
+    }, 1500);
   }
 }

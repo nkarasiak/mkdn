@@ -1,8 +1,7 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 import { documentStore } from '../store/document-store.js';
 import { toast } from '../ui/toast.js';
-
-const CUSTOM_TEMPLATES_KEY = 'mkdn-custom-templates';
+import { STORAGE_CUSTOM_TEMPLATES } from '../constants.js';
 
 const BUILTIN_TEMPLATES = [
   {
@@ -270,7 +269,7 @@ Describe the high-level architecture.
 
 function loadCustomTemplates() {
   try {
-    const stored = localStorage.getItem(CUSTOM_TEMPLATES_KEY);
+    const stored = localStorage.getItem(STORAGE_CUSTOM_TEMPLATES);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
@@ -279,7 +278,7 @@ function loadCustomTemplates() {
 
 function saveCustomTemplates(templates) {
   try {
-    localStorage.setItem(CUSTOM_TEMPLATES_KEY, JSON.stringify(templates));
+    localStorage.setItem(STORAGE_CUSTOM_TEMPLATES, JSON.stringify(templates));
   } catch { /* quota exceeded */ }
 }
 
@@ -355,8 +354,7 @@ export function openTemplateChooser() {
 }
 
 // Inject styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
   .template-chooser {
     min-width: 360px;
     max-height: 400px;
@@ -418,5 +416,4 @@ style.textContent = `
     background: var(--error);
     color: white;
   }
-`;
-document.head.appendChild(style);
+`);

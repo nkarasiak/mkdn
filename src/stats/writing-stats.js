@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 import { documentStore } from '../store/document-store.js';
 
 // Session timer
@@ -120,8 +120,7 @@ export function initWritingStats() {
 }
 
 // Inject styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
   .writing-stats {
     min-width: 320px;
   }
@@ -182,8 +181,7 @@ style.textContent = `
     color: var(--text-secondary);
     font-weight: 500;
   }
-`;
-document.head.appendChild(style);
+`);
 
 function statCard(label, value) {
   return el('div', { className: 'stat-card' },

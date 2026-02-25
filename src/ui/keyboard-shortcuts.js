@@ -137,6 +137,13 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
+    // Ctrl+Shift+G — Knowledge graph
+    if (key === 'g' && shift) {
+      e.preventDefault();
+      import('../graph/graph-view.js').then(m => m.openGraphView());
+      return;
+    }
+
     // Ctrl+U — Toggle source view
     if (key === 'u' && !shift) {
       e.preventDefault();

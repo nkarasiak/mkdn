@@ -1,3 +1,4 @@
+import { injectStyles } from '../utils/dom.js';
 import { Plugin, PluginKey } from '@milkdown/prose/state';
 import { Decoration, DecorationSet } from '@milkdown/prose/view';
 
@@ -137,8 +138,7 @@ function renderAllMermaidBlocks(view) {
 }
 
 // Inject styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
   .mermaid-code-block {
     position: relative;
   }
@@ -160,5 +160,4 @@ style.textContent = `
     font-size: var(--font-size-sm);
     font-style: italic;
   }
-`;
-document.head.appendChild(style);
+`);

@@ -178,10 +178,17 @@
 
 .sidebar-section-body {
   overflow: hidden;
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.2s ease;
 }
 
 .sidebar-section.collapsed .sidebar-section-body {
-  display: none;
+  grid-template-rows: 0fr;
+}
+
+.sidebar-section-body > * {
+  overflow: hidden;
 }
 
 .sidebar-sections {

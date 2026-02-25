@@ -25,6 +25,7 @@ import { registerSearchCommands } from './search/search-commands.js';
 import { initBacklinks } from './backlinks/backlinks-ui.js';
 import { initWritingStats } from './stats/writing-stats.js';
 import { initThemeEditor } from './themes/theme-editor.js';
+import { registerGraphCommands } from './graph/graph-commands.js';
 
 let sidebarWrapper, sidebarOverlay;
 
@@ -251,6 +252,7 @@ export const App = {
     registerCollabCommands();
     registerSearchCommands();
     registerPluginCommands();
+    registerGraphCommands();
 
     // Initialize backlinks, writing stats, and custom theme
     initBacklinks();
