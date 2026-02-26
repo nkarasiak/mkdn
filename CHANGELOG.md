@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **Collab Security** — room key now sent via `X-Room-Key` header instead of URL query parameter (prevents leaking in logs/Referer)
+- **Room ID Generation** — use `crypto.getRandomValues()` instead of `Math.random()` for cryptographically secure room IDs
+- **CORS Restriction** — PartyKit server now allowlists specific origins instead of `Access-Control-Allow-Origin: *`
+- **Plugin Sandbox** — added `e.source` verification in iframe message handler; documented opaque-origin `postMessage` requirement
+- **Dependency Pinning** — all dependency versions pinned to exact installed versions
+
 ## [2.1.0] - 2026-02-26
 
 ### Added
