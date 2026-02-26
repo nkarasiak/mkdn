@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.1.0] - 2026-02-26
 
 ### Added
 
@@ -63,7 +63,7 @@ All notable changes to this project will be documented in this file.
 - **Lazy search indexing** — 23MB transformer model deferred until first search invocation
 - **Debounced sidebar file search** — 150ms debounce prevents excessive re-renders on keystroke
 - **Backlinks file caching** — content cache avoids re-reading all files on every backlink scan
-- **Service worker cache** — version bumped to `mkdn-v2.0.0`
+- **Service worker cache** — version bumped to `mkdn-v2.1.0`
 - **`injectStyles()` utility** — extracted common 3-line style injection pattern into shared helper (18 files)
 - **Centralized storage keys** — all `mkdn-*` localStorage/sessionStorage/IndexedDB keys in `constants.js` (13 files)
 - **Deduplicated collab username** — `getUserName()` exported from collab-manager, reused in collab-ui
