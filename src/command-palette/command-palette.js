@@ -1,11 +1,10 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 import { commandRegistry } from './command-registry.js';
 import { fuzzyMatch, highlightMatches } from './fuzzy-match.js';
 import { extractHeadings, scrollToHeading } from './heading-utils.js';
 import { documentStore } from '../store/document-store.js';
 import { storage } from '../storage/local-storage.js';
-
-const RECENT_KEY = 'mkdn-cmd-recent';
+import { STORAGE_CMD_RECENT } from '../constants.js';
 const MAX_RECENT = 10;
 const MAX_RESULTS = 20;
 
@@ -110,13 +109,13 @@ function detectMode(query) {
 }
 
 function getRecentIds() {
-  return storage.get(RECENT_KEY, []);
+  return storage.get(STORAGE_CMD_RECENT, []);
 }
 
 function addRecent(id) {
   const recent = getRecentIds().filter(r => r !== id);
   recent.unshift(id);
-  storage.set(RECENT_KEY, recent.slice(0, MAX_RECENT));
+  storage.set(STORAGE_CMD_RECENT, recent.slice(0, MAX_RECENT));
 }
 
 function renderResults(query, container) {
@@ -264,8 +263,7 @@ function executeSelected() {
 }
 
 // Inject styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
 .cmd-palette-overlay {
   display: none;
   position: fixed;
@@ -354,5 +352,4 @@ style.textContent = `
   font-size: var(--font-size-sm);
   font-family: var(--font-sans);
 }
-`;
-document.head.appendChild(style);
+`);

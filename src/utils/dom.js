@@ -28,6 +28,13 @@ export function el(tag, attrs = {}, ...children) {
   return element;
 }
 
+export function injectStyles(css) {
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+  return style;
+}
+
 export function svgIcon(svgString) {
   const t = document.createElement('template');
   t.innerHTML = svgString;

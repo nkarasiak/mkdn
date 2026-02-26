@@ -3,19 +3,19 @@ import { Decoration, DecorationSet } from '@milkdown/prose/view';
 import { el } from '../utils/dom.js';
 import { eventBus } from '../store/event-bus.js';
 
-export const embedKey = new PluginKey('embed');
+const embedKey = new PluginKey('embed');
 
 // --- URL matchers ---
 
 const youtubeRe = /^https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]{11})(?:[?&].*)?$/;
 const tweetRe = /^https?:\/\/(?:www\.)?(?:x\.com|twitter\.com)\/\w+\/status\/(\d+)(?:\?.*)?$/;
 
-export function extractYouTubeId(url) {
+function extractYouTubeId(url) {
   const m = url.match(youtubeRe);
   return m ? m[1] : null;
 }
 
-export function extractTweetId(url) {
+function extractTweetId(url) {
   const m = url.match(tweetRe);
   return m ? m[1] : null;
 }

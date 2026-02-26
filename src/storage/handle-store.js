@@ -1,11 +1,11 @@
-const DB_NAME = 'mkdn-handles';
+import { DB_HANDLES } from '../constants.js';
 const DB_VERSION = 1;
 const STORE_NAME = 'handles';
 const HANDLE_KEY = 'localFolder';
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    const req = indexedDB.open(DB_HANDLES, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {

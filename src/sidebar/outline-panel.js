@@ -5,20 +5,13 @@ import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { extractHeadings } from '../command-palette/heading-utils.js';
 import { getSourceTextarea } from '../editor/source-formatter.js';
+import { debounce } from '../utils/debounce.js';
 
 let listEl = null;
 let activeIndex = -1;
 let headingsCache = [];
 let updateTimer = null;
 let scrollListener = null;
-
-function debounce(fn, ms) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  };
-}
 
 function navigateToHeading(heading, index) {
   if (settingsStore.get('sourceMode')) {

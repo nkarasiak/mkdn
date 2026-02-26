@@ -2,12 +2,11 @@ import { storage } from './local-storage.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { debounce } from '../utils/debounce.js';
-
-const SESSION_KEY = 'mkdn-session';
+import { STORAGE_SESSION } from '../constants.js';
 
 function save() {
   const s = documentStore.getState();
-  storage.set(SESSION_KEY, {
+  storage.set(STORAGE_SESSION, {
     markdown: s.markdown,
     fileName: s.fileName,
     fileId: s.fileId,
@@ -21,7 +20,7 @@ const debouncedSave = debounce(save, 2000);
 
 export const sessionStore = {
   restoreSession() {
-    const saved = storage.get(SESSION_KEY);
+    const saved = storage.get(STORAGE_SESSION);
     if (saved && saved.markdown != null) {
       documentStore.restoreState(saved);
     }
@@ -37,7 +36,7 @@ export const sessionStore = {
     eventBus.on('file:saved', save);
 
     eventBus.on('file:new', () => {
-      storage.remove(SESSION_KEY);
+      storage.remove(STORAGE_SESSION);
     });
   },
 };

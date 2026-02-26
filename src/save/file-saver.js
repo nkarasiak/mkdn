@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 import { icons } from '../toolbar/toolbar-icons.js';
 import { documentStore } from '../store/document-store.js';
 import { localSync } from '../local/local-sync.js';
@@ -6,6 +6,8 @@ import { localFs } from '../local/local-fs.js';
 import { prompt as promptModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { extractHeadings } from '../command-palette/heading-utils.js';
+import { collabManager } from '../collab/collab-manager.js';
+import { pushSnapshot } from '../collab/collab-history.js';
 
 function showSaveLocationPicker() {
   return new Promise((resolve) => {
@@ -135,6 +137,15 @@ export const fileSaver = {
   },
 
   async save() {
+    // Collab active — save snapshot to PartyKit cloud
+    if (collabManager.isActive()) {
+      const content = documentStore.getMarkdown();
+      await pushSnapshot({ content, trigger: 'save' });
+      documentStore.markSaved();
+      toast('Saved to cloud', 'success');
+      return;
+    }
+
     const source = documentStore.getFileSource();
 
     // File already has a source — save directly
@@ -164,8 +175,7 @@ export const fileSaver = {
 };
 
 // Inject save picker styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
 .save-picker-modal {
   max-width: 400px;
 }
@@ -222,5 +232,4 @@ style.textContent = `
     display: none;
   }
 }
-`;
-document.head.appendChild(style);
+`);

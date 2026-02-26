@@ -84,6 +84,17 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
       import('../utils/export.js').then(m => m.printDocument());
     }},
 
+    // --- Tools ---
+    { id: 'tools:writing-stats', label: 'Writing Statistics', category: 'Tools', keywords: ['stats', 'words', 'readability', 'writing', 'dashboard'], action: () => {
+      import('../stats/writing-stats.js').then(m => m.openWritingStats());
+    }},
+    { id: 'tools:theme-editor', label: 'Theme Editor', category: 'Tools', keywords: ['theme', 'color', 'accent', 'font', 'customize', 'appearance', 'style'], action: () => {
+      import('../themes/theme-editor.js').then(m => m.openThemeEditor());
+    }},
+    { id: 'tools:templates', label: 'New from Template', category: 'Tools', keywords: ['template', 'new', 'blog', 'meeting', 'journal', 'readme', 'todo', 'preset'], action: () => {
+      import('../templates/template-system.js').then(m => m.openTemplateChooser());
+    }},
+
     // --- Focus ---
     { id: 'focus:zen', label: 'Zen Mode', category: 'Focus', shortcut: 'Ctrl+Shift+F', keywords: ['zen', 'distraction', 'free', 'focus', 'fullscreen'], action: () => focusManager.cycleMode() },
     { id: 'focus:paragraph', label: 'Paragraph Focus', category: 'Focus', keywords: ['paragraph', 'focus', 'dim'], action: () => {

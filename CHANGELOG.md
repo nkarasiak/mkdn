@@ -2,6 +2,122 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-02-26
+
+### Added
+
+- **Knowledge Graph** — force-directed canvas visualization of wiki-link connections between notes
+- **Collab Session History** — server-side snapshots pushed on save/checkpoint
+- **Callout Blocks** — `[!NOTE]`, `[!TIP]`, `[!WARNING]`, `[!CAUTION]`, `[!IMPORTANT]` rendered with icons
+- **Details/Summary Blocks** — collapsible `<details>` sections in the editor
+- **Emoji Picker** — type `:` to search and insert emoji inline
+
+- **Backlinks / Wiki-style Linking** — `[[page-name]]` syntax for linking between notes
+  - ProseMirror decoration plugin highlights wiki-links with accent color
+  - Supports `[[page]]` and `[[page|display text]]` syntax
+  - Sidebar backlinks panel showing incoming and outgoing links
+  - Click-to-navigate on resolved links across linked folder
+- **Writing Statistics Dashboard** — click word count in status bar to open
+  - Word, character, sentence, and paragraph counts
+  - Flesch-Kincaid readability score with level indicator
+  - Read time estimate and session duration timer
+- **Theme Editor** — customize editor appearance beyond light/dark
+  - 6 color presets: Default, Ocean Blue, Forest Green, Sunset, Lavender, Monochrome
+  - Accent color picker with live preview
+  - Editor font selector (Spectral, System Sans, Georgia, Palatino, Courier, Monospace)
+  - Font size, content width, and line height sliders
+  - Export/import theme files as JSON
+- **Template System** — create documents from pre-built templates
+  - 8 built-in templates: Blank, Blog Post, Meeting Notes, Daily Journal, README, To-Do List, Weekly Review, Technical Spec
+  - Save current document as custom template
+  - Delete custom templates
+- **Image Paste & Drop** — paste images from clipboard or drag-and-drop
+  - Images stored inline as base64 data URIs
+  - 5MB file size limit with warning toast
+- **Mermaid Diagram Support** — render diagrams from `mermaid` code blocks
+  - Lazy-loads Mermaid library from CDN on first use
+  - Renders preview below code block with caching
+  - Respects light/dark theme
+- **Customizable Sidebar Layout** — configure which sections are visible
+  - Settings gear button in sidebar header opens config modal
+  - Toggle visibility of Local Folder, Outline, Backlinks, and History sections
+  - Preferences persist in settings store
+- Swipe gestures for sidebar on touch devices (swipe right from left edge to open, swipe left to close)
+
+### Security
+
+- **Plugin sandbox hardened** — plugin code is no longer interpolated into HTML template literals; delivered via `postMessage` instead, preventing `</script>` breakout attacks
+- **Plugin ID validation** — only alphanumeric, dashes, underscores, dots allowed (max 128 chars)
+- **postMessage source verification** — message handlers now verify `e.source` matches the expected iframe
+- **GitHub publish input validation** — repo, path, and branch are validated before constructing API URLs; uses `URL` constructor with `encodeURI`
+- **GitHub token moved to sessionStorage** — cleared when tab closes instead of persisting in localStorage; old tokens migrated and removed
+- **URL sanitization in exports** — `javascript:`, `data:`, `vbscript:` schemes blocked in markdown-to-HTML link/image conversion (slides & HTML export)
+- **Theme editor CSS injection prevention** — font values whitelisted, hex colors validated, numeric ranges enforced; imported themes sanitized
+- **Mermaid SVG rendered safely** — uses `DOMParser` + `document.importNode()` instead of `innerHTML`
+- **innerHTML clearing replaced** — `replaceChildren()` used across collab UI, search UI, and plugin manager
+- **HTTPS enforcement for collab** — non-HTTPS server URLs rejected (localhost exempt for development)
+
+### Changed
+
+- **Vite code splitting** — milkdown (1.4MB) and collab (112KB) split into separate chunks for faster initial load
+- **Lazy search indexing** — 23MB transformer model deferred until first search invocation
+- **Debounced sidebar file search** — 150ms debounce prevents excessive re-renders on keystroke
+- **Backlinks file caching** — content cache avoids re-reading all files on every backlink scan
+- **Service worker cache** — version bumped to `mkdn-v2.1.0`
+- **`injectStyles()` utility** — extracted common 3-line style injection pattern into shared helper (18 files)
+- **Centralized storage keys** — all `mkdn-*` localStorage/sessionStorage/IndexedDB keys in `constants.js` (13 files)
+- **Deduplicated collab username** — `getUserName()` exported from collab-manager, reused in collab-ui
+- **Outline panel debounce** — imports shared `debounce()` instead of local copy
+- **Removed unused exports** — `embedKey`, `extractYouTubeId`, `extractTweetId` made module-private
+- **Removed stale Vue defines** — cleaned up `__VUE_OPTIONS_API__` flags from vite.config.js
+
+### Removed
+
+- Daily word goal (progress bar and configurable target) from Writing Statistics
+- Writing streak tracking from Writing Statistics
+
+### Fixed
+
+- **Print / PDF export** — removed redundant file name title injection that produced unwanted text above content when printing
+- Mobile horizontal overflow — text, lists, and blockquotes now wrap correctly on 375px viewports
+- Stale "AI Assistant" keyboard shortcut removed from About modal
+
+## [2.0.0] - 2026-02-24
+
+### Added
+
+- **Publish & Export Pipeline** — all transforms run in-browser
+  - Styled HTML export with 4 themes (Minimal, Academic, Newspaper, Dark)
+  - DOCX (Word) export via `docx` library with full formatting support
+  - Slide deck presentation mode (split on `---`, fullscreen, keyboard nav)
+  - Export slides as standalone HTML file
+  - Publish to GitHub via Personal Access Token (browser → GitHub REST API)
+- **Real-Time P2P Collaboration** — Yjs CRDT + WebRTC
+  - One-click Share button starts session instantly (no modal)
+  - Encrypted rooms with 256-bit password and 16-char room IDs
+  - Obfuscated share URL (`#s=<token>`) persists in address bar
+  - Auto-copies share URL to clipboard on session start
+  - Live colored cursors with name labels
+  - Conflict-free concurrent editing via Yjs
+  - Presence indicator in status bar showing connected peers
+- **Semantic Search Across All Documents** — in-browser ML
+  - Natural language search via Transformers.js (all-MiniLM-L6-v2, ~23MB, cached)
+  - Vector embeddings stored in IndexedDB for instant queries
+  - Find Related Documents command for discovering connections
+  - Auto-indexes current document on save when model is loaded
+  - One-click index all files in linked folder
+- **Plugin & Extension System** — ES module-based extensibility
+  - Load trusted plugins from URLs (ES modules with `init(api)` pattern)
+  - Sandboxed plugin execution in iframes with postMessage API bridge
+  - Built-in plugins: Date Inserter, Lorem Ipsum, Word Frequency, Table of Contents
+  - Plugin Manager UI for enabling/disabling/adding/removing plugins
+  - Public plugin API: event bus, document access, command registration, slash commands, editor operations, namespaced storage
+
+### Changed
+
+- Major version bump to 2.0.0 for five new feature additions
+- New npm dependencies: `docx`, `yjs`, `y-webrtc`, `y-prosemirror`, `@huggingface/transformers`
+
 ## [1.3.0] - 2026-02-22
 
 ### Added

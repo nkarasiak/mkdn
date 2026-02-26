@@ -214,6 +214,12 @@ export const sourceFormat = {
     }
     insertBlock(textarea, lines.join('\n'));
   },
+  callout(type = 'NOTE') {
+    insertBlock(textarea, `> [!${type.toUpperCase()}]\n> `);
+  },
+  toggleBlock(summary = 'Click to expand') {
+    insertBlock(textarea, `<details>\n<summary>${summary}</summary>\n\nContent here\n\n</details>`);
+  },
   insertLink(text, url) {
     if (!textarea) return;
     const start = textarea.selectionStart;

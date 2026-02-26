@@ -1,8 +1,11 @@
 import { historyDB } from '../storage/history-db.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
+import { collabManager } from '../collab/collab-manager.js';
+import { pushSnapshot, fetchSnapshots } from '../collab/collab-history.js';
 
 const PERIODIC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const SERVER_TRIGGERS = new Set(['save', 'autosave', 'checkpoint']);
 let periodicTimer = null;
 let lastPeriodicContent = null;
 let previousState = null;
@@ -29,6 +32,11 @@ async function saveSnapshot(trigger) {
     });
     await historyDB.pruneSnapshots(fileKey, 50);
   } catch { /* IndexedDB may be unavailable */ }
+
+  // Push to collab server for qualifying triggers
+  if (collabManager.isActive() && SERVER_TRIGGERS.has(trigger)) {
+    pushSnapshot({ content, trigger });
+  }
 }
 
 async function savePreviousState(trigger) {
@@ -123,6 +131,15 @@ export const historyManager = {
       await historyDB.pruneSnapshots(fileKey, 50);
       eventBus.emit('history:updated');
     } catch { /* IndexedDB may be unavailable */ }
+
+    if (collabManager.isActive()) {
+      pushSnapshot({ content, trigger: 'checkpoint', message });
+    }
+  },
+
+  async getCollabHistory() {
+    if (!collabManager.isActive()) return [];
+    return fetchSnapshots();
   },
 
   async restoreSnapshot(id) {

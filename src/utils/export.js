@@ -2,27 +2,15 @@ import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 
 export function printDocument() {
-  const fileName = documentStore.getFileName() || 'Untitled.md';
-  const title = fileName.replace(/\.md$/i, '');
-
-  // Inject print title
-  const titleEl = document.createElement('div');
-  titleEl.className = 'print-title';
-  titleEl.textContent = title;
-  const editorPane = document.querySelector('.editor-pane');
-  if (editorPane) {
-    editorPane.insertBefore(titleEl, editorPane.firstChild);
-  }
-
   // If in source mode, temporarily show editor pane for printing
+  const editorPane = document.querySelector('.editor-pane');
   const inSourceMode = settingsStore.get('sourceMode');
-  if (inSourceMode) {
+  if (inSourceMode && editorPane) {
     editorPane.style.display = 'block';
   }
 
   const cleanup = () => {
-    titleEl.remove();
-    if (inSourceMode) {
+    if (inSourceMode && editorPane) {
       editorPane.style.display = 'none';
     }
   };

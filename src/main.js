@@ -9,7 +9,13 @@ import './styles/responsive.css';
 import './styles/focus.css';
 import './styles/embed.css';
 import './styles/print.css';
+import './styles/plugins.css';
+import './styles/search.css';
 
 import { App } from './app.js';
 
 App.init();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}

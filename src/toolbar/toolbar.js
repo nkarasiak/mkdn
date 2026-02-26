@@ -6,6 +6,8 @@ import { eventBus } from '../store/event-bus.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
 import { createTablePicker } from './table-picker.js';
+import { openCollabDialog } from '../collab/collab-ui.js';
+import { settingsStore } from '../store/settings-store.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
@@ -94,9 +96,31 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     'Folder',
   );
 
+  // Share / Collab button
+  const shareBtn = el('button', {
+    className: 'toolbar-secondary-btn',
+    'data-tooltip': 'Collaborate',
+    onClick: () => openCollabDialog(),
+  },
+    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.share }),
+    'Share',
+  );
+
+  // Update share button label when collab is active
+  eventBus.on('collab:started', () => {
+    shareBtn.querySelector('span:last-child')?.remove();
+    shareBtn.appendChild(document.createTextNode('Live'));
+    shareBtn.classList.add('toolbar-btn-active');
+  });
+  eventBus.on('collab:stopped', () => {
+    shareBtn.classList.remove('toolbar-btn-active');
+    while (shareBtn.childNodes.length > 1) shareBtn.lastChild.remove();
+    shareBtn.appendChild(document.createTextNode('Share'));
+  });
+
   const headerRow = el('div', { className: 'toolbar-header' },
     el('div', { className: 'toolbar-header-left' }, backBtn, statusBadge),
-    el('div', { className: 'toolbar-header-right' }, openBtn, openFolderBtn),
+    el('div', { className: 'toolbar-header-right' }, shareBtn, openBtn, openFolderBtn),
   );
 
   // === FORMATTING TOOLBAR ROW ===
@@ -158,38 +182,116 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const olBtn = btn('ol', 'Numbered List', () =>
     milkdown.toggleList('ordered_list', milkdown.commands.wrapOrderedList));
 
-  // More dropdown with table picker flyout
-  const moreMenu = el('div', { className: 'toolbar-dropdown-menu' });
+  // More dropdown with grouped sections
+  const moreMenu = el('div', { className: 'toolbar-dropdown-menu toolbar-dropdown-grouped' });
+
+  function menuGroupHeader(label) {
+    return el('div', { className: 'toolbar-menu-group-header' }, label);
+  }
+
+  function menuItem(icon, label, onClick) {
+    return el('button', {
+      className: 'toolbar-dropdown-item toolbar-dropdown-item-icon',
+      onClick: () => { onClick(); closeAllDropdowns(); },
+    },
+      el('span', { className: 'toolbar-menu-icon', textContent: icon }),
+      el('span', {}, label),
+    );
+  }
+
+  // --- Insert group ---
+  moreMenu.appendChild(menuGroupHeader('Insert'));
 
   // Table item with picker flyout
   const tablePicker = createTablePicker((rows, cols) => {
     milkdown.insertTable(rows, cols);
     closeAllDropdowns();
   });
-  const tableItem = el('div', { className: 'toolbar-dropdown-item table-picker-item' });
+  const tableItem = el('div', { className: 'toolbar-dropdown-item toolbar-dropdown-item-icon table-picker-item' });
+  tableItem.appendChild(el('span', { className: 'toolbar-menu-icon', textContent: '\u{1F4CA}' }));
   tableItem.appendChild(el('span', {}, 'Table'));
   tableItem.appendChild(el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronRight }));
   const tableFlyout = el('div', { className: 'table-picker-flyout' }, tablePicker);
   tableItem.appendChild(tableFlyout);
   moreMenu.appendChild(tableItem);
 
-  // Other items
-  [
-    { label: 'Horizontal rule', onClick: () =>
-      milkdown.runCommand(milkdown.commands.insertHr) },
-    { label: 'Code block', onClick: () => {
-      milkdown.runCommand(milkdown.commands.wrapHeading, 0);
-      milkdown.runCommand(milkdown.commands.createCodeBlock);
-    }},
-    { label: 'Download .md', onClick: () => downloadMarkdown() },
-    { label: 'Copy as HTML', onClick: () => copyHtml() },
-    { label: 'Print / PDF', onClick: () => printDocument() },
-  ].forEach(({ label, onClick }) => {
-    moreMenu.appendChild(el('button', {
-      className: 'toolbar-dropdown-item',
-      onClick: () => { onClick(); closeAllDropdowns(); },
-    }, label));
+  // Callout submenu
+  const calloutTypes = ['NOTE', 'TIP', 'WARNING', 'CAUTION', 'IMPORTANT'];
+  const calloutIcons = { NOTE: '\u2139\uFE0F', TIP: '\u{1F4A1}', WARNING: '\u26A0\uFE0F', CAUTION: '\u{1F6D1}', IMPORTANT: '\u2757' };
+  const calloutItem = el('div', { className: 'toolbar-dropdown-item toolbar-dropdown-item-icon table-picker-item' });
+  calloutItem.appendChild(el('span', { className: 'toolbar-menu-icon', textContent: '\u{1F4A1}' }));
+  calloutItem.appendChild(el('span', {}, 'Callout'));
+  calloutItem.appendChild(el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronRight }));
+  const calloutFlyout = el('div', { className: 'table-picker-flyout callout-flyout' });
+  calloutTypes.forEach(type => {
+    calloutFlyout.appendChild(el('button', {
+      className: 'toolbar-dropdown-item toolbar-dropdown-item-icon',
+      onClick: () => {
+        if (settingsStore.get('sourceMode')) {
+          import('../editor/source-formatter.js').then(m => m.sourceFormat.callout(type));
+        } else {
+          milkdown.toggleBlockquote();
+          // Insert the callout marker text
+          const view = milkdown.getView();
+          if (view) {
+            const { state, dispatch } = view;
+            const { from } = state.selection;
+            dispatch(state.tr.insertText(`[!${type}]\n`, from, from).scrollIntoView());
+          }
+        }
+        closeAllDropdowns();
+      },
+    },
+      el('span', { className: 'toolbar-menu-icon', textContent: calloutIcons[type] }),
+      el('span', {}, type.charAt(0) + type.slice(1).toLowerCase()),
+    ));
   });
+  calloutItem.appendChild(calloutFlyout);
+  moreMenu.appendChild(calloutItem);
+
+  moreMenu.appendChild(menuItem('\u25B6', 'Toggle Block', () => {
+    if (settingsStore.get('sourceMode')) {
+      import('../editor/source-formatter.js').then(m => m.sourceFormat.toggleBlock());
+    } else {
+      const view = milkdown.getView();
+      if (view) {
+        const { state, dispatch } = view;
+        const text = '<details>\n<summary>Click to expand</summary>\n\nContent here\n\n</details>';
+        dispatch(state.tr.insertText(text).scrollIntoView());
+      }
+    }
+  }));
+  moreMenu.appendChild(menuItem('\u2500', 'Horizontal Rule', () =>
+    milkdown.runCommand(milkdown.commands.insertHr)));
+  moreMenu.appendChild(menuItem('\u2328\uFE0F', 'Code Block', () => {
+    milkdown.runCommand(milkdown.commands.wrapHeading, 0);
+    milkdown.runCommand(milkdown.commands.createCodeBlock);
+  }));
+
+  // --- Export group ---
+  moreMenu.appendChild(menuGroupHeader('Export'));
+
+  moreMenu.appendChild(menuItem('\u2B07\uFE0F', 'Download .md', () => downloadMarkdown()));
+  moreMenu.appendChild(menuItem('\u{1F4CB}', 'Copy as HTML', () => copyHtml()));
+  moreMenu.appendChild(menuItem('\u{1F5A8}\uFE0F', 'Print / PDF', () => printDocument()));
+  moreMenu.appendChild(menuItem('\u{1F310}', 'Export as HTML', () =>
+    import('../export/html-export.js').then(m => m.exportStyledHtml())));
+  moreMenu.appendChild(menuItem('\u{1F4C4}', 'Export as DOCX', () =>
+    import('../export/docx-export.js').then(m => m.exportDocx())));
+  moreMenu.appendChild(menuItem('\u{1F4FD}\uFE0F', 'Present as Slides', () =>
+    import('../export/slides.js').then(m => m.enterSlideMode())));
+
+  // --- Tools group ---
+  moreMenu.appendChild(menuGroupHeader('Tools'));
+
+  moreMenu.appendChild(menuItem('\u{1F50D}', 'Semantic Search', () =>
+    import('../search/semantic-search-ui.js').then(m => m.openSearchPanel())));
+  moreMenu.appendChild(menuItem('\u{1F578}\uFE0F', 'Knowledge Graph', () =>
+    import('../graph/graph-view.js').then(m => m.openGraphView())));
+  moreMenu.appendChild(menuItem('\u{1F4E4}', 'Publish to GitHub', () =>
+    import('../export/github-publish.js').then(m => m.openGithubPublish())));
+  moreMenu.appendChild(menuItem('\u{1F9E9}', 'Plugins', () =>
+    import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager())));
 
   const moreTrigger = el('button', {
     className: 'toolbar-dropdown-btn',

@@ -1,4 +1,4 @@
-import { el } from '../utils/dom.js';
+import { el, injectStyles } from '../utils/dom.js';
 
 let container;
 
@@ -32,8 +32,7 @@ export function toast(message, type = 'info', duration = 3000) {
 }
 
 // Inject toast styles
-const style = document.createElement('style');
-style.textContent = `
+injectStyles(`
 .toast-container {
   position: fixed;
   bottom: 32px;
@@ -66,5 +65,4 @@ style.textContent = `
 .toast-success { background: var(--success); }
 .toast-error { background: var(--error); }
 .toast-warning { background: var(--warning); }
-`;
-document.head.appendChild(style);
+`);

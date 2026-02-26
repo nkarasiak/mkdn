@@ -32,15 +32,20 @@
   }
 
   .sidebar-overlay {
-    display: none;
     position: fixed;
     inset: 0;
     background: var(--bg-overlay);
     z-index: 49;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    pointer-events: none;
   }
 
   .sidebar-overlay.visible {
-    display: block;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 }
 
@@ -58,6 +63,9 @@
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    position: relative;
+    mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
   }
 
   .toolbar-formatting::-webkit-scrollbar {
@@ -88,16 +96,103 @@
     font-size: var(--font-size-xs);
   }
 
-
   .app-sidebar {
     width: 85vw;
     max-width: 300px;
   }
 
-  .editor-pane .ProseMirror {
-    padding: 32px 16px 80px;
-    font-size: var(--font-size-lg);
-    max-width: 100%;
+  /* Fix horizontal overflow on mobile — !important needed to override wysiwyg.css */
+  .editor-pane,
+  .editor-pane .crepe,
+  .editor-pane milkdown-crepe-editor {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
+  .editor-pane .ProseMirror,
+  .milkdown .ProseMirror {
+    padding: 24px 16px 80px !important;
+    font-size: var(--font-size-lg) !important;
+    max-width: 100% !important;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .editor-pane .ProseMirror pre,
+  .milkdown .ProseMirror pre {
+    max-width: calc(100vw - 32px);
+    overflow-x: auto;
+  }
+
+  .editor-pane .ProseMirror img,
+  .milkdown .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .editor-pane .ProseMirror table,
+  .milkdown .ProseMirror table {
+    max-width: 100%;
+    overflow-x: auto;
+    display: block;
+    font-size: var(--font-size-sm);
+  }
+
+  .milkdown .milkdown-code-block {
+    max-width: calc(100vw - 32px);
+    overflow-x: auto;
+  }
+
+  /* List items should not overflow */
+  .editor-pane .ProseMirror li,
+  .milkdown .ProseMirror li {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .editor-pane .ProseMirror blockquote,
+  .milkdown .ProseMirror blockquote {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Source editor mobile */
+  .source-editor {
+    padding: 16px 16px 80px;
+    font-size: 13px;
+  }
+
+  /* Status bar compact on mobile */
+  .statusbar {
+    padding: 0 8px;
+  }
+
+  .statusbar-stats {
+    font-size: 10px;
+  }
+
+  /* Hide less important toolbar buttons on very small screens */
+  .toolbar-header-right .toolbar-secondary-btn span:not(.toolbar-btn-icon) {
+    display: none;
+  }
+
+  .toolbar-header-right .toolbar-secondary-btn {
+    padding: 6px 8px;
+  }
+}
+
+/* Very small mobile */
+@media (max-width: 374px) {
+  .editor-pane .ProseMirror,
+  .milkdown .ProseMirror {
+    padding: 16px 12px 80px !important;
+  }
+
+  .toolbar-header {
+    padding: 0 6px;
+  }
+
+  .toolbar-formatting {
+    padding: 0 4px;
+  }
 }

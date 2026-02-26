@@ -1,0 +1,5 @@
+{
+  "name": "mkdn-collab",
+  "main": "party/server.js",
+  "compatibilityDate": "2024-12-01"
+}
