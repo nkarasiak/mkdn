@@ -58,6 +58,10 @@
   --sidebar-width: 260px;
   --content-max-width: 728px;
 
+  --icon-sm: 14px;
+  --icon-md: 17px;
+  --icon-lg: 18px;
+
   --focus-ring: 0 0 0 2px var(--accent);
 
   --transition-fast: 0.15s ease;
@@ -123,6 +127,10 @@
   --statusbar-height: 44px;
   --sidebar-width: 260px;
   --content-max-width: 728px;
+
+  --icon-sm: 14px;
+  --icon-md: 17px;
+  --icon-lg: 18px;
 
   --focus-ring: 0 0 0 2px var(--accent);
 

@@ -215,7 +215,7 @@ injectStyles(`
 .modal-btn-danger {
   background: var(--error);
 }
-.modal-btn-danger:hover { background: #b91c1c; }
+.modal-btn-danger:hover { background: color-mix(in srgb, var(--error) 85%, black); }
 .modal-input {
   width: 100%;
   padding: 8px 12px;
