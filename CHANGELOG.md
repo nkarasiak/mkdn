@@ -4,20 +4,52 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-03-15
+
 ### Added
 
-- **Offline Support** — app now works fully offline after first visit via Workbox-powered service worker that pre-caches all build assets and Google Fonts
-- **Tauri Desktop App** — native desktop build via Tauri 2.x with file associations (`.md`, `.markdown`, `.mkdn`, `.mdx`), scoped filesystem access, and native dialogs
+- **Accessibility Foundations** — global `:focus-visible` ring, ARIA labels on all icon-only buttons, `role="dialog"` + focus trap on modals, `aria-live` on toasts, `aria-expanded` on sidebar sections, combobox/listbox ARIA on command palette
+- **Share as Link** — compress document into URL hash (`#d=...`) for instant read-only sharing without any server
+- **Real-time Collaboration by Default** — deployed PartyKit server (`mkdn-collab.nkarasiak.partykit.dev`) hardcoded as default; every visitor can collaborate out of the box
+- **Tauri Desktop App Enhancements**:
+  - Custom frameless titlebar with minimize/maximize/close window controls
+  - Native file I/O bridge replacing File System Access API (fixes macOS/Linux webviews)
+  - Window state persistence (remembers size/position across sessions)
+  - Single instance prevention (second launch focuses existing window)
+  - Native File/Edit/View menu bar with standard keyboard accelerators
+  - Open files from CLI (`mkdn file.md`) or OS file associations (double-click `.md`)
+- **Desktop Release CI** — GitHub Actions workflow builds `.msi`/`.exe` (Windows), `.dmg` (macOS Intel + Apple Silicon), `.deb`/`.AppImage` (Linux) on version tags
+- **Image Paste to Assets** — pasted/dropped images saved to `assets/` subfolder as files instead of base64 blobs when a local folder is linked
+- **Touch & Mobile UX** — file action buttons always visible on touch devices, enlarged statusbar touch targets, command palette and More menu constrained on mobile
+- **Editor Placeholder** — "Start writing..." placeholder on empty documents
+
+### Changed
+
+- **Icon Size Tokens** — `--icon-sm`/`--icon-md`/`--icon-lg` CSS custom properties replace hardcoded pixel values
+- **Collab Session Persistence** — switched from `sessionStorage` to `localStorage` so sessions survive window close/restart
+- **Session Store Upgraded** — primary storage moved to IndexedDB (no size limit) with localStorage fallback
+- **Tooltip Max-Width** — tooltips capped at `min(200px, 80vw)` to prevent viewport clipping
+- **Danger Button Themed** — modal danger hover color uses `color-mix()` with `--error` variable instead of hardcoded hex
 
 ### Fixed
 
+- **Sidebar Header Buttons** — settings/new-file buttons reduced from 34px to 24px; tooltip right-aligned to prevent clipping
 - **Sidebar Toggle Arrow** — arrow now points right (→) to open and left (←) to close, matching spatial direction
 - **Sidebar Auto-Open** — sidebar automatically opens when a local folder is linked, including on page reload with a previously linked folder
-- **Collab Security** — room key now sent via `X-Room-Key` header instead of URL query parameter (prevents leaking in logs/Referer)
-- **Room ID Generation** — use `crypto.getRandomValues()` instead of `Math.random()` for cryptographically secure room IDs
-- **CORS Restriction** — PartyKit server now allowlists specific origins instead of `Access-Control-Allow-Origin: *`
-- **Plugin Sandbox** — added `e.source` verification in iframe message handler; documented opaque-origin `postMessage` requirement
+- **Scroll-Spy Optimization** — outline heading tracker only runs when sidebar is open
+- **Collab Share URL in Tauri** — uses GitHub Pages URL instead of `tauri://localhost`
+- **Collab Security** — room key now sent via `X-Room-Key` header instead of URL query parameter
+- **Room ID Generation** — use `crypto.getRandomValues()` instead of `Math.random()`
+- **CORS Restriction** — PartyKit server now allowlists specific origins
+- **Plugin Sandbox** — added `e.source` verification in iframe message handler
 - **Dependency Pinning** — all dependency versions pinned to exact installed versions
+- **Typewriter Mode** — increased dead zone for smoother scrolling
+- **Ctrl+N Dirty Check** — prompts before discarding unsaved changes
+- **History Panel Colors** — collab trigger uses CSS variable instead of hardcoded hex
+
+### Security
+
+- **Offline Support** — app works fully offline via Workbox service worker
 
 ## [2.1.0] - 2026-02-26
 
