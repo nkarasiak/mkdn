@@ -27,6 +27,7 @@ import { initWritingStats } from './stats/writing-stats.js';
 import { initThemeEditor } from './themes/theme-editor.js';
 import { registerGraphCommands } from './graph/graph-commands.js';
 import { isTauri, initTauri } from './platform/tauri-bridge.js';
+import { loadFromShareLink } from './share/share-link.js';
 
 let sidebarWrapper, sidebarOverlay;
 
@@ -150,8 +151,11 @@ export const App = {
     // Initialize focus manager
     focusManager.init(app);
 
+    // Load shared document from URL hash (takes priority over saved session)
+    const isSharedDoc = await loadFromShareLink();
+
     // Restore session before Milkdown init so restored content is the initial value
-    sessionStore.restoreSession();
+    if (!isSharedDoc) await sessionStore.restoreSession();
 
     // Initialize Milkdown (always-on)
     await milkdown.init(editorPane);

@@ -3,6 +3,7 @@ import { collabManager, getSavedSession, getUserName } from './collab-manager.js
 import { eventBus } from '../store/event-bus.js';
 import { toast } from '../ui/toast.js';
 import { settingsStore } from '../store/settings-store.js';
+import { generateShareLink } from '../share/share-link.js';
 let peerIndicator = null;
 let dialogOverlay = null;
 
@@ -36,7 +37,7 @@ export function createCollabUI() {
     }
     .collab-active-badge {
       font-size: 11px;
-      background: #4ECDC4;
+      background: var(--collab-color);
       color: #000;
       padding: 2px 8px;
       border-radius: 10px;
@@ -203,8 +204,8 @@ function updatePeerIndicator(peers) {
 }
 
 export async function openCollabDialog() {
+  // If collab is already active, just re-copy the URL
   if (collabManager.isActive()) {
-    // Already live — just re-copy the URL
     const url = collabManager.getShareUrl();
     if (url) {
       history.replaceState(null, '', url.slice(url.indexOf('#')));
@@ -215,27 +216,60 @@ export async function openCollabDialog() {
     return;
   }
 
+  // Show share chooser dialog
+  showShareChooser();
+}
+
+function showShareChooser() {
   const serverUrl = settingsStore.get('collabServerUrl');
 
-  // No server URL configured — show setup dialog
-  if (!serverUrl) {
-    showServerSetupDialog();
-    return;
-  }
+  const shareOption = el('button', {
+    className: 'save-picker-option',
+    onClick: async () => {
+      closeSetupDialog();
+      await generateShareLink();
+    },
+  },
+    el('span', { className: 'save-picker-icon', unsafeHTML: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' }),
+    el('span', { className: 'save-picker-label' }, 'Share as link'),
+    el('span', { className: 'save-picker-desc' }, 'Copy a read-only link with the content embedded'),
+  );
 
-  // Start session immediately
-  const name = getUserName();
-  collabManager.setUserName(name);
-  await collabManager.startSession();
+  const collabOption = el('button', {
+    className: 'save-picker-option',
+    onClick: async () => {
+      closeSetupDialog();
+      if (!serverUrl) {
+        showServerSetupDialog();
+        return;
+      }
+      const name = getUserName();
+      collabManager.setUserName(name);
+      await collabManager.startSession();
+      const url = collabManager.getShareUrl();
+      if (url) {
+        history.replaceState(null, '', url.slice(url.indexOf('#')));
+        navigator.clipboard.writeText(url).then(() => {
+          toast('Share URL copied!', 'success');
+        }).catch(() => {});
+      }
+    },
+  },
+    el('span', { className: 'save-picker-icon', unsafeHTML: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' }),
+    el('span', { className: 'save-picker-label' }, 'Collaborate live'),
+    el('span', { className: 'save-picker-desc' }, serverUrl ? 'Start real-time editing session' : 'Requires server setup'),
+  );
 
-  // Put collab URL in address bar and copy to clipboard
-  const url = collabManager.getShareUrl();
-  if (url) {
-    history.replaceState(null, '', url.slice(url.indexOf('#')));
-    navigator.clipboard.writeText(url).then(() => {
-      toast('Share URL copied!', 'success');
-    }).catch(() => {});
-  }
+  const dialog = el('div', { className: 'modal save-picker-modal', role: 'dialog', 'aria-modal': 'true' },
+    el('div', { className: 'modal-header' }, 'Share'),
+    el('div', { className: 'modal-body save-picker-body' }, shareOption, collabOption),
+  );
+
+  dialogOverlay = el('div', {
+    className: 'modal-overlay modal-open',
+    onclick: (e) => { if (e.target === dialogOverlay) closeSetupDialog(); },
+  }, dialog);
+  document.body.appendChild(dialogOverlay);
 }
 
 function showServerSetupDialog() {
