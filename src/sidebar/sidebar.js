@@ -131,15 +131,21 @@ function renderLocalSectionHeader() {
 function createSection(title, bodyChildren, { collapsed = false, sectionKey = null } = {}) {
   const bodyEl = el('div', { className: 'sidebar-section-body' }, ...bodyChildren);
   const actionsEl = el('div', { className: 'sidebar-section-actions' });
-  const sectionEl = el('div', { className: `sidebar-section${collapsed ? ' collapsed' : ''}` },
-    el('div', {
-      className: 'sidebar-section-header',
-      onClick: () => sectionEl.classList.toggle('collapsed'),
+  const headerEl = el('div', {
+    className: 'sidebar-section-header',
+    role: 'button',
+    'aria-expanded': String(!collapsed),
+    onClick: () => {
+      sectionEl.classList.toggle('collapsed');
+      headerEl.setAttribute('aria-expanded', String(!sectionEl.classList.contains('collapsed')));
     },
-      el('span', { className: 'sidebar-section-chevron', unsafeHTML: icons.chevronDown }),
-      el('span', { className: 'sidebar-section-title' }, title),
-      actionsEl,
-    ),
+  },
+    el('span', { className: 'sidebar-section-chevron', unsafeHTML: icons.chevronDown }),
+    el('span', { className: 'sidebar-section-title' }, title),
+    actionsEl,
+  );
+  const sectionEl = el('div', { className: `sidebar-section${collapsed ? ' collapsed' : ''}` },
+    headerEl,
     bodyEl,
   );
   if (sectionKey) {
@@ -216,6 +222,7 @@ export function createSidebar() {
   const configBtn = el('button', {
     className: 'toolbar-btn',
     'data-tooltip': 'Configure sections',
+    'aria-label': 'Configure sections',
     unsafeHTML: icons.settings || icons.cog || `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
     onClick: () => openSidebarConfig(),
   });
@@ -227,10 +234,17 @@ export function createSidebar() {
         el('button', {
           className: 'toolbar-btn',
           'data-tooltip': 'New File',
+          'aria-label': 'New File',
           unsafeHTML: icons.plus,
           onClick: () => {
-            documentStore.newDocument();
-            toast('New document created', 'info');
+            if (documentStore.isDirty()) {
+              confirmModal('You have unsaved changes. Create a new document anyway?', { title: 'Unsaved Changes', okText: 'New Document', danger: true })
+                .then(ok => { if (ok) { documentStore.newDocument(); toast('New document created', 'info'); } })
+                .catch(() => {});
+            } else {
+              documentStore.newDocument();
+              toast('New document created', 'info');
+            }
           },
         }),
         configBtn,
@@ -239,6 +253,13 @@ export function createSidebar() {
     el('div', { className: 'sidebar-search' }, searchInput),
     sectionsEl,
   );
+
+  // Hide search when no folder is linked
+  const searchContainer = sidebarEl.querySelector('.sidebar-search');
+  const updateSearchVisibility = () => {
+    searchContainer.style.display = localSync.isLinked() ? '' : 'none';
+  };
+  updateSearchVisibility();
 
   // Apply initial section visibility and order
   applySectionVisibility();
@@ -256,11 +277,14 @@ export function createSidebar() {
   eventBus.on('local:folder-linked', () => {
     renderLocalFileList();
     renderLocalSectionHeader();
+    updateSearchVisibility();
+    settingsStore.set('sidebarOpen', true);
   });
   eventBus.on('local:folder-unlinked', () => {
     localFiles = [];
     renderLocalFileList();
     renderLocalSectionHeader();
+    updateSearchVisibility();
   });
 
   // Re-render when file changes (to update active state)

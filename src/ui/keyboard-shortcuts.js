@@ -3,7 +3,7 @@ import { fileSaver } from '../save/file-saver.js';
 import { localFs } from '../local/local-fs.js';
 import { localSync } from '../local/local-sync.js';
 import { settingsStore } from '../store/settings-store.js';
-import { closeModal } from '../ui/modal.js';
+import { closeModal, confirm as confirmModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
 import { openFindBar, closeFindBar, isFindBarOpen } from '../find-replace/find-bar.js';
@@ -64,10 +64,16 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+N — New document
+    // Ctrl+N — New document (with dirty check)
     if (key === 'n' && !shift) {
       e.preventDefault();
-      documentStore.newDocument();
+      if (documentStore.isDirty()) {
+        confirmModal('You have unsaved changes. Create a new document anyway?', { title: 'Unsaved Changes', okText: 'New Document', danger: true })
+          .then(ok => { if (ok) documentStore.newDocument(); })
+          .catch(() => {});
+      } else {
+        documentStore.newDocument();
+      }
       return;
     }
 

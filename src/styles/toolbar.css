@@ -63,7 +63,20 @@
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+  background: none;
+  cursor: default;
   user-select: none;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.toolbar-status-badge.unsaved {
+  color: var(--text-secondary);
+  border-color: var(--accent);
+  cursor: pointer;
+}
+
+.toolbar-status-badge.unsaved:hover {
+  background: var(--accent-bg, color-mix(in srgb, var(--accent) 10%, transparent));
 }
 
 .toolbar-status-dot {
@@ -100,23 +113,23 @@
 }
 
 .toolbar-btn-active {
-  background: #4ECDC4;
+  background: var(--collab-color);
   color: #000;
 }
 .toolbar-btn-active:hover {
-  background: #45b8b0;
+  background: color-mix(in srgb, var(--collab-color) 88%, black);
   color: #000;
 }
 
 .toolbar-btn-icon {
   display: flex;
-  width: 14px;
-  height: 14px;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 .toolbar-btn-icon svg {
-  width: 14px;
-  height: 14px;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 /* Primary action button (Save) */
@@ -186,8 +199,8 @@
 }
 
 .toolbar-btn svg {
-  width: 18px;
-  height: 18px;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
 }
 
 /* Tooltip */
@@ -204,6 +217,8 @@
   font-family: var(--font-sans);
   font-weight: 500;
   white-space: nowrap;
+  max-width: min(200px, 80vw);
+  word-wrap: break-word;
   border-radius: var(--radius-md);
   pointer-events: none;
   opacity: 0;

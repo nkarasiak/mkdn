@@ -52,6 +52,10 @@ export const milkdown = {
       root: container,
       defaultValue: content,
       featureConfigs: {
+        [CrepeFeature.Placeholder]: {
+          text: 'Start writing...',
+          mode: 'doc',
+        },
         [CrepeFeature.BlockEdit]: {
           buildMenu: (builder) => {
             const calloutGroup = builder.addGroup('callout', 'Callout');

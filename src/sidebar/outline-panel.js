@@ -108,6 +108,8 @@ function setupScrollSpy() {
   // Clean up previous listener
   teardownScrollSpy();
 
+  if (!settingsStore.get('sidebarOpen')) return;
+
   const updateActiveHeading = debounce(() => {
     if (settingsStore.get('sourceMode') || headingsCache.length === 0) return;
 
@@ -173,6 +175,12 @@ export function createOutlinePanel() {
   // Re-render on file open/new
   eventBus.on('file:opened', () => renderOutline());
   eventBus.on('file:new', () => renderOutline());
+
+  // Toggle scroll-spy when sidebar visibility changes
+  eventBus.on('settings:sidebarOpen', (open) => {
+    if (open && !settingsStore.get('sourceMode')) setupScrollSpy();
+    else teardownScrollSpy();
+  });
 
   // Initial render (delayed to let editor init)
   setTimeout(() => {

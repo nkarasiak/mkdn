@@ -358,6 +358,15 @@
   opacity: 0.5;
 }
 
+/* Placeholder decoration on empty doc */
+.crepe-placeholder[data-placeholder]::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  font-style: italic;
+  pointer-events: none;
+  position: absolute;
+}
+
 /* Source editor (raw markdown textarea) */
 .source-editor {
   display: none;

@@ -4,7 +4,7 @@ let container;
 
 function ensureContainer() {
   if (!container) {
-    container = el('div', { className: 'toast-container' });
+    container = el('div', { className: 'toast-container', 'aria-live': 'polite', role: 'status' });
     document.body.appendChild(container);
   }
   return container;
@@ -12,7 +12,7 @@ function ensureContainer() {
 
 export function toast(message, type = 'info', duration = 3000) {
   const c = ensureContainer();
-  const t = el('div', { className: `toast toast-${type}` }, message);
+  const t = el('div', { className: `toast toast-${type}`, ...(type === 'error' ? { role: 'alert' } : {}) }, message);
   c.appendChild(t);
 
   requestAnimationFrame(() => t.classList.add('toast-visible'));

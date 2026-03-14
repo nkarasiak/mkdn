@@ -89,6 +89,7 @@ export async function loadSandboxedPlugin(id, name, code) {
           return new Promise((resolve, reject) => {
             const id = this._nextId++;
             this._pending.set(id, { resolve, reject });
+            // '*' required: sandboxed blob: iframes have opaque origin
             parent.postMessage({ type: 'plugin-call', pluginId: _pluginId, callId: id, method, args }, '*');
           });
         },
@@ -107,6 +108,8 @@ export async function loadSandboxedPlugin(id, name, code) {
       };
 
       window.addEventListener('message', (e) => {
+        // Only accept messages from the parent window
+        if (e.source !== parent) return;
         if (e.data.type === 'plugin-response') {
           const pending = mkdn._pending.get(e.data.callId);
           if (pending) {
@@ -126,7 +129,7 @@ export async function loadSandboxedPlugin(id, name, code) {
             const fn = new Function('mkdn', e.data.code);
             fn(mkdn);
           } catch(err) {
-            parent.postMessage({ type: 'plugin-error', pluginId: _pluginId, error: err.message }, '*');
+            parent.postMessage({ type: 'plugin-error', pluginId: _pluginId, error: err.message }, '*'); // opaque origin
           }
         }
       });
@@ -155,6 +158,7 @@ export async function loadSandboxedPlugin(id, name, code) {
           // Sandboxed commands execute via postMessage
           const cmd = args[0];
           cmd.action = () => {
+            // '*' required: sandboxed blob: iframes have opaque origin
             iframe.contentWindow?.postMessage({ type: 'command-execute', commandId: cmd.id }, '*');
           };
           result = api.registerCommand(cmd);
@@ -167,6 +171,7 @@ export async function loadSandboxedPlugin(id, name, code) {
       error = e.message;
     }
 
+    // '*' required: sandboxed blob: iframes have opaque origin
     iframe.contentWindow?.postMessage({
       type: 'plugin-response',
       callId,
@@ -193,6 +198,7 @@ export async function loadSandboxedPlugin(id, name, code) {
 
   // Send plugin code via postMessage once iframe loads
   iframe.addEventListener('load', () => {
+    // '*' required: sandboxed blob: iframes have opaque origin
     iframe.contentWindow?.postMessage({
       type: 'plugin-init',
       pluginId: id,

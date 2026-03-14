@@ -15,22 +15,47 @@ function ensureOverlay() {
 
 let currentReject;
 
+function trapFocus(modal) {
+  modal.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const focusable = modal.querySelectorAll('button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])');
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+}
+
+function animateClose(overlayEl, callback) {
+  overlayEl.classList.remove('modal-open');
+  const onEnd = () => {
+    overlayEl.removeEventListener('transitionend', onEnd);
+    callback();
+  };
+  overlayEl.addEventListener('transitionend', onEnd);
+  // Fallback in case transitionend doesn't fire
+  setTimeout(onEnd, 300);
+}
+
 export function closeModal() {
   if (overlay && overlay.classList.contains('modal-open')) {
-    overlay.classList.remove('modal-open');
-    overlay.replaceChildren();
-    if (currentReject) {
-      currentReject(new Error('cancelled'));
-      currentReject = null;
-    }
+    const reject = currentReject;
+    currentReject = null;
+    animateClose(overlay, () => {
+      overlay.replaceChildren();
+      if (reject) reject(new Error('cancelled'));
+    });
     return true;
   }
   // Also close standalone modal overlays (save picker, history preview, etc.)
   const standalone = document.querySelector('.modal-overlay.modal-open');
   if (standalone && standalone !== overlay) {
     standalone.dispatchEvent(new Event('modal:close'));
-    standalone.classList.remove('modal-open');
-    standalone.remove();
+    animateClose(standalone, () => standalone.remove());
     return true;
   }
   return false;
@@ -42,17 +67,20 @@ export function confirm(message, { title = 'Confirm', okText = 'OK', cancelText 
     const o = ensureOverlay();
     o.replaceChildren();
 
-    const modal = el('div', { className: 'modal' },
-      el('div', { className: 'modal-header' }, title),
+    const headerId = 'modal-header-' + Date.now();
+    const okBtn = el('button', { className: `modal-btn modal-btn-primary${danger ? ' modal-btn-danger' : ''}`, onClick: () => { currentReject = null; closeModal(); resolve(true); } }, okText);
+    const modal = el('div', { className: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': headerId },
+      el('div', { className: 'modal-header', id: headerId }, title),
       el('div', { className: 'modal-body' }, message),
       el('div', { className: 'modal-footer' },
         el('button', { className: 'modal-btn', onClick: () => { closeModal(); resolve(false); } }, cancelText),
-        el('button', { className: `modal-btn modal-btn-primary${danger ? ' modal-btn-danger' : ''}`, onClick: () => { currentReject = null; closeModal(); resolve(true); } }, okText),
+        okBtn,
       ),
     );
 
+    trapFocus(modal);
     o.appendChild(modal);
-    requestAnimationFrame(() => o.classList.add('modal-open'));
+    requestAnimationFrame(() => { o.classList.add('modal-open'); okBtn.focus(); });
   });
 }
 
@@ -76,8 +104,9 @@ export function prompt(message, { title = 'Input', defaultValue = '', placeholde
       if (e.key === 'Escape') closeModal();
     });
 
-    const modal = el('div', { className: 'modal' },
-      el('div', { className: 'modal-header' }, title),
+    const headerId = 'modal-header-' + Date.now();
+    const modal = el('div', { className: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': headerId },
+      el('div', { className: 'modal-header', id: headerId }, title),
       el('div', { className: 'modal-body' },
         el('p', { style: { marginBottom: '8px' } }, message),
         input,
@@ -88,6 +117,7 @@ export function prompt(message, { title = 'Input', defaultValue = '', placeholde
       ),
     );
 
+    trapFocus(modal);
     o.appendChild(modal);
     requestAnimationFrame(() => {
       o.classList.add('modal-open');
@@ -101,32 +131,37 @@ export function showInfo(title, content) {
   const o = ensureOverlay();
   o.replaceChildren();
 
+  const headerId = 'modal-header-' + Date.now();
   const isNode = content instanceof Node;
-  const modal = el('div', { className: `modal${isNode ? ' modal-wide' : ''}` },
-    el('div', { className: 'modal-header' }, title),
+  const okBtn = el('button', { className: 'modal-btn modal-btn-primary', onClick: closeModal }, 'OK');
+  const modal = el('div', { className: `modal${isNode ? ' modal-wide' : ''}`, role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': headerId },
+    el('div', { className: 'modal-header', id: headerId }, title),
     el('div', { className: 'modal-body' }, ...(isNode ? [content] : [content])),
-    el('div', { className: 'modal-footer' },
-      el('button', { className: 'modal-btn modal-btn-primary', onClick: closeModal }, 'OK'),
-    ),
+    el('div', { className: 'modal-footer' }, okBtn),
   );
 
+  trapFocus(modal);
   o.appendChild(modal);
-  requestAnimationFrame(() => o.classList.add('modal-open'));
+  requestAnimationFrame(() => { o.classList.add('modal-open'); okBtn.focus(); });
 }
 
 // Inject modal styles
 injectStyles(`
 .modal-overlay {
-  display: none;
+  display: flex;
   position: fixed;
   inset: 0;
   background: var(--bg-overlay);
   z-index: 200;
   align-items: center;
   justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
 }
 .modal-overlay.modal-open {
-  display: flex;
+  opacity: 1;
+  pointer-events: auto;
 }
 .modal {
   background: var(--bg-primary);
@@ -136,6 +171,13 @@ injectStyles(`
   max-width: 480px;
   width: 90vw;
   overflow: hidden;
+  transform: scale(0.96) translateY(4px);
+  opacity: 0;
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+.modal-overlay.modal-open .modal {
+  transform: scale(1) translateY(0);
+  opacity: 1;
 }
 .modal-header {
   padding: 16px 20px 12px;
@@ -173,7 +215,7 @@ injectStyles(`
 .modal-btn-danger {
   background: var(--error);
 }
-.modal-btn-danger:hover { background: #b91c1c; }
+.modal-btn-danger:hover { background: color-mix(in srgb, var(--error) 85%, black); }
 .modal-input {
   width: 100%;
   padding: 8px 12px;

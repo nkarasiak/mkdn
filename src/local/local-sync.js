@@ -58,6 +58,10 @@ export const localSync = {
     return dirHandle !== null;
   },
 
+  getDirHandle() {
+    return dirHandle;
+  },
+
   getFolderName() {
     return dirHandle ? dirHandle.name : null;
   },

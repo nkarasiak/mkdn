@@ -4,17 +4,29 @@ const MAX_SNAPSHOTS = 50;
 const MAX_CONTENT_SIZE = 512 * 1024; // 512 KB
 const MAX_FIELD_LENGTH = 200;
 const VALID_TRIGGERS = new Set(["save", "autosave", "checkpoint"]);
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+const ALLOWED_ORIGINS = new Set([
+  "https://nkk.github.io",
+  "https://nkarasiak.github.io",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "tauri://localhost",
+]);
+
+function corsHeaders(request) {
+  const origin = request?.headers?.get("Origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Room-Key",
+    "Vary": "Origin",
+  };
+}
 const ROOM_KEY_STORAGE_KEY = "room::key";
 
-function jsonResponse(data, status, extraHeaders = {}) {
+function jsonResponse(data, status, request, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json", ...extraHeaders },
+    headers: { ...corsHeaders(request), "Content-Type": "application/json", ...extraHeaders },
   });
 }
 
@@ -36,19 +48,20 @@ export default class YjsServer {
 
   async onRequest(req) {
     const url = new URL(req.url);
+    const cors = corsHeaders(req);
 
     // CORS preflight
     if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
+      return new Response(null, { status: 204, headers: cors });
     }
 
     // Only handle /history path
     if (!url.pathname.endsWith("/history")) {
-      return new Response("Not found", { status: 404, headers: CORS_HEADERS });
+      return new Response("Not found", { status: 404, headers: cors });
     }
 
-    // Authenticate via room key
-    const authError = await this._authenticate(url);
+    // Authenticate via room key (header preferred, query param as fallback)
+    const authError = await this._authenticate(req);
     if (authError) return authError;
 
     if (req.method === "POST") {
@@ -56,22 +69,24 @@ export default class YjsServer {
     }
 
     if (req.method === "GET") {
-      return this._getHistory();
+      return this._getHistory(req);
     }
 
-    return new Response("Method not allowed", { status: 405, headers: CORS_HEADERS });
+    return new Response("Method not allowed", { status: 405, headers: cors });
   }
 
-  async _authenticate(url) {
-    const key = url.searchParams.get("key");
+  async _authenticate(req) {
+    // Prefer X-Room-Key header; fall back to query param for backward compat
+    const url = new URL(req.url);
+    const key = req.headers.get("X-Room-Key") || url.searchParams.get("key");
     if (!key) {
-      return jsonResponse({ error: "Missing key parameter" }, 401);
+      return jsonResponse({ error: "Missing room key" }, 401, req);
     }
 
     const storedKey = await this.party.storage.get(ROOM_KEY_STORAGE_KEY);
     if (storedKey) {
       if (key !== storedKey) {
-        return jsonResponse({ error: "Invalid key" }, 403);
+        return jsonResponse({ error: "Invalid key" }, 403, req);
       }
     } else {
       // First request — store the key for future validation
@@ -86,16 +101,16 @@ export default class YjsServer {
     try {
       body = await req.json();
     } catch {
-      return jsonResponse({ error: "Invalid JSON" }, 400);
+      return jsonResponse({ error: "Invalid JSON" }, 400, req);
     }
 
     const { content, userName, trigger, message } = body;
     if (typeof content !== "string") {
-      return jsonResponse({ error: "content is required" }, 400);
+      return jsonResponse({ error: "content is required" }, 400, req);
     }
 
     if (content.length > MAX_CONTENT_SIZE) {
-      return jsonResponse({ error: "content too large" }, 413);
+      return jsonResponse({ error: "content too large" }, 413, req);
     }
 
     const sanitizedTrigger = VALID_TRIGGERS.has(trigger) ? trigger : "save";
@@ -115,10 +130,10 @@ export default class YjsServer {
     await this.party.storage.put(key, snapshot);
     await this._pruneHistory();
 
-    return jsonResponse({ ok: true, timestamp }, 201);
+    return jsonResponse({ ok: true, timestamp }, 201, req);
   }
 
-  async _getHistory() {
+  async _getHistory(req) {
     const all = await this.party.storage.list({ prefix: "history::" });
     const snapshots = [];
     for (const [, value] of all) {
@@ -127,7 +142,7 @@ export default class YjsServer {
     // Newest first
     snapshots.sort((a, b) => b.timestamp - a.timestamp);
 
-    return jsonResponse(snapshots.slice(0, MAX_SNAPSHOTS), 200);
+    return jsonResponse(snapshots.slice(0, MAX_SNAPSHOTS), 200, req);
   }
 
   async _pruneHistory() {

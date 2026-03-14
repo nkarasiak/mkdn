@@ -26,6 +26,8 @@ import { initBacklinks } from './backlinks/backlinks-ui.js';
 import { initWritingStats } from './stats/writing-stats.js';
 import { initThemeEditor } from './themes/theme-editor.js';
 import { registerGraphCommands } from './graph/graph-commands.js';
+import { isTauri, initTauri, initTauriEvents } from './platform/tauri-bridge.js';
+import { loadFromShareLink } from './share/share-link.js';
 
 let sidebarWrapper, sidebarOverlay;
 
@@ -140,14 +142,20 @@ export const App = {
 
     appEl.appendChild(app);
 
+    // Initialize Tauri desktop integration (window controls, native file I/O)
+    await initTauri();
+
     // Swipe gestures for sidebar on touch devices
     initSwipeGestures(app);
 
     // Initialize focus manager
     focusManager.init(app);
 
+    // Load shared document from URL hash (takes priority over saved session)
+    const isSharedDoc = await loadFromShareLink();
+
     // Restore session before Milkdown init so restored content is the initial value
-    sessionStore.restoreSession();
+    if (!isSharedDoc) await sessionStore.restoreSession();
 
     // Initialize Milkdown (always-on)
     await milkdown.init(editorPane);
@@ -254,10 +262,20 @@ export const App = {
     registerPluginCommands();
     registerGraphCommands();
 
+    // Show template chooser on new document
+    eventBus.on('file:new', () => {
+      setTimeout(() => {
+        import('./templates/template-system.js').then(m => m.openTemplateChooser());
+      }, 150);
+    });
+
     // Initialize backlinks, writing stats, and custom theme
     initBacklinks();
     initWritingStats();
     initThemeEditor();
+
+    // Listen for Tauri native menu events and file-open
+    initTauriEvents({ toggleSidebar, fileSaver, documentStore, focusManager, settingsStore });
   },
 };
 

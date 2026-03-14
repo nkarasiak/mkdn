@@ -9,11 +9,15 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
     className: 'statusbar-stats statusbar-stats-clickable',
     onClick: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()),
     'data-tooltip': 'Writing statistics',
+    'aria-label': 'Writing statistics',
+    role: 'button',
+    tabIndex: '0',
   }, '0 words');
 
   const historyBtn = el('button', {
     className: 'statusbar-icon-btn',
     'data-tooltip': 'History (Ctrl+Shift+H)',
+    'aria-label': 'History (Ctrl+Shift+H)',
     unsafeHTML: icons.clock,
     onClick: () => onToggleHistory?.(),
   });
@@ -34,6 +38,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   const focusBtn = el('button', {
     className: 'statusbar-icon-btn',
     'data-tooltip': 'Focus mode (Ctrl+Shift+F)',
+    'aria-label': 'Focus mode (Ctrl+Shift+F)',
     unsafeHTML: icons.focus,
     onClick: () => focusManager?.cycleMode(),
   });
@@ -57,6 +62,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   const themeBtn = el('button', {
     className: 'statusbar-icon-btn',
     'data-tooltip': 'Toggle Theme (Light/Dark)',
+    'aria-label': 'Toggle Theme (Light/Dark)',
     unsafeHTML: settingsStore.getTheme() === 'dark' ? icons.sun : icons.moon,
     onClick: () => {
       const next = settingsStore.getTheme() === 'dark' ? 'light' : 'dark';
@@ -73,6 +79,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
     className: 'statusbar-icon-btn',
     style: { display: 'none' },
     'data-tooltip': 'Knowledge Graph (Ctrl+Shift+G)',
+    'aria-label': 'Knowledge Graph (Ctrl+Shift+G)',
     unsafeHTML: icons.graph,
     onClick: () => import('../graph/graph-view.js').then(m => m.openGraphView()),
   });
@@ -83,6 +90,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   const infoBtn = el('button', {
     className: 'statusbar-icon-btn',
     'data-tooltip': 'About & Shortcuts',
+    'aria-label': 'About & Shortcuts',
     unsafeHTML: icons.infoCircle,
     onClick: async () => {
       const { showInfo } = await import('./modal.js');
@@ -146,7 +154,7 @@ function buildAboutContent() {
     el('p', {}, issueLink),
     el('h4', { className: 'about-section-title' }, 'Credits'),
     el('p', {}, 'Created by Nicolas Karasiak & Claude'),
-    el('p', { className: 'about-version' }, `v2.0.0`),
+    el('p', { className: 'about-version' }, `v${__APP_VERSION__}`),
   );
 }
 

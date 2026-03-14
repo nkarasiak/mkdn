@@ -39,6 +39,11 @@ button:disabled {
   opacity: 0.5;
 }
 
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 input, textarea {
   font-family: inherit;
   font-size: inherit;

@@ -8,11 +8,14 @@ import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
 import { createTablePicker } from './table-picker.js';
 import { openCollabDialog } from '../collab/collab-ui.js';
 import { settingsStore } from '../store/settings-store.js';
+import { localSync } from '../local/local-sync.js';
+import { saveImageToAssets, saveImageToAssetsTauri, isTauri } from '../editor/image-paste-plugin.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
     className: `toolbar-btn ${extraClass}`.trim(),
     'data-tooltip': tooltip,
+    'aria-label': tooltip,
     unsafeHTML: icons[icon],
     onMousedown: (e) => e.preventDefault(), // keep editor focus
     onClick,
@@ -67,14 +70,24 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const backBtn = el('button', {
     className: 'toolbar-nav-btn',
     'data-tooltip': 'Files (Ctrl+Shift+B)',
-    unsafeHTML: icons.arrowLeft,
+    'aria-label': 'Files (Ctrl+Shift+B)',
+    unsafeHTML: settingsStore.get('sidebarOpen') ? icons.arrowLeft : icons.arrowRight,
     onClick: onToggleSidebar,
   });
 
-  // Save status badge
+  // Flip arrow when sidebar state changes
+  eventBus.on('settings:sidebarOpen', (open) => {
+    backBtn.innerHTML = open ? icons.arrowLeft : icons.arrowRight;
+  });
+
+  // Save status badge (clickable — triggers save when unsaved)
   const statusDot = el('span', { className: 'toolbar-status-dot' });
   const statusText = el('span', { className: 'toolbar-status-text' }, 'saved');
-  const statusBadge = el('div', { className: 'toolbar-status-badge' }, statusDot, statusText);
+  const statusBadge = el('button', {
+    className: 'toolbar-status-badge',
+    'data-tooltip': 'Save (Ctrl+S)',
+    onClick: onSave,
+  }, statusDot, statusText);
 
   // Open file button
   const openBtn = el('button', {
@@ -156,9 +169,32 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     accept: 'image/*',
     style: 'display:none',
   });
-  imageInput.addEventListener('change', () => {
+  imageInput.addEventListener('change', async () => {
     const file = imageInput.files[0];
     if (!file) return;
+
+    // Try saving to local assets/ folder when linked
+    if (localSync.isLinked()) {
+      const dirHandle = localSync.getDirHandle();
+      let relativePath = null;
+
+      if (isTauri()) {
+        relativePath = await saveImageToAssetsTauri(file, dirHandle);
+      } else {
+        relativePath = await saveImageToAssets(file);
+      }
+
+      if (relativePath) {
+        milkdown.runCommand(milkdown.commands.insertImage, {
+          src: relativePath,
+          alt: file.name,
+        });
+        imageInput.value = '';
+        return;
+      }
+    }
+
+    // Fallback: embed as base64 data URI
     const reader = new FileReader();
     reader.onload = () => {
       milkdown.runCommand(milkdown.commands.insertImage, {
@@ -170,9 +206,57 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     imageInput.value = '';
   });
   const imageBtn = btn('image', 'Image', () => imageInput.click());
+  // Video popover (reuses link-popover CSS classes)
+  let videoPopover = null;
+  function closeVideoPopover() {
+    if (videoPopover) {
+      videoPopover.classList.remove('link-popover-open');
+      setTimeout(() => videoPopover?.remove(), 150);
+      videoPopover = null;
+      document.removeEventListener('click', onVideoOutsideClick);
+    }
+  }
+  function onVideoOutsideClick(e) {
+    if (videoPopover && !videoPopover.contains(e.target)) closeVideoPopover();
+  }
   const videoBtn = btn('video', 'Video embed', () => {
-    const url = window.prompt('Video URL (YouTube or X.com):');
-    if (url) milkdown.insertEmbedUrl(url);
+    if (videoPopover) { closeVideoPopover(); return; }
+    const input = el('input', {
+      className: 'link-popover-input',
+      type: 'text',
+      placeholder: 'https://youtube.com/watch?v=...',
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const url = input.value.trim();
+        if (url) milkdown.insertEmbedUrl(url);
+        closeVideoPopover();
+      }
+      if (e.key === 'Escape') closeVideoPopover();
+    });
+    videoPopover = el('div', { className: 'link-popover' },
+      el('div', { className: 'link-popover-header' }, 'Video URL'),
+      input,
+      el('div', { className: 'link-popover-footer' },
+        el('button', { className: 'link-popover-btn', onClick: closeVideoPopover }, 'Cancel'),
+        el('button', { className: 'link-popover-btn link-popover-btn-primary', onClick: () => {
+          const url = input.value.trim();
+          if (url) milkdown.insertEmbedUrl(url);
+          closeVideoPopover();
+        }}, 'Insert'),
+      ),
+    );
+    // Position below the video button
+    const rect = videoBtn.getBoundingClientRect();
+    videoPopover.style.position = 'fixed';
+    videoPopover.style.top = `${rect.bottom + 6}px`;
+    videoPopover.style.left = `${rect.left + rect.width / 2}px`;
+    document.body.appendChild(videoPopover);
+    requestAnimationFrame(() => {
+      videoPopover.classList.add('link-popover-open');
+      input.focus();
+    });
+    setTimeout(() => document.addEventListener('click', onVideoOutsideClick), 0);
   });
   const commentBtn = btn('comment', 'Blockquote', () => milkdown.toggleBlockquote());
 
@@ -334,10 +418,14 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const setSaved = () => {
     statusDot.className = 'toolbar-status-dot saved';
     statusText.textContent = 'saved';
+    statusBadge.classList.remove('unsaved');
+    statusBadge.style.pointerEvents = 'none';
   };
   const setUnsaved = () => {
     statusDot.className = 'toolbar-status-dot';
-    statusText.textContent = 'editing';
+    statusText.textContent = 'Save';
+    statusBadge.classList.add('unsaved');
+    statusBadge.style.pointerEvents = '';
   };
 
   eventBus.on('file:saved', setSaved);
