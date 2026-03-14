@@ -49,17 +49,17 @@ export function getUserName() {
 
 function saveSession() {
   if (roomId && roomPassword) {
-    sessionStorage.setItem(SESSION_COLLAB, JSON.stringify({ roomId, roomPassword }));
+    localStorage.setItem(SESSION_COLLAB, JSON.stringify({ roomId, roomPassword }));
   }
 }
 
 function clearSession() {
-  sessionStorage.removeItem(SESSION_COLLAB);
+  localStorage.removeItem(SESSION_COLLAB);
 }
 
 export function getSavedSession() {
   try {
-    const raw = sessionStorage.getItem(SESSION_COLLAB);
+    const raw = localStorage.getItem(SESSION_COLLAB);
     if (!raw) return null;
     const { roomId, roomPassword } = JSON.parse(raw);
     return roomId ? { roomId, roomPassword } : null;
@@ -248,7 +248,12 @@ export const collabManager = {
 
   getShareUrl() {
     if (!roomId) return null;
-    const baseUrl = window.location.origin + window.location.pathname;
+    // Use the web deployment URL — window.location may be tauri://localhost in desktop
+    const origin = window.location.origin;
+    const isTauriOrigin = origin.startsWith('tauri://') || origin.startsWith('https://tauri.');
+    const baseUrl = isTauriOrigin
+      ? (settingsStore.get('collabShareBaseUrl') || 'https://nkarasiak.github.io/mkdn/')
+      : origin + window.location.pathname;
     return `${baseUrl}#s=${roomId}.${roomPassword}`;
   },
 };
