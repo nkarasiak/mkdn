@@ -357,10 +357,10 @@ injectStyles(`
   border-bottom: 1px solid var(--border-light);
 }
 .history-item.is-collab {
-  border-left: 3px solid #4ECDC4;
+  border-left: 3px solid var(--collab-color);
 }
 .history-item-trigger.collab-trigger {
-  color: #4ECDC4;
+  color: var(--collab-color);
 }
 .diff-modal {
   max-width: 720px;
