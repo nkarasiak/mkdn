@@ -49,8 +49,17 @@
   }
 }
 
+/* Touch-friendly targets */
+@media (hover: none) {
+  .statusbar-icon-btn { min-width: 36px; min-height: 36px; }
+}
+
 /* Mobile */
 @media (max-width: 767px) {
+  .cmd-palette-overlay.cmd-palette-open { padding-top: 8vh; }
+  .cmd-palette { max-height: 75vh; }
+  .toolbar-dropdown-grouped { max-width: calc(100vw - 32px); max-height: 60vh; overflow-y: auto; }
+
   .toolbar-header {
     padding: 0 10px;
     height: 46px;

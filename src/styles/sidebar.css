@@ -86,6 +86,10 @@
   display: flex;
 }
 
+@media (hover: none) {
+  .file-item-actions { display: flex; }
+}
+
 .file-item-btn {
   width: 20px;
   height: 20px;
