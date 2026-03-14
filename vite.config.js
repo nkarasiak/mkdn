@@ -3,9 +3,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
+const isTauri = !!process.env.TAURI_BUILD || !!process.env.TAURI_ENV_PLATFORM;
 
 export default defineConfig(({ mode }) => ({
-  base: '/mkdn/',
+  base: isTauri ? '/' : '/mkdn/',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __PARTYKIT_URL__: JSON.stringify(
@@ -16,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
   },
   plugins: [
-    VitePWA({
+    !isTauri && VitePWA({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
@@ -57,7 +58,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
-  ],
+  ].filter(Boolean),
   build: {
     outDir: 'dist',
     sourcemap: false,
