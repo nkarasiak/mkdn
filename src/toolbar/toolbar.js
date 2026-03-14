@@ -8,6 +8,8 @@ import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
 import { createTablePicker } from './table-picker.js';
 import { openCollabDialog } from '../collab/collab-ui.js';
 import { settingsStore } from '../store/settings-store.js';
+import { localSync } from '../local/local-sync.js';
+import { saveImageToAssets, saveImageToAssetsTauri, isTauri } from '../editor/image-paste-plugin.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
@@ -167,9 +169,32 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     accept: 'image/*',
     style: 'display:none',
   });
-  imageInput.addEventListener('change', () => {
+  imageInput.addEventListener('change', async () => {
     const file = imageInput.files[0];
     if (!file) return;
+
+    // Try saving to local assets/ folder when linked
+    if (localSync.isLinked()) {
+      const dirHandle = localSync.getDirHandle();
+      let relativePath = null;
+
+      if (isTauri()) {
+        relativePath = await saveImageToAssetsTauri(file, dirHandle);
+      } else {
+        relativePath = await saveImageToAssets(file);
+      }
+
+      if (relativePath) {
+        milkdown.runCommand(milkdown.commands.insertImage, {
+          src: relativePath,
+          alt: file.name,
+        });
+        imageInput.value = '';
+        return;
+      }
+    }
+
+    // Fallback: embed as base64 data URI
     const reader = new FileReader();
     reader.onload = () => {
       milkdown.runCommand(milkdown.commands.insertImage, {
