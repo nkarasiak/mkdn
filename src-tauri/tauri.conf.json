@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "mkdn",
   "version": "2.1.0",
-  "identifier": "io.github.mkdn.app",
+  "identifier": "io.github.nkarasiak.mkdn",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
@@ -37,12 +37,23 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "category": "Productivity",
+    "shortDescription": "A beautiful markdown editor",
+    "longDescription": "MKDN is a minimal, browser-based WYSIWYG markdown editor with real-time collaboration, local folder sync, version history, and a plugin system.",
     "linux": {
       "deb": {
-        "desktopTemplate": null,
-        "files": {}
+        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"],
+        "section": "editors"
       },
       "appimage": {}
+    },
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": false
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15"
     },
     "fileAssociations": [
       {
