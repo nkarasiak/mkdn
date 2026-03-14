@@ -6,8 +6,10 @@ const MAX_FIELD_LENGTH = 200;
 const VALID_TRIGGERS = new Set(["save", "autosave", "checkpoint"]);
 const ALLOWED_ORIGINS = new Set([
   "https://nkk.github.io",
+  "https://nkarasiak.github.io",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
+  "tauri://localhost",
 ]);
 
 function corsHeaders(request) {

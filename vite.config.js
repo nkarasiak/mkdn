@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __PARTYKIT_URL__: JSON.stringify(
-      mode === 'development' ? 'http://localhost:1999' : '',
+      mode === 'development' ? 'http://localhost:1999' : 'https://mkdn-collab.nkarasiak.partykit.dev',
     ),
     __VUE_OPTIONS_API__: false,
     __VUE_PROD_DEVTOOLS__: false,
