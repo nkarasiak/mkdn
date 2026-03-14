@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Offline Support** — app now works fully offline after first visit via Workbox-powered service worker that pre-caches all build assets and Google Fonts
+- **Tauri Desktop App** — native desktop build via Tauri 2.x with file associations (`.md`, `.markdown`, `.mkdn`, `.mdx`), scoped filesystem access, and native dialogs
 
 ### Fixed
 
