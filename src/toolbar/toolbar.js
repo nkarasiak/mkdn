@@ -13,6 +13,7 @@ function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
     className: `toolbar-btn ${extraClass}`.trim(),
     'data-tooltip': tooltip,
+    'aria-label': tooltip,
     unsafeHTML: icons[icon],
     onMousedown: (e) => e.preventDefault(), // keep editor focus
     onClick,
@@ -67,6 +68,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const backBtn = el('button', {
     className: 'toolbar-nav-btn',
     'data-tooltip': 'Files (Ctrl+Shift+B)',
+    'aria-label': 'Files (Ctrl+Shift+B)',
     unsafeHTML: settingsStore.get('sidebarOpen') ? icons.arrowLeft : icons.arrowRight,
     onClick: onToggleSidebar,
   });
@@ -76,20 +78,14 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     backBtn.innerHTML = open ? icons.arrowLeft : icons.arrowRight;
   });
 
-  // Save status badge
+  // Save status badge (clickable — triggers save when unsaved)
   const statusDot = el('span', { className: 'toolbar-status-dot' });
   const statusText = el('span', { className: 'toolbar-status-text' }, 'saved');
-  const statusBadge = el('div', { className: 'toolbar-status-badge' }, statusDot, statusText);
-
-  // Save button
-  const saveBtn = el('button', {
-    className: 'toolbar-secondary-btn',
+  const statusBadge = el('button', {
+    className: 'toolbar-status-badge',
     'data-tooltip': 'Save (Ctrl+S)',
     onClick: onSave,
-  },
-    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.save }),
-    'Save',
-  );
+  }, statusDot, statusText);
 
   // Open file button
   const openBtn = el('button', {
@@ -134,7 +130,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   });
 
   const headerRow = el('div', { className: 'toolbar-header' },
-    el('div', { className: 'toolbar-header-left' }, backBtn, statusBadge, saveBtn),
+    el('div', { className: 'toolbar-header-left' }, backBtn, statusBadge),
     el('div', { className: 'toolbar-header-right' }, shareBtn, openBtn, openFolderBtn),
   );
 
@@ -397,14 +393,14 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const setSaved = () => {
     statusDot.className = 'toolbar-status-dot saved';
     statusText.textContent = 'saved';
-    saveBtn.style.opacity = '0.5';
-    saveBtn.style.pointerEvents = 'none';
+    statusBadge.classList.remove('unsaved');
+    statusBadge.style.pointerEvents = 'none';
   };
   const setUnsaved = () => {
     statusDot.className = 'toolbar-status-dot';
-    statusText.textContent = 'editing';
-    saveBtn.style.opacity = '';
-    saveBtn.style.pointerEvents = '';
+    statusText.textContent = 'Save';
+    statusBadge.classList.add('unsaved');
+    statusBadge.style.pointerEvents = '';
   };
 
   eventBus.on('file:saved', setSaved);

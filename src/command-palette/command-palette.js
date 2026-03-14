@@ -33,12 +33,16 @@ export function openCommandPalette(initialMode) {
     type: 'text',
     className: 'cmd-palette-input',
     placeholder: 'Type a command, > for actions, # for headings...',
+    role: 'combobox',
+    'aria-expanded': 'true',
+    'aria-controls': 'cmd-results',
+    'aria-autocomplete': 'list',
   });
 
   if (initialMode === 'commands') input.value = '>';
   else if (initialMode === 'headings') input.value = '#';
 
-  const resultsList = el('div', { className: 'cmd-palette-results' });
+  const resultsList = el('div', { className: 'cmd-palette-results', id: 'cmd-results', role: 'listbox' });
 
   const palette = el('div', { className: 'cmd-palette' },
     el('div', { className: 'cmd-palette-input-wrapper' }, input),
@@ -221,6 +225,8 @@ function createResultRow(item, index) {
 
   const row = el('div', {
     className: `cmd-palette-row${index === selectedIndex ? ' selected' : ''}`,
+    role: 'option',
+    'aria-selected': String(index === selectedIndex),
     dataset: { index: String(index) },
   }, ...parts);
 
@@ -241,8 +247,10 @@ function updateSelection(container) {
   if (!container) return;
   const rows = container.querySelectorAll('.cmd-palette-row');
   rows.forEach((row, i) => {
-    row.classList.toggle('selected', i === selectedIndex);
-    if (i === selectedIndex) {
+    const isSelected = i === selectedIndex;
+    row.classList.toggle('selected', isSelected);
+    row.setAttribute('aria-selected', String(isSelected));
+    if (isSelected) {
       row.scrollIntoView({ block: 'nearest' });
     }
   });
