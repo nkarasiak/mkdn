@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Offline Support** — app now works fully offline after first visit via Workbox-powered service worker that pre-caches all build assets and Google Fonts
+
 ### Fixed
 
 - **Collab Security** — room key now sent via `X-Room-Key` header instead of URL query parameter (prevents leaking in logs/Referer)
