@@ -23,6 +23,38 @@ export async function initTauri() {
   patchLocalFs();
 }
 
+// Listen for native menu events and file-open from CLI/OS
+export async function initTauriEvents({ toggleSidebar, fileSaver, documentStore, focusManager, settingsStore }) {
+  if (!isTauri()) return;
+
+  const { listen } = await import('@tauri-apps/api/event');
+
+  // Native menu → JS actions
+  await listen('menu-event', ({ payload: id }) => {
+    switch (id) {
+      case 'file:new': documentStore.newDocument(); break;
+      case 'file:open': fileSaver.openFile(); break;
+      case 'file:save': fileSaver.save(); break;
+      case 'file:save-as': fileSaver.saveAs(); break;
+      case 'view:toggle-sidebar': toggleSidebar(); break;
+      case 'view:toggle-source': settingsStore.set('sourceMode', !settingsStore.get('sourceMode')); break;
+      case 'view:zen-mode': focusManager.cycleMode(); break;
+    }
+  });
+
+  // Open file from CLI args or OS double-click
+  await listen('file-open', async ({ payload: path }) => {
+    try {
+      const { readTextFile } = await import('@tauri-apps/plugin-fs');
+      const content = await readTextFile(path);
+      const name = path.split('/').pop().split('\\').pop();
+      documentStore.setFile(path, name, content, 'local');
+    } catch (err) {
+      console.error('[tauri] Failed to open file:', err);
+    }
+  });
+}
+
 // --- Window controls ---
 
 const MINIMIZE_SVG = `<svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>`;

@@ -26,7 +26,7 @@ import { initBacklinks } from './backlinks/backlinks-ui.js';
 import { initWritingStats } from './stats/writing-stats.js';
 import { initThemeEditor } from './themes/theme-editor.js';
 import { registerGraphCommands } from './graph/graph-commands.js';
-import { isTauri, initTauri } from './platform/tauri-bridge.js';
+import { isTauri, initTauri, initTauriEvents } from './platform/tauri-bridge.js';
 import { loadFromShareLink } from './share/share-link.js';
 
 let sidebarWrapper, sidebarOverlay;
@@ -273,6 +273,9 @@ export const App = {
     initBacklinks();
     initWritingStats();
     initThemeEditor();
+
+    // Listen for Tauri native menu events and file-open
+    initTauriEvents({ toggleSidebar, fileSaver, documentStore, focusManager, settingsStore });
   },
 };
 

@@ -49,6 +49,12 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-close",
     "core:window:allow-is-maximized",
-    "core:window:allow-set-focus"
+    "core:window:allow-set-focus",
+    "core:event:default",
+    "core:event:allow-listen",
+    "core:event:allow-emit",
+    "core:menu:default",
+    "core:menu:allow-popup",
+    "core:menu:allow-set-as-app-menu"
   ]
 }
