@@ -229,8 +229,14 @@ export function createSidebar() {
           'data-tooltip': 'New File',
           unsafeHTML: icons.plus,
           onClick: () => {
-            documentStore.newDocument();
-            toast('New document created', 'info');
+            if (documentStore.isDirty()) {
+              confirmModal('You have unsaved changes. Create a new document anyway?', { title: 'Unsaved Changes', okText: 'New Document', danger: true })
+                .then(ok => { if (ok) { documentStore.newDocument(); toast('New document created', 'info'); } })
+                .catch(() => {});
+            } else {
+              documentStore.newDocument();
+              toast('New document created', 'info');
+            }
           },
         }),
         configBtn,
@@ -239,6 +245,13 @@ export function createSidebar() {
     el('div', { className: 'sidebar-search' }, searchInput),
     sectionsEl,
   );
+
+  // Hide search when no folder is linked
+  const searchContainer = sidebarEl.querySelector('.sidebar-search');
+  const updateSearchVisibility = () => {
+    searchContainer.style.display = localSync.isLinked() ? '' : 'none';
+  };
+  updateSearchVisibility();
 
   // Apply initial section visibility and order
   applySectionVisibility();
@@ -256,11 +269,14 @@ export function createSidebar() {
   eventBus.on('local:folder-linked', () => {
     renderLocalFileList();
     renderLocalSectionHeader();
+    updateSearchVisibility();
+    settingsStore.set('sidebarOpen', true);
   });
   eventBus.on('local:folder-unlinked', () => {
     localFiles = [];
     renderLocalFileList();
     renderLocalSectionHeader();
+    updateSearchVisibility();
   });
 
   // Re-render when file changes (to update active state)

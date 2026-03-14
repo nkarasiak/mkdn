@@ -67,14 +67,29 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const backBtn = el('button', {
     className: 'toolbar-nav-btn',
     'data-tooltip': 'Files (Ctrl+Shift+B)',
-    unsafeHTML: icons.arrowLeft,
+    unsafeHTML: settingsStore.get('sidebarOpen') ? icons.arrowLeft : icons.arrowRight,
     onClick: onToggleSidebar,
+  });
+
+  // Flip arrow when sidebar state changes
+  eventBus.on('settings:sidebarOpen', (open) => {
+    backBtn.innerHTML = open ? icons.arrowLeft : icons.arrowRight;
   });
 
   // Save status badge
   const statusDot = el('span', { className: 'toolbar-status-dot' });
   const statusText = el('span', { className: 'toolbar-status-text' }, 'saved');
   const statusBadge = el('div', { className: 'toolbar-status-badge' }, statusDot, statusText);
+
+  // Save button
+  const saveBtn = el('button', {
+    className: 'toolbar-secondary-btn',
+    'data-tooltip': 'Save (Ctrl+S)',
+    onClick: onSave,
+  },
+    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.save }),
+    'Save',
+  );
 
   // Open file button
   const openBtn = el('button', {
@@ -119,7 +134,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   });
 
   const headerRow = el('div', { className: 'toolbar-header' },
-    el('div', { className: 'toolbar-header-left' }, backBtn, statusBadge),
+    el('div', { className: 'toolbar-header-left' }, backBtn, statusBadge, saveBtn),
     el('div', { className: 'toolbar-header-right' }, shareBtn, openBtn, openFolderBtn),
   );
 
@@ -170,9 +185,57 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     imageInput.value = '';
   });
   const imageBtn = btn('image', 'Image', () => imageInput.click());
+  // Video popover (reuses link-popover CSS classes)
+  let videoPopover = null;
+  function closeVideoPopover() {
+    if (videoPopover) {
+      videoPopover.classList.remove('link-popover-open');
+      setTimeout(() => videoPopover?.remove(), 150);
+      videoPopover = null;
+      document.removeEventListener('click', onVideoOutsideClick);
+    }
+  }
+  function onVideoOutsideClick(e) {
+    if (videoPopover && !videoPopover.contains(e.target)) closeVideoPopover();
+  }
   const videoBtn = btn('video', 'Video embed', () => {
-    const url = window.prompt('Video URL (YouTube or X.com):');
-    if (url) milkdown.insertEmbedUrl(url);
+    if (videoPopover) { closeVideoPopover(); return; }
+    const input = el('input', {
+      className: 'link-popover-input',
+      type: 'text',
+      placeholder: 'https://youtube.com/watch?v=...',
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const url = input.value.trim();
+        if (url) milkdown.insertEmbedUrl(url);
+        closeVideoPopover();
+      }
+      if (e.key === 'Escape') closeVideoPopover();
+    });
+    videoPopover = el('div', { className: 'link-popover' },
+      el('div', { className: 'link-popover-header' }, 'Video URL'),
+      input,
+      el('div', { className: 'link-popover-footer' },
+        el('button', { className: 'link-popover-btn', onClick: closeVideoPopover }, 'Cancel'),
+        el('button', { className: 'link-popover-btn link-popover-btn-primary', onClick: () => {
+          const url = input.value.trim();
+          if (url) milkdown.insertEmbedUrl(url);
+          closeVideoPopover();
+        }}, 'Insert'),
+      ),
+    );
+    // Position below the video button
+    const rect = videoBtn.getBoundingClientRect();
+    videoPopover.style.position = 'fixed';
+    videoPopover.style.top = `${rect.bottom + 6}px`;
+    videoPopover.style.left = `${rect.left + rect.width / 2}px`;
+    document.body.appendChild(videoPopover);
+    requestAnimationFrame(() => {
+      videoPopover.classList.add('link-popover-open');
+      input.focus();
+    });
+    setTimeout(() => document.addEventListener('click', onVideoOutsideClick), 0);
   });
   const commentBtn = btn('comment', 'Blockquote', () => milkdown.toggleBlockquote());
 
@@ -334,10 +397,14 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const setSaved = () => {
     statusDot.className = 'toolbar-status-dot saved';
     statusText.textContent = 'saved';
+    saveBtn.style.opacity = '0.5';
+    saveBtn.style.pointerEvents = 'none';
   };
   const setUnsaved = () => {
     statusDot.className = 'toolbar-status-dot';
     statusText.textContent = 'editing';
+    saveBtn.style.opacity = '';
+    saveBtn.style.pointerEvents = '';
   };
 
   eventBus.on('file:saved', setSaved);
