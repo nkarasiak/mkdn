@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Sidebar Toggle Arrow** — arrow now points right (→) to open and left (←) to close, matching spatial direction
+- **Sidebar Auto-Open** — sidebar automatically opens when a local folder is linked, including on page reload with a previously linked folder
 - **Collab Security** — room key now sent via `X-Room-Key` header instead of URL query parameter (prevents leaking in logs/Referer)
 - **Room ID Generation** — use `crypto.getRandomValues()` instead of `Math.random()` for cryptographically secure room IDs
 - **CORS Restriction** — PartyKit server now allowlists specific origins instead of `Access-Control-Allow-Origin: *`
