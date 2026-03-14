@@ -62,11 +62,7 @@ async function initWindowControls() {
     maximizeBtn.setAttribute('aria-label', isMax ? 'Restore' : 'Maximize');
   });
 
-  // Double-click empty header area to toggle maximize
-  header.addEventListener('dblclick', (e) => {
-    if (e.target.closest('button, input, a, .window-controls')) return;
-    appWindow.toggleMaximize();
-  });
+  // Note: double-click to maximize is handled natively by data-tauri-drag-region
 }
 
 function controlBtn(type, svg, onClick) {
