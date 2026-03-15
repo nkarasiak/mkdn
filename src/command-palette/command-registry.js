@@ -1,4 +1,5 @@
 import { openFileSwitcher } from './file-switcher.js';
+import { tabStore } from '../store/tab-store.js';
 
 const commands = [];
 
@@ -40,6 +41,28 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'file:open', label: 'Open File', category: 'File', shortcut: 'Ctrl+O', keywords: ['open', 'load'], action: () => fileSaver.openFile() },
     { id: 'file:open-folder', label: 'Open Folder', category: 'File', keywords: ['folder', 'directory', 'link'], action: () => localSync.linkFolder() },
     { id: 'file:quick-switch', label: 'Quick Open File', category: 'File', shortcut: 'Ctrl+P', keywords: ['switch', 'quick', 'open', 'find', 'file', 'recent'], action: () => openFileSwitcher() },
+    { id: 'file:library', label: 'Document Library', category: 'File', keywords: ['library', 'documents', 'browse', 'all', 'collection'], action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
+
+    // --- Tabs ---
+    { id: 'tab:new', label: 'New Tab', category: 'Tab', shortcut: 'Ctrl+T', keywords: ['tab', 'new'], action: () => documentStore.newDocument() },
+    { id: 'tab:close', label: 'Close Tab', category: 'Tab', shortcut: 'Ctrl+W', keywords: ['tab', 'close'], action: () => {
+      const tabs = tabStore.getTabs();
+      if (tabs.length <= 1) return;
+      const next = tabStore.closeTab(tabStore.getActiveTabId());
+      if (next) documentStore.setFile(next.id, next.name, next.content, next.source);
+    }},
+    { id: 'tab:reopen', label: 'Reopen Closed Tab', category: 'Tab', shortcut: 'Ctrl+Shift+T', keywords: ['tab', 'reopen', 'restore', 'undo close'], action: () => {
+      const tab = tabStore.reopenTab();
+      if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
+    }},
+    { id: 'tab:next', label: 'Next Tab', category: 'Tab', shortcut: 'Ctrl+Tab', keywords: ['tab', 'next', 'switch'], action: () => {
+      const tab = tabStore.nextTab();
+      if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
+    }},
+    { id: 'tab:prev', label: 'Previous Tab', category: 'Tab', shortcut: 'Ctrl+Shift+Tab', keywords: ['tab', 'previous', 'switch'], action: () => {
+      const tab = tabStore.prevTab();
+      if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
+    }},
 
     // --- View ---
     { id: 'view:toggle-sidebar', label: 'Toggle Sidebar', category: 'View', shortcut: 'Ctrl+Shift+B', keywords: ['sidebar', 'panel'], action: toggleSidebar },
@@ -100,11 +123,22 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
 
     // --- Focus ---
     { id: 'focus:zen', label: 'Zen Mode', category: 'Focus', shortcut: 'Ctrl+Shift+F', keywords: ['zen', 'distraction', 'free', 'focus', 'fullscreen'], action: () => focusManager.cycleMode() },
+    { id: 'focus:writing', label: 'Writing Mode', category: 'Focus', keywords: ['writing', 'clean', 'minimal', 'centered', 'column'], action: () => {
+      settingsStore.set('writingMode', !settingsStore.get('writingMode'));
+    }},
     { id: 'focus:paragraph', label: 'Paragraph Focus', category: 'Focus', keywords: ['paragraph', 'focus', 'dim'], action: () => {
       settingsStore.set('paragraphFocus', !settingsStore.get('paragraphFocus'));
     }},
     { id: 'focus:typewriter', label: 'Typewriter Mode', category: 'Focus', keywords: ['typewriter', 'scroll', 'center'], action: () => {
       settingsStore.set('typewriterMode', !settingsStore.get('typewriterMode'));
+    }},
+
+    // --- Comments ---
+    { id: 'edit:add-comment', label: 'Add Comment', category: 'Edit', keywords: ['comment', 'annotate', 'note', 'review'], action: () => import('../comments/comment-plugin.js').then(m => m.addComment()) },
+
+    // --- Writing Goals ---
+    { id: 'tools:writing-goals', label: 'Writing Goals & Streaks', category: 'Tools', keywords: ['goal', 'target', 'streak', 'daily', 'progress', 'words'], action: () => {
+      import('../stats/writing-goals.js').then(m => m.openGoalSettings());
     }},
   ]);
 }

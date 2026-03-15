@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "mkdn",
-  "version": "2.2.0",
+  "version": "2.4.0",
   "identifier": "io.github.nkarasiak.mkdn",
   "build": {
     "frontendDist": "../dist",
@@ -19,7 +19,7 @@
         "minHeight": 400,
         "resizable": true,
         "fullscreen": false,
-        "decorations": false,
+        "decorations": true,
         "center": true
       }
     ],

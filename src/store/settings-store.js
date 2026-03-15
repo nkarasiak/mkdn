@@ -7,6 +7,7 @@ const defaults = {
   sidebarOpen: false,
   autoSaveInterval: 30000,
   zenMode: false,
+  writingMode: false,
   paragraphFocus: false,
   typewriterMode: false,
   sourceMode: false,
@@ -33,6 +34,7 @@ function load() {
     parsed.sidebarOpen = false;
     // Focus modes never persist across reload
     parsed.zenMode = false;
+    parsed.writingMode = false;
     parsed.paragraphFocus = false;
     parsed.typewriterMode = false;
     parsed.sourceMode = false;

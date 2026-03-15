@@ -48,7 +48,7 @@ injectStyles(`
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   color: #fff;
-  background: var(--text-primary);
+  background: #333;
   box-shadow: var(--shadow-lg);
   pointer-events: auto;
   cursor: pointer;

@@ -8,6 +8,7 @@ import { documentStore } from './document-store.js';
 
 let tabs = [];
 let activeTabId = null;
+let closedTabs = []; // stack for reopen (Ctrl+Shift+T), max 20
 
 export const tabStore = {
   getTabs() {
@@ -52,6 +53,14 @@ export const tabStore = {
   closeTab(id) {
     const idx = tabs.findIndex(t => t.id === id);
     if (idx === -1) return null;
+
+    const closed = tabs[idx];
+    // Save content before closing if it's the active tab
+    if (closed.id === activeTabId) {
+      closed.content = documentStore.getMarkdown();
+    }
+    closedTabs.push({ ...closed });
+    if (closedTabs.length > 20) closedTabs.shift();
 
     tabs.splice(idx, 1);
 
@@ -102,6 +111,29 @@ export const tabStore = {
     const tab = tabs.find(t => t.id === id);
     if (tab) tab.name = name;
     eventBus.emit('tabs:changed', { tabs, activeTabId });
+  },
+
+  /** Reopen the last closed tab. Returns the tab, or null. */
+  reopenTab() {
+    if (closedTabs.length === 0) return null;
+    const tab = closedTabs.pop();
+    return this.openTab(tab.id, tab.name, tab.content, tab.source);
+  },
+
+  /** Switch to the next tab (wraps around) */
+  nextTab() {
+    if (tabs.length <= 1) return null;
+    const idx = tabs.findIndex(t => t.id === activeTabId);
+    const next = tabs[(idx + 1) % tabs.length];
+    return this.switchTab(next.id);
+  },
+
+  /** Switch to the previous tab (wraps around) */
+  prevTab() {
+    if (tabs.length <= 1) return null;
+    const idx = tabs.findIndex(t => t.id === activeTabId);
+    const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
+    return this.switchTab(prev.id);
   },
 
   /** Reorder tabs via drag */

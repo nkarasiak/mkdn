@@ -42,6 +42,31 @@
   color: var(--text-secondary);
 }
 
+.sidebar-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+  margin-left: 2px;
+}
+
+.sidebar-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-close-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Prevent tooltip clipping inside sidebar overflow */
 .sidebar-actions .toolbar-btn[data-tooltip]::after {
   left: auto;

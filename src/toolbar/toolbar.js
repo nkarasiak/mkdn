@@ -135,6 +135,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
     { label: 'Open Folder', action: onOpenFolder },
     { label: 'Quick Open', shortcut: 'Ctrl+P', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
+    { label: 'Document Library', action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
     '---',
     { label: 'Save', shortcut: 'Ctrl+S', action: onSave },
     { label: 'Save As', shortcut: 'Ctrl+Shift+S', action: () => import('../save/file-saver.js').then(m => m.fileSaver.saveAs()) },
@@ -162,6 +163,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'Split Editor', shortcut: 'Ctrl+\\', action: () => import('../editor/split-pane.js').then(m => m.toggleSplitPane()) },
     { label: 'Present Slides', action: () => import('../export/slides.js').then(m => m.enterSlideMode()) },
     '---',
+    { label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
     { label: 'Zen Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
     '---',
     { label: 'Theme: Light', action: () => settingsStore.set('theme', 'light') },
@@ -175,6 +177,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
     { label: 'Knowledge Graph', shortcut: 'Ctrl+Shift+G', action: () => import('../graph/graph-view.js').then(m => m.openGraphView()) },
     { label: 'Plugins', action: () => import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager()) },
+    { label: 'Writing Goals', action: () => import('../stats/writing-goals.js').then(m => m.openGoalSettings()) },
     '---',
     { label: 'Collaborate', action: () => openCollabDialog() },
   ]);
@@ -297,9 +300,18 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     collabBtn.setAttribute('data-tooltip', 'Collaborate');
   });
 
+  // Export button
+  const exportBtn = el('button', {
+    className: 'toolbar-icon-btn',
+    'data-tooltip': 'Export',
+    'aria-label': 'Export',
+    unsafeHTML: icons.download,
+    onClick: () => import('../export/export-menu.js').then(m => m.showExportMenu(exportBtn)),
+  });
+
   const headerRow = el('div', { className: 'toolbar-header' },
     el('div', { className: 'toolbar-header-left' }, backBtn, menuBar),
-    el('div', { className: 'toolbar-header-right' }, breadcrumbEl, statusBadge, collabBtn, themeBtn),
+    el('div', { className: 'toolbar-header-right' }, breadcrumbEl, statusBadge, exportBtn, collabBtn, themeBtn),
   );
 
   // === FORMATTING TOOLBAR ROW ===

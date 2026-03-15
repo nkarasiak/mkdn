@@ -1,60 +1,6 @@
-/* Tauri desktop app — custom titlebar and window controls */
+/* Tauri desktop app overrides */
 
-/* Window control buttons (minimize, maximize, close) */
-.window-controls {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-left: 12px;
-  -webkit-app-region: no-drag;
-}
-
-.window-control {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 32px;
-  color: var(--text-secondary);
-  transition: background 0.1s ease, color 0.1s ease;
-  border-radius: 0;
-}
-
-.window-control:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.window-control-close:hover {
-  background: #e81123;
-  color: #ffffff;
-}
-
-/* Drag region — make header draggable when in Tauri */
-.is-tauri .toolbar-header {
-  -webkit-app-region: drag;
-}
-
-.is-tauri .toolbar-header button,
-.is-tauri .toolbar-header input,
-.is-tauri .toolbar-header a,
-.is-tauri .toolbar-header .toolbar-dropdown,
-.is-tauri .window-controls {
-  -webkit-app-region: no-drag;
-}
-
-/* Adjust top-right corner for window controls */
-.is-tauri .toolbar-header {
-  padding-right: 0;
-}
-
-/* Slight visual separator between app buttons and window controls */
-.window-controls::before {
-  content: '';
-  display: block;
-  width: 1px;
-  height: 20px;
-  background: var(--border-color);
-  margin-right: 4px;
-  opacity: 0.5;
+/* Hide in-app menubar in Tauri — native menus handle the same actions */
+.is-tauri .menubar {
+  display: none;
 }

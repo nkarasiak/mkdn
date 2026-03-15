@@ -5,20 +5,26 @@ import { el } from '../utils/dom.js';
 let appEl = null;
 let revealTimer = null;
 let hintEl = null;
+let sessionStatsEl = null;
+let sessionStatsTimer = null;
 
-// Cycle: Normal → Zen → Zen+Focus → Zen+Focus+Typewriter → Normal
+// Cycle: Normal → Writing → Zen → Zen+Focus → Zen+Focus+Typewriter → Normal
 const MODES = [
-  { zen: false, focus: false, typewriter: false },
-  { zen: true,  focus: false, typewriter: false },
-  { zen: true,  focus: true,  typewriter: false },
-  { zen: true,  focus: true,  typewriter: true  },
+  { zen: false, writing: false, focus: false, typewriter: false },
+  { zen: false, writing: true,  focus: false, typewriter: false },
+  { zen: true,  writing: false, focus: false, typewriter: false },
+  { zen: true,  writing: false, focus: true,  typewriter: false },
+  { zen: true,  writing: false, focus: true,  typewriter: true  },
 ];
 
 function getCurrentIndex() {
   const zen = settingsStore.get('zenMode');
+  const writing = settingsStore.get('writingMode');
   const focus = settingsStore.get('paragraphFocus');
   const tw = settingsStore.get('typewriterMode');
-  const idx = MODES.findIndex(m => m.zen === zen && m.focus === focus && m.typewriter === tw);
+  const idx = MODES.findIndex(m =>
+    m.zen === zen && m.writing === writing && m.focus === focus && m.typewriter === tw
+  );
   return idx >= 0 ? idx : 0;
 }
 
@@ -31,6 +37,16 @@ function applyZen(on) {
   } else {
     removeMouseReveal();
     removeEscapeHint();
+  }
+}
+
+function applyWritingMode(on) {
+  if (!appEl) return;
+  appEl.classList.toggle('writing-mode', on);
+  if (on) {
+    showSessionStats();
+  } else {
+    hideSessionStats();
   }
 }
 
@@ -95,17 +111,44 @@ function removeMouseReveal() {
   toolbar?.classList.remove('zen-reveal');
 }
 
+// Session stats overlay for writing mode
+function showSessionStats() {
+  hideSessionStats();
+  sessionStatsEl = el('div', { className: 'writing-mode-session-stats' });
+  document.body.appendChild(sessionStatsEl);
+  updateSessionStats();
+  sessionStatsTimer = setInterval(updateSessionStats, 10000);
+}
+
+function hideSessionStats() {
+  clearInterval(sessionStatsTimer);
+  if (sessionStatsEl) {
+    sessionStatsEl.remove();
+    sessionStatsEl = null;
+  }
+}
+
+function updateSessionStats() {
+  if (!sessionStatsEl) return;
+  // Import dynamically to avoid circular deps
+  const md = document.querySelector('.ProseMirror')?.textContent || '';
+  const words = md.trim() ? md.trim().split(/\s+/).length : 0;
+  sessionStatsEl.textContent = `${words} words`;
+}
+
 export const focusManager = {
   init(app) {
     appEl = app;
 
     // Listen for settings changes
     eventBus.on('settings:zenMode', applyZen);
+    eventBus.on('settings:writingMode', applyWritingMode);
     eventBus.on('settings:paragraphFocus', applyParagraphFocus);
     eventBus.on('settings:typewriterMode', applyTypewriter);
 
     // Apply initial state (all false on load, but just in case)
     applyZen(settingsStore.get('zenMode'));
+    applyWritingMode(settingsStore.get('writingMode'));
     applyParagraphFocus(settingsStore.get('paragraphFocus'));
     applyTypewriter(settingsStore.get('typewriterMode'));
   },
@@ -116,26 +159,31 @@ export const focusManager = {
     const mode = MODES[next];
 
     settingsStore.set('zenMode', mode.zen);
+    settingsStore.set('writingMode', mode.writing);
     settingsStore.set('paragraphFocus', mode.focus);
     settingsStore.set('typewriterMode', mode.typewriter);
   },
 
   exitAllModes() {
-    if (!settingsStore.get('zenMode') && !settingsStore.get('paragraphFocus') && !settingsStore.get('typewriterMode')) {
+    if (!settingsStore.get('zenMode') && !settingsStore.get('paragraphFocus') &&
+        !settingsStore.get('typewriterMode') && !settingsStore.get('writingMode')) {
       return false;
     }
     settingsStore.set('zenMode', false);
+    settingsStore.set('writingMode', false);
     settingsStore.set('paragraphFocus', false);
     settingsStore.set('typewriterMode', false);
     return true;
   },
 
   isActive() {
-    return settingsStore.get('zenMode') || settingsStore.get('paragraphFocus') || settingsStore.get('typewriterMode');
+    return settingsStore.get('zenMode') || settingsStore.get('paragraphFocus') ||
+           settingsStore.get('typewriterMode') || settingsStore.get('writingMode');
   },
 
   getCurrentModeLabel() {
     const parts = [];
+    if (settingsStore.get('writingMode')) parts.push('Writing');
     if (settingsStore.get('zenMode')) parts.push('Zen');
     if (settingsStore.get('paragraphFocus')) parts.push('Focus');
     if (settingsStore.get('typewriterMode')) parts.push('Typewriter');

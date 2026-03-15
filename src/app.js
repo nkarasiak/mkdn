@@ -25,7 +25,9 @@ import { registerPluginCommands } from './plugins/plugin-commands.js';
 import { registerSearchCommands } from './search/search-commands.js';
 import { initBacklinks } from './backlinks/backlinks-ui.js';
 import { initWritingStats } from './stats/writing-stats.js';
+import { initWritingGoals } from './stats/writing-goals.js';
 import { initThemeEditor } from './themes/theme-editor.js';
+import { initLibraryAutoSave } from './library/library-view.js';
 import { registerGraphCommands } from './graph/graph-commands.js';
 import { registerCanvasCommands } from './canvas/canvas-commands.js';
 import { isTauri, initTauri, initTauriEvents } from './platform/tauri-bridge.js';
@@ -54,8 +56,18 @@ function updateDocTitle() {
 
 function applySidebarState(open) {
   sidebarWrapper?.classList.toggle('collapsed', !open);
-  sidebarOverlay?.classList.toggle('visible', open && window.innerWidth < 1024);
+  sidebarWrapper?.classList.toggle('open', open);
+  // Show overlay on tablet/mobile where sidebar is a fixed overlay
+  const isOverlayMode = window.innerWidth < 1024;
+  sidebarOverlay?.classList.toggle('visible', open && isOverlayMode);
 }
+
+// Re-evaluate overlay when window is resized
+window.addEventListener('resize', () => {
+  const open = settingsStore.get('sidebarOpen');
+  const isOverlayMode = window.innerWidth < 1024;
+  sidebarOverlay?.classList.toggle('visible', open && isOverlayMode);
+});
 
 function toggleSidebar() {
   const current = settingsStore.get('sidebarOpen');
@@ -319,7 +331,11 @@ export const App = {
     // Initialize backlinks, writing stats, and custom theme
     initBacklinks();
     initWritingStats();
+    initWritingGoals(statusbar.querySelector('.statusbar-left'));
     initThemeEditor();
+
+    // Initialize library auto-save
+    initLibraryAutoSave();
 
     // Initialize PWA features (install prompt, offline detection, file handler)
     initPWA();
