@@ -8,7 +8,9 @@ All notable changes to this project will be documented in this file.
 
 - **Menu Bar** — File, Edit, View, Help menus integrated into toolbar header (like Google Docs/LibreOffice), with keyboard shortcut labels and hover-switching between open menus
 - **Auto Dark/Light Mode** — theme defaults to `auto`, detecting system preference via `prefers-color-scheme`; responds to OS theme changes in real-time; cycles Light → Dark → Auto
-- **Ctrl+W Close Tab** — standard keyboard shortcut to close the active tab
+- **Full Tab Shortcuts** — Ctrl+T (new tab), Ctrl+W (close tab, no-op on last), Ctrl+Shift+T (reopen closed tab), Ctrl+Tab/Ctrl+Shift+Tab (cycle tabs), all registered in command palette
+- **Always-Visible Tab Bar** — tab bar shown even with one tab (browser-style), with + button to create new tabs
+- **Tab Rename** — double-click tab title to rename inline (Enter to confirm, Escape to cancel)
 - **Breadcrumb Navigation** — folder/path/filename display in toolbar header with click-to-navigate and inline rename
 - **Active Formatting State** — toolbar buttons highlight to reflect cursor context (bold, italic, heading, list, blockquote)
 - **Quick File Switcher (Ctrl+P)** — fuzzy file finder with recent files, path search, and keyboard navigation
