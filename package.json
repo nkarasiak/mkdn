@@ -1,6 +1,6 @@
 {
   "name": "mkdn",
-  "version": "2.3.0",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
     "preview": "vite preview --port 3000",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "TAURI_BUILD=1 tauri build"
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",
