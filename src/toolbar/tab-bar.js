@@ -14,21 +14,25 @@ function renderTabs() {
   const tabs = tabStore.getTabs();
   const activeId = tabStore.getActiveTabId();
 
+  // Hide the entire tab bar when there's only one tab
+  barEl.style.display = tabs.length <= 1 ? 'none' : '';
+
   tabs.forEach((tab, idx) => {
     const isActive = tab.id === activeId;
 
+    const canClose = tabs.length > 1;
     const closeBtn = el('button', {
       className: 'tab-close',
       'aria-label': 'Close tab',
       unsafeHTML: icons.x,
+      style: canClose ? {} : { display: 'none' },
       onMousedown: (e) => e.stopPropagation(),
       onClick: (e) => {
         e.stopPropagation();
+        if (tabs.length <= 1) return; // never close the last tab
         const next = tabStore.closeTab(tab.id);
         if (next) {
           documentStore.setFile(next.id, next.name, next.content, next.source);
-        } else {
-          documentStore.newDocument();
         }
       },
     });

@@ -35,6 +35,9 @@ import { createCalloutPlugin } from './callout-plugin.js';
 import { createEmojiPlugin } from './emoji-plugin.js';
 import { createDetailsPlugin } from './details-plugin.js';
 import { createDragHandlePlugin } from './drag-handle-plugin.js';
+import { createFloatingToolbarPlugin } from './floating-toolbar.js';
+import { createSlashMenuPlugin } from './slash-menu-plugin.js';
+import { createCommentPlugin } from '../comments/comment-plugin.js';
 import { CrepeFeature } from '@milkdown/crepe';
 import { sourceFormat, getSourceTextarea } from './source-formatter.js';
 
@@ -140,6 +143,9 @@ export const milkdown = {
     crepe.editor.use($prose(() => createEmojiPlugin()));
     crepe.editor.use($prose(() => createDetailsPlugin()));
     crepe.editor.use($prose(() => createDragHandlePlugin()));
+    crepe.editor.use($prose(() => createFloatingToolbarPlugin()));
+    crepe.editor.use($prose(() => createSlashMenuPlugin()));
+    crepe.editor.use($prose(() => createCommentPlugin()));
     await crepe.create();
 
     // Listen for focus mode toggle to refresh decorations

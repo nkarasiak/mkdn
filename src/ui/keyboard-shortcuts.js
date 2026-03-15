@@ -21,11 +21,15 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     const shift = e.shiftKey;
     const key = e.key.toLowerCase();
 
-    // Escape: close find bar → close file switcher → close palette → exit focus modes → close modal (priority chain)
+    // Escape: close find bar → close file switcher → close palette → close sidebar → exit focus modes → close modal (priority chain)
     if (key === 'escape') {
       if (closeFindBar()) return;
       if (closeFileSwitcher()) return;
       if (closeCommandPalette()) return;
+      if (settingsStore.get('sidebarOpen')) {
+        settingsStore.set('sidebarOpen', false);
+        return;
+      }
       if (focusManagerRef?.exitAllModes()) return;
       closeModal();
       return;

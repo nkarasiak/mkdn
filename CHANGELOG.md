@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2026-03-15
+
+### Added
+
+- **Floating Format Toolbar** — contextual formatting toolbar appears on text selection (bold, italic, strikethrough, code, link, heading, quote, comment), positioned above the selection like Google Docs/Notion
+- **Slash Commands (`/` Menu)** — type `/` at start of a line to open an inline command menu with filterable block insertion: headings, lists, quotes, callouts, tables, code blocks, dividers, images, embeds, mermaid diagrams, dates, templates
+- **Writing Mode** — new focus mode (in Ctrl+Shift+F cycle) that centers content in a 680px column, hides formatting toolbar, fades chrome for a clean Substack/Medium-like writing experience
+- **Document Library** — IndexedDB-backed document collection with grid/list view, search, folder filtering, import/export; auto-saves all documents; accessible via File menu or command palette
+- **Writing Goals & Streaks** — set daily/session/document word targets with progress bar in status bar; tracks writing streaks with day counter; activity heatmap (last 7 weeks) in goals modal
+- **Block Actions Menu** — click or right-click the drag handle to access block operations: duplicate, move up/down, convert to heading/paragraph, copy as markdown, delete
+- **Block Plus Button** — `+` button next to drag handle inserts a new block and triggers slash menu
+- **Block Type Labels** — subtle type indicator (H1, P, Quote, Code, etc.) shown on block hover in left gutter
+- **Export Menu** — quick-access export dropdown in toolbar header with Download .md, Export HTML, Export DOCX, Print/PDF
+- **Inline Comments** — select text and add comments via floating toolbar or command palette; comment threads with replies, resolve, and delete; comment highlights as ProseMirror decorations
+- **Comment Store** — localStorage-backed per-file comment threads with real-time decoration updates
+- **Mobile Bottom Toolbar** — on touch devices, formatting toolbar moves to bottom of screen with 44px touch-friendly buttons
+- **Library Auto-Save** — documents automatically saved to IndexedDB library every 5 seconds during editing
+
+### Changed
+
+- **Focus Mode Cycle** — expanded to: Normal → Writing → Zen → Zen+Focus → Zen+Focus+Typewriter → Normal
+- **Drag Handle** — redesigned with wrapper containing plus button + grip handle, showing block type on hover
+- **Toolbar Header** — added Export button and sidebar close button
+- **Command Palette** — added commands: Writing Mode, Writing Goals, Document Library, Add Comment
+- **View Menu** — added Writing Mode toggle
+- **Help Menu** — added Writing Goals
+- **File Menu** — added Document Library
+- **Mobile Responsive** — improved touch target sizes (38px minimum), floating toolbar and slash menu adapt to viewport
+- **Sidebar Close Button** — X button in sidebar header to close; Esc key also closes sidebar
+- **Tab Bar** — hidden when only one tab is open; close button hidden on last tab
+- **Tauri Desktop** — use native window decorations and hide in-app menubar (native menus used instead)
+
+### Fixed
+
+- Toast notifications unreadable in dark mode (was using `var(--text-primary)` as background)
+- Sidebar not opening on screens < 1024px (missing `.open` class toggle)
+- Esc key not closing sidebar
+- Closing last tab incorrectly triggering template chooser modal
+- Sidebar overlay not re-evaluated on window resize
+
 ## [2.3.0] - 2026-03-15
 
 ### Added

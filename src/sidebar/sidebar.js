@@ -227,6 +227,13 @@ export function createSidebar() {
     onClick: () => openSidebarConfig(),
   });
 
+  const closeSidebarBtn = el('button', {
+    className: 'sidebar-close-btn',
+    'aria-label': 'Close sidebar',
+    unsafeHTML: icons.x,
+    onClick: () => settingsStore.set('sidebarOpen', false),
+  });
+
   sidebarEl = el('div', { className: 'sidebar' },
     el('div', { className: 'sidebar-header' },
       el('span', { className: 'sidebar-title' }, 'Files'),
@@ -248,6 +255,7 @@ export function createSidebar() {
           },
         }),
         configBtn,
+        closeSidebarBtn,
       ),
     ),
     el('div', { className: 'sidebar-search' }, searchInput),

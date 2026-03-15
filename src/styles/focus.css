@@ -56,6 +56,71 @@
   padding-bottom: 45vh;
 }
 
+/* --- Writing Mode: centered, minimal, content-first --- */
+.app.writing-mode .toolbar-formatting {
+  display: none;
+}
+
+.app.writing-mode .app-sidebar {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app.writing-mode .sidebar-resize-handle {
+  display: none;
+}
+
+.app.writing-mode .toolbar-header {
+  background: transparent;
+  border-bottom-color: transparent;
+}
+
+.app.writing-mode .menubar {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.app.writing-mode .toolbar-header:hover .menubar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.app.writing-mode .editor-pane .ProseMirror {
+  max-width: 680px;
+  margin: 0 auto;
+  padding-top: 60px;
+  padding-bottom: 40vh;
+}
+
+.app.writing-mode .app-statusbar {
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+.app.writing-mode .app-statusbar:hover {
+  opacity: 1;
+}
+
+/* Writing mode session stats overlay */
+.writing-mode-session-stats {
+  position: fixed;
+  bottom: 56px;
+  right: 16px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.writing-mode-session-stats:hover {
+  opacity: 0.8;
+}
+
 /* --- Escape hint overlay --- */
 .zen-escape-hint {
   position: fixed;

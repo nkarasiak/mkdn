@@ -204,6 +204,75 @@
   }
 }
 
+/* Mobile bottom formatting bar */
+@media (max-width: 767px) and (hover: none) {
+  .app {
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      "toolbar"
+      "main"
+      "formatbar";
+  }
+
+  .toolbar-formatting {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: var(--toolbar-bg);
+    border-top: 1px solid var(--border-light);
+    height: 44px;
+    padding: 0 8px;
+    justify-content: center;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .app-statusbar {
+    bottom: 44px;
+  }
+
+  /* Larger touch targets */
+  .toolbar-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+
+  .toolbar-dropdown-btn {
+    min-height: 38px;
+  }
+
+  /* Floating toolbar adjustments for mobile */
+  .floating-toolbar {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .floating-toolbar-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Slash menu adjustments */
+  .slash-menu {
+    max-width: calc(100vw - 32px);
+    max-height: 50vh;
+  }
+
+  /* Modal adjustments */
+  .library-panel,
+  .publish-panel {
+    width: 95vw;
+    max-height: 85vh;
+  }
+
+  .publish-targets {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Very small mobile */
 @media (max-width: 374px) {
   .editor-pane .ProseMirror,

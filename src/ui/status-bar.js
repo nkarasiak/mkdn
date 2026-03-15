@@ -54,6 +54,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   }
 
   eventBus.on('settings:zenMode', updateFocusLabel);
+  eventBus.on('settings:writingMode', updateFocusLabel);
   eventBus.on('settings:paragraphFocus', updateFocusLabel);
   eventBus.on('settings:typewriterMode', updateFocusLabel);
   updateFocusLabel();
