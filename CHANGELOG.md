@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- CI: add missing `tauri` npm script so `tauri-apps/tauri-action` can run desktop builds
+
 ## [2.2.0] - 2026-03-15
 
 ### Added
