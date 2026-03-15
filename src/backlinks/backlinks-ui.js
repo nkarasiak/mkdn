@@ -6,6 +6,7 @@ import { localSync } from '../local/local-sync.js';
 import { getBacklinksBody } from '../sidebar/sidebar.js';
 import { extractWikiLinks, findBacklinks, getOutgoingLinks, resolveWikiLink } from './backlinks-engine.js';
 import { debounce } from '../utils/debounce.js';
+import { createEmptyState } from '../ui/empty-state.js';
 
 let lastFiles = [];
 let backlinksPanelEl = null;
@@ -57,9 +58,11 @@ function renderBacklinksPanel(backlinks, outgoing, files) {
   // Empty state
   if (outgoing.length === 0 && backlinks.length === 0) {
     container.appendChild(
-      el('div', { className: 'sidebar-empty' },
-        'No wiki-links found. Use [[page-name]] to link between notes.',
-      ),
+      createEmptyState({
+        icon: icons.link,
+        title: 'No links yet',
+        description: 'Use [[page-name]] syntax to create wiki-links between your notes.',
+      }),
     );
   }
 }

@@ -131,8 +131,76 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     shareBtn.appendChild(document.createTextNode('Share'));
   });
 
+  // === BREADCRUMB ===
+  const breadcrumbEl = el('div', { className: 'toolbar-breadcrumb' });
+
+  function updateBreadcrumb() {
+    breadcrumbEl.replaceChildren();
+    const folderName = localSync.isLinked() ? localSync.getFolderName() : null;
+    const fileId = documentStore.getFileId();
+    const fileName = documentStore.getFileName();
+
+    if (folderName) {
+      const folderSpan = el('span', {
+        className: 'breadcrumb-segment breadcrumb-folder',
+        onClick: onToggleSidebar,
+      }, folderName);
+      breadcrumbEl.appendChild(folderSpan);
+
+      // If fileId has path segments, show subdirectories
+      if (fileId && fileId.includes('/')) {
+        const parts = fileId.split('/');
+        // Show intermediate path segments (skip last = filename)
+        for (let i = 0; i < parts.length - 1; i++) {
+          breadcrumbEl.appendChild(el('span', { className: 'breadcrumb-sep' }));
+          breadcrumbEl.appendChild(
+            el('span', { className: 'breadcrumb-segment' }, parts[i]),
+          );
+        }
+      }
+
+      breadcrumbEl.appendChild(el('span', { className: 'breadcrumb-sep' }));
+    }
+
+    const nameSpan = el('span', {
+      className: 'breadcrumb-segment breadcrumb-file',
+      onClick: () => {
+        // Inline rename
+        const input = el('input', {
+          type: 'text',
+          className: 'breadcrumb-rename-input',
+          value: fileName.replace(/\.md$/i, ''),
+        });
+        nameSpan.replaceWith(input);
+        input.focus();
+        input.select();
+        const finish = () => {
+          const newName = input.value.trim();
+          if (newName && newName !== fileName.replace(/\.md$/i, '')) {
+            const fullName = newName.endsWith('.md') ? newName : newName + '.md';
+            documentStore.setFileName(fullName);
+          }
+          input.replaceWith(nameSpan);
+        };
+        input.addEventListener('blur', finish);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+          if (e.key === 'Escape') { input.value = fileName.replace(/\.md$/i, ''); input.blur(); }
+        });
+      },
+    }, fileName.replace(/\.md$/i, ''));
+    breadcrumbEl.appendChild(nameSpan);
+  }
+
+  updateBreadcrumb();
+  eventBus.on('file:opened', updateBreadcrumb);
+  eventBus.on('file:new', updateBreadcrumb);
+  eventBus.on('file:renamed', updateBreadcrumb);
+  eventBus.on('local:folder-linked', updateBreadcrumb);
+  eventBus.on('local:folder-unlinked', updateBreadcrumb);
+
   const headerRow = el('div', { className: 'toolbar-header' },
-    el('div', { className: 'toolbar-header-left' }, backBtn, statusBadge),
+    el('div', { className: 'toolbar-header-left' }, backBtn, breadcrumbEl, statusBadge),
     el('div', { className: 'toolbar-header-right' }, shareBtn, openBtn, openFolderBtn),
   );
 
@@ -410,6 +478,62 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   formattingRow.addEventListener('mousedown', (e) => {
     e.preventDefault();
   });
+
+  // === ACTIVE FORMATTING STATE ===
+  const styleLabel = styleDropdown.querySelector('.toolbar-dropdown-btn > span:first-child');
+
+  function updateActiveFormatting() {
+    if (settingsStore.get('sourceMode')) return;
+    const view = milkdown.getView?.();
+    if (!view) return;
+    const { state } = view;
+    const { $from } = state.selection;
+    const marks = state.storedMarks || $from.marks();
+
+    // Marks
+    const hasBold = marks.some(m => m.type.name === 'strong');
+    const hasItalic = marks.some(m => m.type.name === 'emphasis');
+    const hasStrike = marks.some(m => m.type.name === 'strikethrough');
+    const hasCode = marks.some(m => m.type.name === 'inlineCode');
+
+    boldBtn.classList.toggle('toolbar-btn-active-format', hasBold);
+    italicBtn.classList.toggle('toolbar-btn-active-format', hasItalic);
+    strikeBtn.classList.toggle('toolbar-btn-active-format', hasStrike);
+    codeBtn.classList.toggle('toolbar-btn-active-format', hasCode);
+
+    // Node type (heading / list / blockquote)
+    const parent = $from.parent;
+    const grandparent = $from.node($from.depth - 1);
+
+    let styleText = 'Style';
+    if (parent.type.name === 'heading') {
+      styleText = `Heading ${parent.attrs.level}`;
+    } else if (parent.type.name === 'paragraph') {
+      styleText = 'Normal';
+    }
+    if (styleLabel) styleLabel.textContent = styleText;
+
+    const isBullet = grandparent?.type.name === 'list_item' &&
+      $from.node($from.depth - 2)?.type.name === 'bullet_list';
+    const isOrdered = grandparent?.type.name === 'list_item' &&
+      $from.node($from.depth - 2)?.type.name === 'ordered_list';
+    const isBlockquote = state.selection.$from.path?.some?.((v, i) =>
+      typeof v === 'object' && v?.type?.name === 'blockquote'
+    ) || false;
+
+    ulBtn.classList.toggle('toolbar-btn-active-format', !!isBullet);
+    olBtn.classList.toggle('toolbar-btn-active-format', !!isOrdered);
+    commentBtn.classList.toggle('toolbar-btn-active-format', !!isBlockquote);
+  }
+
+  // Poll on selection changes via ProseMirror transaction
+  eventBus.on('content:changed', updateActiveFormatting);
+  // Also update on click/arrow keys
+  document.addEventListener('selectionchange', () => {
+    requestAnimationFrame(updateActiveFormatting);
+  });
+  // Update after milkdown init with a small delay
+  setTimeout(updateActiveFormatting, 2500);
 
   // === COMBINED TOOLBAR ===
   const toolbar = el('div', { className: 'toolbar' }, headerRow, formattingRow);

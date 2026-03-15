@@ -7,6 +7,10 @@
       "main";
   }
 
+  .sidebar-resize-handle {
+    display: none;
+  }
+
   .app-sidebar {
     position: fixed;
     top: 0;
@@ -178,6 +182,16 @@
 
   .statusbar-stats {
     font-size: 10px;
+  }
+
+  /* Breadcrumb: show only filename on mobile */
+  .breadcrumb-folder,
+  .breadcrumb-sep {
+    display: none;
+  }
+
+  .breadcrumb-file {
+    max-width: 120px;
   }
 
   /* Hide less important toolbar buttons on very small screens */

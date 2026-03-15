@@ -1,10 +1,10 @@
 .app {
   display: grid;
   grid-template-rows: auto 1fr;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 0 1fr;
   grid-template-areas:
-    "toolbar toolbar"
-    "sidebar main";
+    "toolbar toolbar toolbar"
+    "sidebar resize main";
   height: 100vh;
   overflow: hidden;
 }
@@ -16,7 +16,7 @@
 .app-sidebar {
   grid-area: sidebar;
   width: var(--sidebar-width);
-  transition: width var(--transition-normal), opacity var(--transition-normal);
+  transition: width var(--transition-spring), opacity var(--transition-normal);
   overflow: hidden;
 }
 
@@ -25,6 +25,40 @@
   opacity: 0;
   pointer-events: none;
   border-right: none;
+}
+
+.sidebar-resize-handle {
+  grid-area: resize;
+  width: 3px;
+  cursor: col-resize;
+  background: transparent;
+  transition: width 0.15s ease, background 0.15s ease;
+  z-index: 2;
+  position: relative;
+}
+
+.sidebar-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -2px;
+  width: 7px;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle.active {
+  width: 3px;
+  background: var(--accent);
+}
+
+body.resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.resizing * {
+  cursor: col-resize !important;
 }
 
 .app-main {
