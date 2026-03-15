@@ -56,6 +56,16 @@ export default defineConfig(({ mode }) => ({
           { src: './icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: './favicon.svg', sizes: 'any', type: 'image/svg+xml' },
         ],
+        file_handlers: [
+          {
+            action: './',
+            accept: {
+              'text/markdown': ['.md', '.markdown'],
+              'text/plain': ['.txt'],
+            },
+          },
+        ],
+        categories: ['productivity', 'utilities'],
       },
     }),
   ].filter(Boolean),
