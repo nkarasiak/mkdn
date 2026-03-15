@@ -6,6 +6,7 @@ import { settingsStore } from '../store/settings-store.js';
 import { closeModal, confirm as confirmModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
+import { openFileSwitcher, closeFileSwitcher } from '../command-palette/file-switcher.js';
 import { openFindBar, closeFindBar, isFindBarOpen } from '../find-replace/find-bar.js';
 import { sourceFormat } from '../editor/source-formatter.js';
 
@@ -19,9 +20,10 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     const shift = e.shiftKey;
     const key = e.key.toLowerCase();
 
-    // Escape: close find bar → close palette → exit focus modes → close modal (priority chain)
+    // Escape: close find bar → close file switcher → close palette → exit focus modes → close modal (priority chain)
     if (key === 'escape') {
       if (closeFindBar()) return;
+      if (closeFileSwitcher()) return;
       if (closeCommandPalette()) return;
       if (focusManagerRef?.exitAllModes()) return;
       closeModal();
@@ -137,10 +139,10 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+P — Print / Export PDF
+    // Ctrl+P — Quick file switcher
     if (key === 'p' && !shift) {
       e.preventDefault();
-      import('../utils/export.js').then(m => m.printDocument());
+      openFileSwitcher();
       return;
     }
 
@@ -157,6 +159,13 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     if (key === 'u' && !shift) {
       e.preventDefault();
       settingsStore.set('sourceMode', !settingsStore.get('sourceMode'));
+      return;
+    }
+
+    // Ctrl+\ — Toggle split pane
+    if (e.code === 'Backslash' && !shift) {
+      e.preventDefault();
+      import('../editor/split-pane.js').then(m => m.toggleSplitPane());
       return;
     }
 
