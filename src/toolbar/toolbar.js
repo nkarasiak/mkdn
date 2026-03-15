@@ -89,51 +89,217 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     onClick: onSave,
   }, statusDot, statusText);
 
-  // Open file button
-  const openBtn = el('button', {
-    className: 'toolbar-secondary-btn',
-    'data-tooltip': 'Open file (Ctrl+O)',
-    onClick: onOpen,
-  },
-    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.file }),
-    'Open',
-  );
+  // === MENU BAR (File, Edit, View, Help) ===
+  function createMenu(label, items) {
+    const menu = el('div', { className: 'toolbar-dropdown-menu menubar-menu' });
+    items.forEach(item => {
+      if (item === '---') {
+        menu.appendChild(el('div', { className: 'menubar-separator' }));
+        return;
+      }
+      const shortcutEl = item.shortcut
+        ? el('span', { className: 'menubar-shortcut' }, item.shortcut)
+        : null;
+      menu.appendChild(el('button', {
+        className: 'toolbar-dropdown-item menubar-item',
+        onClick: () => { item.action(); closeAllDropdowns(); },
+      },
+        el('span', {}, item.label),
+        shortcutEl,
+      ));
+    });
 
-  // Open folder button
-  const openFolderBtn = el('button', {
-    className: 'toolbar-secondary-btn',
-    'data-tooltip': 'Open folder',
-    onClick: onOpenFolder,
-  },
-    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.folderOpen }),
-    'Folder',
-  );
+    const trigger = el('button', {
+      className: 'menubar-trigger',
+      onClick: (e) => {
+        e.stopPropagation();
+        const wasOpen = menu.classList.contains('open');
+        closeAllDropdowns();
+        if (!wasOpen) menu.classList.add('open');
+      },
+      onMouseenter: () => {
+        // If any sibling menu is open, switch to this one on hover
+        const anyOpen = menuBar.querySelector('.toolbar-dropdown-menu.open');
+        if (anyOpen && anyOpen !== menu) {
+          closeAllDropdowns();
+          menu.classList.add('open');
+        }
+      },
+    }, label);
 
-  // Share / Collab button
-  const shareBtn = el('button', {
-    className: 'toolbar-secondary-btn',
+    return el('div', { className: 'toolbar-dropdown menubar-dropdown' }, trigger, menu);
+  }
+
+  const fileMenu = createMenu('File', [
+    { label: 'New', shortcut: 'Ctrl+N', action: () => documentStore.newDocument() },
+    { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
+    { label: 'Open Folder', action: onOpenFolder },
+    { label: 'Quick Open', shortcut: 'Ctrl+P', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
+    '---',
+    { label: 'Save', shortcut: 'Ctrl+S', action: onSave },
+    { label: 'Save As', shortcut: 'Ctrl+Shift+S', action: () => import('../save/file-saver.js').then(m => m.fileSaver.saveAs()) },
+    '---',
+    { label: 'Download .md', action: () => downloadMarkdown() },
+    { label: 'Export HTML', action: () => import('../export/html-export.js').then(m => m.exportStyledHtml()) },
+    { label: 'Export DOCX', action: () => import('../export/docx-export.js').then(m => m.exportDocx()) },
+    { label: 'Print / PDF', shortcut: 'Ctrl+P', action: () => printDocument() },
+  ]);
+
+  const editMenu = createMenu('Edit', [
+    { label: 'Undo', shortcut: 'Ctrl+Z', action: () => milkdown.runCommand(milkdown.commands.undo) },
+    { label: 'Redo', shortcut: 'Ctrl+Shift+Z', action: () => milkdown.runCommand(milkdown.commands.redo) },
+    '---',
+    { label: 'Find', shortcut: 'Ctrl+F', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(false)) },
+    { label: 'Find & Replace', shortcut: 'Ctrl+H', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(true)) },
+  ]);
+
+  const viewMenu = createMenu('View', [
+    { label: 'Toggle Sidebar', shortcut: 'Ctrl+Shift+B', action: onToggleSidebar },
+    { label: 'Toggle Outline', action: () => import('../sidebar/sidebar.js').then(m => m.toggleOutlineSection()) },
+    { label: 'Toggle History', shortcut: 'Ctrl+Shift+H', action: () => import('../sidebar/sidebar.js').then(m => m.toggleHistorySection()) },
+    '---',
+    { label: 'Source View', shortcut: 'Ctrl+U', action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
+    { label: 'Split Editor', shortcut: 'Ctrl+\\', action: () => import('../editor/split-pane.js').then(m => m.toggleSplitPane()) },
+    { label: 'Present Slides', action: () => import('../export/slides.js').then(m => m.enterSlideMode()) },
+    '---',
+    { label: 'Zen Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
+    '---',
+    { label: 'Theme: Light', action: () => settingsStore.set('theme', 'light') },
+    { label: 'Theme: Dark', action: () => settingsStore.set('theme', 'dark') },
+    { label: 'Theme: Auto', action: () => settingsStore.set('theme', 'auto') },
+    { label: 'Theme Editor', action: () => import('../themes/theme-editor.js').then(m => m.openThemeEditor()) },
+  ]);
+
+  const helpMenu = createMenu('Help', [
+    { label: 'Command Palette', shortcut: 'Ctrl+K', action: () => import('../command-palette/command-palette.js').then(m => m.openCommandPalette()) },
+    { label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
+    { label: 'Knowledge Graph', shortcut: 'Ctrl+Shift+G', action: () => import('../graph/graph-view.js').then(m => m.openGraphView()) },
+    { label: 'Plugins', action: () => import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager()) },
+    '---',
+    { label: 'Collaborate', action: () => openCollabDialog() },
+  ]);
+
+  const menuBar = el('div', { className: 'menubar' }, fileMenu, editMenu, viewMenu, helpMenu);
+
+  // === BREADCRUMB ===
+  const breadcrumbEl = el('div', { className: 'toolbar-breadcrumb' });
+
+  function updateBreadcrumb() {
+    breadcrumbEl.replaceChildren();
+    const folderName = localSync.isLinked() ? localSync.getFolderName() : null;
+    const fileId = documentStore.getFileId();
+    const fileName = documentStore.getFileName();
+
+    if (folderName) {
+      const folderSpan = el('span', {
+        className: 'breadcrumb-segment breadcrumb-folder',
+        onClick: onToggleSidebar,
+      }, folderName);
+      breadcrumbEl.appendChild(folderSpan);
+
+      // If fileId has path segments, show subdirectories
+      if (fileId && fileId.includes('/')) {
+        const parts = fileId.split('/');
+        // Show intermediate path segments (skip last = filename)
+        for (let i = 0; i < parts.length - 1; i++) {
+          breadcrumbEl.appendChild(el('span', { className: 'breadcrumb-sep' }));
+          breadcrumbEl.appendChild(
+            el('span', { className: 'breadcrumb-segment' }, parts[i]),
+          );
+        }
+      }
+
+      breadcrumbEl.appendChild(el('span', { className: 'breadcrumb-sep' }));
+    }
+
+    const nameSpan = el('span', {
+      className: 'breadcrumb-segment breadcrumb-file',
+      onClick: () => {
+        // Inline rename
+        const input = el('input', {
+          type: 'text',
+          className: 'breadcrumb-rename-input',
+          value: fileName.replace(/\.md$/i, ''),
+        });
+        nameSpan.replaceWith(input);
+        input.focus();
+        input.select();
+        const finish = () => {
+          const newName = input.value.trim();
+          if (newName && newName !== fileName.replace(/\.md$/i, '')) {
+            const fullName = newName.endsWith('.md') ? newName : newName + '.md';
+            documentStore.setFileName(fullName);
+          }
+          input.replaceWith(nameSpan);
+        };
+        input.addEventListener('blur', finish);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+          if (e.key === 'Escape') { input.value = fileName.replace(/\.md$/i, ''); input.blur(); }
+        });
+      },
+    }, fileName.replace(/\.md$/i, ''));
+    breadcrumbEl.appendChild(nameSpan);
+  }
+
+  updateBreadcrumb();
+  eventBus.on('file:opened', updateBreadcrumb);
+  eventBus.on('file:new', updateBreadcrumb);
+  eventBus.on('file:renamed', updateBreadcrumb);
+  eventBus.on('local:folder-linked', updateBreadcrumb);
+  eventBus.on('local:folder-unlinked', updateBreadcrumb);
+
+  // === HEADER-RIGHT ICON BUTTONS (moved from status bar) ===
+
+  // Theme toggle (cycles: light → dark → auto)
+  function themeIcon(theme) {
+    if (theme === 'dark') return icons.sun;
+    if (theme === 'auto') return icons.monitor;
+    return icons.moon;
+  }
+  function themeTooltip(theme) {
+    if (theme === 'dark') return 'Theme: Dark';
+    if (theme === 'auto') return 'Theme: Auto';
+    return 'Theme: Light';
+  }
+  const themeBtn = el('button', {
+    className: 'toolbar-icon-btn',
+    'data-tooltip': themeTooltip(settingsStore.getTheme()),
+    'aria-label': themeTooltip(settingsStore.getTheme()),
+    unsafeHTML: themeIcon(settingsStore.getTheme()),
+    onClick: () => {
+      const current = settingsStore.getTheme();
+      const next = current === 'light' ? 'dark' : current === 'dark' ? 'auto' : 'light';
+      settingsStore.set('theme', next);
+    },
+  });
+
+  eventBus.on('settings:theme', (theme) => {
+    themeBtn.innerHTML = themeIcon(theme);
+    themeBtn.setAttribute('data-tooltip', themeTooltip(theme));
+  });
+
+  // Collaborate button
+  const collabBtn = el('button', {
+    className: 'toolbar-icon-btn',
     'data-tooltip': 'Collaborate',
+    'aria-label': 'Collaborate',
+    unsafeHTML: icons.share,
     onClick: () => openCollabDialog(),
-  },
-    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.share }),
-    'Share',
-  );
+  });
 
-  // Update share button label when collab is active
   eventBus.on('collab:started', () => {
-    shareBtn.querySelector('span:last-child')?.remove();
-    shareBtn.appendChild(document.createTextNode('Live'));
-    shareBtn.classList.add('toolbar-btn-active');
+    collabBtn.classList.add('toolbar-btn-active');
+    collabBtn.setAttribute('data-tooltip', 'Live collaboration');
   });
   eventBus.on('collab:stopped', () => {
-    shareBtn.classList.remove('toolbar-btn-active');
-    while (shareBtn.childNodes.length > 1) shareBtn.lastChild.remove();
-    shareBtn.appendChild(document.createTextNode('Share'));
+    collabBtn.classList.remove('toolbar-btn-active');
+    collabBtn.setAttribute('data-tooltip', 'Collaborate');
   });
 
   const headerRow = el('div', { className: 'toolbar-header' },
-    el('div', { className: 'toolbar-header-left' }, backBtn, statusBadge),
-    el('div', { className: 'toolbar-header-right' }, shareBtn, openBtn, openFolderBtn),
+    el('div', { className: 'toolbar-header-left' }, backBtn, menuBar),
+    el('div', { className: 'toolbar-header-right' }, breadcrumbEl, statusBadge, collabBtn, themeBtn),
   );
 
   // === FORMATTING TOOLBAR ROW ===
@@ -410,6 +576,62 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   formattingRow.addEventListener('mousedown', (e) => {
     e.preventDefault();
   });
+
+  // === ACTIVE FORMATTING STATE ===
+  const styleLabel = styleDropdown.querySelector('.toolbar-dropdown-btn > span:first-child');
+
+  function updateActiveFormatting() {
+    if (settingsStore.get('sourceMode')) return;
+    const view = milkdown.getView?.();
+    if (!view) return;
+    const { state } = view;
+    const { $from } = state.selection;
+    const marks = state.storedMarks || $from.marks();
+
+    // Marks
+    const hasBold = marks.some(m => m.type.name === 'strong');
+    const hasItalic = marks.some(m => m.type.name === 'emphasis');
+    const hasStrike = marks.some(m => m.type.name === 'strikethrough');
+    const hasCode = marks.some(m => m.type.name === 'inlineCode');
+
+    boldBtn.classList.toggle('toolbar-btn-active-format', hasBold);
+    italicBtn.classList.toggle('toolbar-btn-active-format', hasItalic);
+    strikeBtn.classList.toggle('toolbar-btn-active-format', hasStrike);
+    codeBtn.classList.toggle('toolbar-btn-active-format', hasCode);
+
+    // Node type (heading / list / blockquote)
+    const parent = $from.parent;
+    const grandparent = $from.node($from.depth - 1);
+
+    let styleText = 'Style';
+    if (parent.type.name === 'heading') {
+      styleText = `Heading ${parent.attrs.level}`;
+    } else if (parent.type.name === 'paragraph') {
+      styleText = 'Normal';
+    }
+    if (styleLabel) styleLabel.textContent = styleText;
+
+    const isBullet = grandparent?.type.name === 'list_item' &&
+      $from.node($from.depth - 2)?.type.name === 'bullet_list';
+    const isOrdered = grandparent?.type.name === 'list_item' &&
+      $from.node($from.depth - 2)?.type.name === 'ordered_list';
+    const isBlockquote = state.selection.$from.path?.some?.((v, i) =>
+      typeof v === 'object' && v?.type?.name === 'blockquote'
+    ) || false;
+
+    ulBtn.classList.toggle('toolbar-btn-active-format', !!isBullet);
+    olBtn.classList.toggle('toolbar-btn-active-format', !!isOrdered);
+    commentBtn.classList.toggle('toolbar-btn-active-format', !!isBlockquote);
+  }
+
+  // Poll on selection changes via ProseMirror transaction
+  eventBus.on('content:changed', updateActiveFormatting);
+  // Also update on click/arrow keys
+  document.addEventListener('selectionchange', () => {
+    requestAnimationFrame(updateActiveFormatting);
+  });
+  // Update after milkdown init with a small delay
+  setTimeout(updateActiveFormatting, 2500);
 
   // === COMBINED TOOLBAR ===
   const toolbar = el('div', { className: 'toolbar' }, headerRow, formattingRow);

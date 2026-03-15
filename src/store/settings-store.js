@@ -2,7 +2,7 @@ import { eventBus } from './event-bus.js';
 import { STORAGE_SETTINGS } from '../constants.js';
 
 const defaults = {
-  theme: 'light',
+  theme: 'auto',
   fontSize: 15,
   sidebarOpen: false,
   autoSaveInterval: 30000,
@@ -68,6 +68,14 @@ export const settingsStore = {
   },
 
   getTheme() {
+    return settings.theme;
+  },
+
+  /** Resolve 'auto' to actual light/dark based on system preference */
+  getResolvedTheme() {
+    if (settings.theme === 'auto') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
     return settings.theme;
   },
 };

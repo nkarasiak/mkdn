@@ -12,6 +12,7 @@ import { toast } from '../ui/toast.js';
 import { createHistoryPanel } from '../history/history-panel.js';
 import { createOutlinePanel } from './outline-panel.js';
 import { debounce } from '../utils/debounce.js';
+import { createEmptyState } from '../ui/empty-state.js';
 
 let sidebarEl = null;
 let searchInput = null;
@@ -36,13 +37,12 @@ function renderLocalFileList() {
 
   if (!localSync.isLinked()) {
     localFileListEl.appendChild(
-      el('button', {
-        className: 'local-link-btn',
-        onClick: () => localSync.linkFolder(),
-      },
-        el('span', { unsafeHTML: icons.folder }),
-        'Open Folder',
-      ),
+      createEmptyState({
+        icon: icons.folderOpen,
+        title: 'Open a folder to get started',
+        description: 'Link a local folder to browse, create, and edit your markdown files.',
+        action: { label: 'Open Folder', onClick: () => localSync.linkFolder() },
+      }),
     );
     return;
   }

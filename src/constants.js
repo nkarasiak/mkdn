@@ -22,6 +22,9 @@ export const STORAGE_SESSION = 'mkdn-session';
 // Plugin storage prefix (used dynamically as `mkdn-plugin-${id}-${key}`)
 export const PLUGIN_STORAGE_PREFIX = 'mkdn-plugin-';
 
+// Recent files (file switcher)
+export const STORAGE_RECENT_FILES = 'mkdn-recent-files';
+
 // PartyKit room prefix
 export const PARTYKIT_ROOM_PREFIX = 'mkdn-';
 

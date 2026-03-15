@@ -58,22 +58,6 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   eventBus.on('settings:typewriterMode', updateFocusLabel);
   updateFocusLabel();
 
-  // Theme toggle
-  const themeBtn = el('button', {
-    className: 'statusbar-icon-btn',
-    'data-tooltip': 'Toggle Theme (Light/Dark)',
-    'aria-label': 'Toggle Theme (Light/Dark)',
-    unsafeHTML: settingsStore.getTheme() === 'dark' ? icons.sun : icons.moon,
-    onClick: () => {
-      const next = settingsStore.getTheme() === 'dark' ? 'light' : 'dark';
-      settingsStore.set('theme', next);
-    },
-  });
-
-  eventBus.on('settings:theme', (theme) => {
-    themeBtn.replaceChildren(svgIcon(theme === 'dark' ? icons.sun : icons.moon));
-  });
-
   // Graph button — only visible when a local folder with wiki-links is linked
   const graphBtn = el('button', {
     className: 'statusbar-icon-btn',
@@ -100,7 +84,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
 
   const statusEl = el('div', { className: 'statusbar' },
     el('div', { className: 'statusbar-left' }, statsEl),
-    el('div', { className: 'statusbar-right' }, focusModeLabel, focusBtn, historyBtn, graphBtn, themeBtn, infoBtn),
+    el('div', { className: 'statusbar-right' }, focusModeLabel, focusBtn, historyBtn, graphBtn, infoBtn),
   );
 
   return statusEl;
@@ -135,6 +119,7 @@ function buildAboutContent() {
       shortcutRow(['Ctrl', 'U'], 'Toggle source view'),
       shortcutRow(['Ctrl', 'Shift', 'F'], 'Cycle focus modes'),
       shortcutRow(['Ctrl', 'Shift', 'G'], 'Knowledge graph'),
+      shortcutRow(['Ctrl', 'W'], 'Close tab'),
       shortcutRow(['Esc'], 'Close dialog / exit focus'),
     ),
   );

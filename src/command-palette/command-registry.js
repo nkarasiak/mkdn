@@ -1,3 +1,5 @@
+import { openFileSwitcher } from './file-switcher.js';
+
 const commands = [];
 
 export const commandRegistry = {
@@ -37,6 +39,7 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'file:new', label: 'New Document', category: 'File', shortcut: 'Ctrl+N', keywords: ['new', 'create', 'blank'], action: () => documentStore.newDocument() },
     { id: 'file:open', label: 'Open File', category: 'File', shortcut: 'Ctrl+O', keywords: ['open', 'load'], action: () => fileSaver.openFile() },
     { id: 'file:open-folder', label: 'Open Folder', category: 'File', keywords: ['folder', 'directory', 'link'], action: () => localSync.linkFolder() },
+    { id: 'file:quick-switch', label: 'Quick Open File', category: 'File', shortcut: 'Ctrl+P', keywords: ['switch', 'quick', 'open', 'find', 'file', 'recent'], action: () => openFileSwitcher() },
 
     // --- View ---
     { id: 'view:toggle-sidebar', label: 'Toggle Sidebar', category: 'View', shortcut: 'Ctrl+Shift+B', keywords: ['sidebar', 'panel'], action: toggleSidebar },
@@ -48,7 +51,7 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'format:bold', label: 'Bold', category: 'Format', shortcut: 'Ctrl+B', keywords: ['bold', 'strong'], action: () => milkdown.runCommand(milkdown.commands.toggleBold) },
     { id: 'format:italic', label: 'Italic', category: 'Format', shortcut: 'Ctrl+I', keywords: ['italic', 'emphasis'], action: () => milkdown.runCommand(milkdown.commands.toggleItalic) },
     { id: 'format:strikethrough', label: 'Strikethrough', category: 'Format', keywords: ['strikethrough', 'strike'], action: () => milkdown.runCommand(milkdown.commands.toggleStrikethrough) },
-    { id: 'format:code', label: 'Inline Code', category: 'Format', keywords: ['code', 'inline', 'monospace'], action: () => milkdown.runCommand(milkdown.commands.toggleCode) },
+    { id: 'format:code', label: 'Inline Code', category: 'Format', shortcut: 'Ctrl+E', keywords: ['code', 'inline', 'monospace'], action: () => milkdown.runCommand(milkdown.commands.toggleCode) },
     { id: 'format:h1', label: 'Heading 1', category: 'Format', keywords: ['heading', 'h1', 'title'], action: () => milkdown.runCommand(milkdown.commands.wrapHeading, 1) },
     { id: 'format:h2', label: 'Heading 2', category: 'Format', keywords: ['heading', 'h2', 'subtitle'], action: () => milkdown.runCommand(milkdown.commands.wrapHeading, 2) },
     { id: 'format:h3', label: 'Heading 3', category: 'Format', keywords: ['heading', 'h3'], action: () => milkdown.runCommand(milkdown.commands.wrapHeading, 3) },
@@ -58,7 +61,7 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'format:blockquote', label: 'Blockquote', category: 'Format', keywords: ['quote', 'blockquote'], action: () => milkdown.toggleBlockquote() },
 
     // --- Insert ---
-    { id: 'insert:link', label: 'Insert Link', category: 'Insert', shortcut: 'Ctrl+L', keywords: ['link', 'url', 'href'], action: () => milkdown.runCommand(milkdown.commands.toggleLink) },
+    { id: 'insert:link', label: 'Insert Link', category: 'Insert', shortcut: 'Ctrl+L', keywords: ['link', 'url', 'href', 'wikilink'], action: () => milkdown.runCommand(milkdown.commands.toggleLink) },
     { id: 'insert:table', label: 'Insert Table', category: 'Insert', keywords: ['table', 'grid', 'rows', 'columns'], action: () => milkdown.insertTable() },
     { id: 'insert:hr', label: 'Horizontal Rule', category: 'Insert', keywords: ['horizontal', 'rule', 'divider', 'separator'], action: () => milkdown.runCommand(milkdown.commands.insertHr) },
     { id: 'insert:code-block', label: 'Code Block', category: 'Insert', keywords: ['code', 'block', 'snippet'], action: () => milkdown.runCommand(milkdown.commands.createCodeBlock) },
@@ -80,7 +83,7 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'export:copy-html', label: 'Copy as HTML', category: 'Export', keywords: ['copy', 'html', 'clipboard'], action: () => {
       import('../utils/export.js').then(m => m.copyHtml());
     }},
-    { id: 'export:print', label: 'Print / Export PDF', category: 'Export', shortcut: 'Ctrl+P', keywords: ['print', 'pdf', 'export'], action: () => {
+    { id: 'export:print', label: 'Print / Export PDF', category: 'Export', keywords: ['print', 'pdf', 'export'], action: () => {
       import('../utils/export.js').then(m => m.printDocument());
     }},
 

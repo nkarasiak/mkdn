@@ -54,7 +54,7 @@ injectStyles(`
   cursor: pointer;
   opacity: 0;
   transform: translateY(8px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   max-width: 360px;
   word-break: break-word;
 }

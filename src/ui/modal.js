@@ -157,7 +157,7 @@ injectStyles(`
   justify-content: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--transition-normal);
+  transition: opacity 0.15s ease;
 }
 .modal-overlay.modal-open {
   opacity: 1;
@@ -173,7 +173,7 @@ injectStyles(`
   overflow: hidden;
   transform: scale(0.96) translateY(4px);
   opacity: 0;
-  transition: transform var(--transition-normal), opacity var(--transition-normal);
+  transition: transform var(--transition-spring, 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)), opacity 0.2s ease;
 }
 .modal-overlay.modal-open .modal {
   transform: scale(1) translateY(0);

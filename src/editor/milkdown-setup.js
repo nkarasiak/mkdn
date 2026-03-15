@@ -34,6 +34,7 @@ import { createMermaidPlugin } from './mermaid-plugin.js';
 import { createCalloutPlugin } from './callout-plugin.js';
 import { createEmojiPlugin } from './emoji-plugin.js';
 import { createDetailsPlugin } from './details-plugin.js';
+import { createDragHandlePlugin } from './drag-handle-plugin.js';
 import { CrepeFeature } from '@milkdown/crepe';
 import { sourceFormat, getSourceTextarea } from './source-formatter.js';
 
@@ -138,6 +139,7 @@ export const milkdown = {
     crepe.editor.use($prose(() => createCalloutPlugin()));
     crepe.editor.use($prose(() => createEmojiPlugin()));
     crepe.editor.use($prose(() => createDetailsPlugin()));
+    crepe.editor.use($prose(() => createDragHandlePlugin()));
     await crepe.create();
 
     // Listen for focus mode toggle to refresh decorations

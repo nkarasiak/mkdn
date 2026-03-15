@@ -220,7 +220,15 @@ function createResultRow(item, index) {
   ];
 
   if (item.shortcut) {
-    parts.push(el('span', { className: 'cmd-palette-shortcut' }, item.shortcut));
+    const kbdContainer = el('span', { className: 'cmd-palette-shortcut' });
+    const keys = item.shortcut.split('+');
+    keys.forEach((key, i) => {
+      kbdContainer.appendChild(el('kbd', { className: 'cmd-palette-kbd' }, key));
+      if (i < keys.length - 1) {
+        kbdContainer.appendChild(document.createTextNode('+'));
+      }
+    });
+    parts.push(kbdContainer);
   }
 
   const row = el('div', {
@@ -348,10 +356,23 @@ injectStyles(`
   padding: 0 1px;
 }
 .cmd-palette-shortcut {
-  font-size: var(--font-size-xs);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
   color: var(--text-muted);
   font-family: var(--font-mono);
   white-space: nowrap;
+}
+.cmd-palette-kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  line-height: 1.4;
 }
 .cmd-palette-empty {
   padding: 20px 16px;

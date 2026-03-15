@@ -13,8 +13,9 @@ import { historyManager } from './history/history-manager.js';
 import { focusManager } from './focus/focus-manager.js';
 import { documentStore } from './store/document-store.js';
 import { toast } from './ui/toast.js';
-import { registerBuiltinCommands } from './command-palette/command-registry.js';
+import { registerBuiltinCommands, commandRegistry } from './command-palette/command-registry.js';
 import { setMilkdownRef } from './command-palette/command-palette.js';
+import { initRecentFileTracking } from './command-palette/file-switcher.js';
 import { extractHeadings } from './command-palette/heading-utils.js';
 import { setSourceTextarea } from './editor/source-formatter.js';
 import { initFindBar } from './find-replace/find-bar.js';
@@ -26,15 +27,23 @@ import { initBacklinks } from './backlinks/backlinks-ui.js';
 import { initWritingStats } from './stats/writing-stats.js';
 import { initThemeEditor } from './themes/theme-editor.js';
 import { registerGraphCommands } from './graph/graph-commands.js';
+import { registerCanvasCommands } from './canvas/canvas-commands.js';
 import { isTauri, initTauri, initTauriEvents } from './platform/tauri-bridge.js';
 import { loadFromShareLink } from './share/share-link.js';
+import { createTabBar, initTabs } from './toolbar/tab-bar.js';
+import { initPWA } from './pwa/pwa-manager.js';
 
 let sidebarWrapper, sidebarOverlay;
 
 function applyTheme() {
-  const theme = settingsStore.getTheme();
+  const theme = settingsStore.getResolvedTheme();
   document.documentElement.setAttribute('data-theme', theme);
 }
+
+// Listen for OS dark/light mode changes when theme is 'auto'
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (settingsStore.getTheme() === 'auto') applyTheme();
+});
 
 function updateDocTitle() {
   const md = documentStore.getMarkdown();
@@ -84,6 +93,9 @@ export const App = {
       },
     });
 
+    // Create tab bar
+    const tabBar = createTabBar();
+
     // Create status bar
     const statusbar = createStatusBar({
       onToggleHistory: () => toggleHistorySection(),
@@ -131,10 +143,21 @@ export const App = {
       reader.readAsText(file);
     });
 
+    // Sidebar resize handle
+    const resizeHandle = el('div', { className: 'sidebar-resize-handle' });
+    initResizeHandle(resizeHandle);
+
+    // Restore persisted sidebar width
+    const savedWidth = settingsStore.get('sidebarWidth');
+    if (savedWidth) {
+      document.documentElement.style.setProperty('--sidebar-width', savedWidth + 'px');
+    }
+
     // App shell
     const app = el('div', { className: 'app' },
-      el('div', { className: 'app-toolbar' }, toolbar),
+      el('div', { className: 'app-toolbar' }, toolbar, tabBar),
       sidebarWrapper,
+      resizeHandle,
       main,
       sidebarOverlay,
       el('div', { className: 'app-statusbar' }, statusbar),
@@ -159,6 +182,9 @@ export const App = {
 
     // Initialize Milkdown (always-on)
     await milkdown.init(editorPane);
+
+    // Initialize tab system
+    initTabs();
 
     // Initialize local folder support
     localSync.init();
@@ -261,6 +287,24 @@ export const App = {
     registerSearchCommands();
     registerPluginCommands();
     registerGraphCommands();
+    registerCanvasCommands();
+
+    // Register Tier 3 commands
+    commandRegistry.register({
+      id: 'view:split-pane',
+      label: 'Toggle Split Editor',
+      category: 'View',
+      shortcut: 'Ctrl+\\',
+      keywords: ['split', 'pane', 'side', 'dual', 'two', 'reference'],
+      action: () => import('./editor/split-pane.js').then(m => m.toggleSplitPane()),
+    });
+    commandRegistry.register({
+      id: 'tools:canvas',
+      label: 'Canvas / Whiteboard',
+      category: 'Tools',
+      keywords: ['canvas', 'whiteboard', 'board', 'freeform', 'diagram', 'mindmap', 'cards'],
+      action: () => import('./canvas/canvas-mode.js').then(m => m.openCanvasMode()),
+    });
 
     // Show template chooser on new document
     eventBus.on('file:new', () => {
@@ -269,15 +313,58 @@ export const App = {
       }, 150);
     });
 
+    // Initialize recent file tracking for quick file switcher
+    initRecentFileTracking();
+
     // Initialize backlinks, writing stats, and custom theme
     initBacklinks();
     initWritingStats();
     initThemeEditor();
 
+    // Initialize PWA features (install prompt, offline detection, file handler)
+    initPWA();
+
     // Listen for Tauri native menu events and file-open
     initTauriEvents({ toggleSidebar, fileSaver, documentStore, focusManager, settingsStore });
   },
 };
+
+function initResizeHandle(handle) {
+  let startX = 0;
+  let startWidth = 0;
+
+  function onMouseMove(e) {
+    const newWidth = Math.min(
+      Math.max(180, startWidth + (e.clientX - startX)),
+      window.innerWidth * 0.5
+    );
+    document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
+  }
+
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    document.body.classList.remove('resizing');
+    handle.classList.remove('active');
+
+    const width = parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')
+    );
+    if (width) settingsStore.set('sidebarWidth', width);
+  }
+
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    startX = e.clientX;
+    startWidth = parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')
+    );
+    document.body.classList.add('resizing');
+    handle.classList.add('active');
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+}
 
 function initSwipeGestures(appEl) {
   let startX = 0;

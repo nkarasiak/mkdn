@@ -6,6 +6,7 @@ import { eventBus } from '../store/event-bus.js';
 import { confirm as confirmModal } from '../ui/modal.js';
 import { computeDiff, collapseDiff } from './diff.js';
 import { collabManager } from '../collab/collab-manager.js';
+import { createEmptyState } from '../ui/empty-state.js';
 
 let listEl = null;
 
@@ -243,7 +244,11 @@ async function renderList() {
   // Empty state when no history at all and not collaborating
   if (snapshots.length === 0 && !collabManager.isActive()) {
     listEl.appendChild(
-      el('div', { className: 'sidebar-empty' }, 'No history for this file'),
+      createEmptyState({
+        icon: icons.clock,
+        title: 'No history yet',
+        description: 'Snapshots are created automatically as you edit and save your document.',
+      }),
     );
   }
 }

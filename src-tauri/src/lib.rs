@@ -66,10 +66,46 @@ fn build_menu(app: &tauri::App) -> Result<tauri::menu::Menu<tauri::Wry>, tauri::
         .item(&view_zen)
         .build()?;
 
+    // --- Tools menu ---
+    let tools_stats = MenuItemBuilder::with_id("tools:writing-stats", "Writing Statistics")
+        .build(app)?;
+    let tools_theme = MenuItemBuilder::with_id("tools:theme-editor", "Theme Editor")
+        .build(app)?;
+    let tools_templates = MenuItemBuilder::with_id("tools:templates", "New from Template")
+        .build(app)?;
+    let tools_command_palette = MenuItemBuilder::with_id("tools:command-palette", "Command Palette")
+        .accelerator("CmdOrCtrl+K")
+        .build(app)?;
+
+    let tools_menu = SubmenuBuilder::new(app, "Tools")
+        .item(&tools_command_palette)
+        .separator()
+        .item(&tools_stats)
+        .item(&tools_theme)
+        .item(&tools_templates)
+        .build()?;
+
+    // --- Help menu ---
+    let help_shortcuts = MenuItemBuilder::with_id("help:shortcuts", "Keyboard Shortcuts")
+        .build(app)?;
+    let help_updates = MenuItemBuilder::with_id("help:check-updates", "Check for Updates...")
+        .build(app)?;
+    let help_about = MenuItemBuilder::with_id("help:about", "About MKDN")
+        .build(app)?;
+
+    let help_menu = SubmenuBuilder::new(app, "Help")
+        .item(&help_shortcuts)
+        .separator()
+        .item(&help_updates)
+        .item(&help_about)
+        .build()?;
+
     MenuBuilder::new(app)
         .item(&file_menu)
         .item(&edit_menu)
         .item(&view_menu)
+        .item(&tools_menu)
+        .item(&help_menu)
         .build()
 }
 
@@ -80,6 +116,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_window_state::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             // Focus the existing window when a second instance is launched
             if let Some(window) = app.get_webview_window("main") {
