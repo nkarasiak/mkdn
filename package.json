@@ -9,6 +9,7 @@
     "dev:all": "npx concurrently -n vite,party -c blue,green \"vite --port 3000\" \"partykit dev\"",
     "build": "vite build",
     "preview": "vite preview --port 3000",
+    "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "TAURI_BUILD=1 tauri build"
   },
