@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Breadcrumb Navigation** — folder/path/filename display in toolbar header with click-to-navigate and inline rename
+- **Active Formatting State** — toolbar buttons highlight to reflect cursor context (bold, italic, heading, list, blockquote)
+- **Quick File Switcher (Ctrl+P)** — fuzzy file finder with recent files, path search, and keyboard navigation
+- **Tab Bar** — multi-document tabs with dirty indicator, close button, and drag-to-reorder
+- **Block Drag Handles** — grip icon on hover for drag-to-reorder content blocks
+- **Resizable Sidebar** — drag right edge to resize (180px–50% viewport), persisted width
+- **Split Pane (Ctrl+\\)** — side-by-side editing with read-only markdown reference pane
+- **Canvas / Whiteboard** — freeform note cards, text labels, and connection arrows with pan/zoom, undo/redo, context menus, save/load/export/import
+- **PWA Enhancements** — install prompt banner, offline status indicator, service worker update notification, `.md` file handler registration
+- **Actionable Empty States** — icon + title + description + action button for file list, backlinks, and history panels
+- **`<kbd>` Shortcut Elements** — styled keyboard key hints in command palette results
+
+### Changed
+
+- **Smooth Micro-Animations** — spring easing on sidebar, staggered dropdown items, toast slide-up with overshoot, faster modal overlay (150ms), toolbar button press pulse
+- **Modal Transitions** — content uses spring curve, overlay fades in 150ms instead of 250ms
+
 - **Desktop App Menus** — Tools menu (Command Palette, Writing Statistics, Theme Editor, Templates) and Help menu (Keyboard Shortcuts, Check for Updates, About MKDN)
 - **Keyboard Shortcuts Dialog** — categorized reference of all shortcuts, accessible from Help menu
 - **About Dialog** — app description, version, and GitHub links
