@@ -242,18 +242,19 @@ async function checkForUpdates(silent = false) {
     if (!ok) return;
 
     // Show progress via toast
-    const { showToast } = await import('../ui/toast.js');
-    showToast('Downloading update...', 'info', 0);
+    const { toast: showToast } = await import('../ui/toast.js');
+    const dismissDownloading = showToast('Downloading update...', 'info', 0);
 
     await update.downloadAndInstall((event) => {
       if (event.event === 'Finished') {
+        dismissDownloading();
         showToast('Update ready — restart to apply.', 'success', 5000);
       }
     });
   } catch (err) {
     console.error('[tauri] Update check failed:', err);
     if (!silent) {
-      const { showToast } = await import('../ui/toast.js');
+      const { toast: showToast } = await import('../ui/toast.js');
       showToast('Failed to check for updates', 'error');
     }
   }
