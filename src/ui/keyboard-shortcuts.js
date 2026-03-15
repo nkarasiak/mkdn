@@ -31,6 +31,16 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
+    // Ctrl+Tab / Ctrl+Shift+Tab — Next/Previous tab
+    if (ctrl && key === 'tab') {
+      e.preventDefault();
+      const tab = shift ? tabStore.prevTab() : tabStore.nextTab();
+      if (tab) {
+        documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
+      }
+      return;
+    }
+
     if (!ctrl) return;
 
     // Source mode formatting shortcuts (Ctrl+B/I/E)
@@ -80,19 +90,31 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+W — Close current tab
-    if (key === 'w' && !shift) {
+    // Ctrl+T — New tab
+    if (key === 't' && !shift) {
+      e.preventDefault();
+      documentStore.newDocument();
+      return;
+    }
+
+    // Ctrl+Shift+T — Reopen last closed tab
+    if (key === 't' && shift) {
+      e.preventDefault();
+      const tab = tabStore.reopenTab();
+      if (tab) {
+        documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
+      }
+      return;
+    }
+
+    // Ctrl+W / Ctrl+Shift+W — Close current tab (no-op on last tab)
+    if (key === 'w') {
       e.preventDefault();
       const tabs = tabStore.getTabs();
-      const activeId = tabStore.getActiveTabId();
-      if (tabs.length > 1) {
-        const next = tabStore.closeTab(activeId);
-        if (next) {
-          documentStore.setFile(next.id, next.name, next.content, next.source);
-        }
-      } else {
-        // Last tab — create new blank document
-        documentStore.newDocument();
+      if (tabs.length <= 1) return;
+      const next = tabStore.closeTab(tabStore.getActiveTabId());
+      if (next) {
+        documentStore.setFile(next.id, next.name, next.content, next.source);
       }
       return;
     }

@@ -14,13 +14,6 @@ function renderTabs() {
   const tabs = tabStore.getTabs();
   const activeId = tabStore.getActiveTabId();
 
-  if (tabs.length <= 1) {
-    barEl.style.display = 'none';
-    return;
-  }
-
-  barEl.style.display = '';
-
   tabs.forEach((tab, idx) => {
     const isActive = tab.id === activeId;
 
@@ -57,6 +50,38 @@ function renderTabs() {
       closeBtn,
     );
 
+    // Double-click to rename
+    tabEl.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      const labelEl = tabEl.querySelector('.tab-label');
+      if (!labelEl) return;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'tab-rename-input';
+      input.value = tab.name.replace(/\.md$/i, '');
+
+      const commit = () => {
+        const raw = input.value.trim();
+        if (raw && raw !== label) {
+          const newName = raw.endsWith('.md') ? raw : raw + '.md';
+          tabStore.updateName(tab.id, newName);
+          documentStore.setFileName(newName);
+        }
+        renderTabs();
+      };
+
+      input.addEventListener('keydown', (ke) => {
+        if (ke.key === 'Enter') { ke.preventDefault(); commit(); }
+        if (ke.key === 'Escape') { ke.preventDefault(); renderTabs(); }
+      });
+      input.addEventListener('blur', commit);
+
+      labelEl.replaceWith(input);
+      input.focus();
+      input.select();
+    });
+
     // Drag-and-drop reorder
     tabEl.addEventListener('dragstart', (e) => {
       dragFromIdx = idx;
@@ -80,11 +105,19 @@ function renderTabs() {
 
     barEl.appendChild(tabEl);
   });
+
+  // "New tab" button
+  const newTabBtn = el('button', {
+    className: 'tab-new-btn',
+    'aria-label': 'New tab',
+    unsafeHTML: icons.plus,
+    onClick: () => documentStore.newDocument(),
+  });
+  barEl.appendChild(newTabBtn);
 }
 
 export function createTabBar() {
   barEl = el('div', { className: 'tab-bar' });
-  barEl.style.display = 'none';
 
   eventBus.on('tabs:changed', renderTabs);
   renderTabs();
@@ -211,5 +244,39 @@ injectStyles(`
 .tab-close svg {
   width: 10px;
   height: 10px;
+}
+
+.tab-rename-input {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  padding: 0 4px;
+  width: 100%;
+  min-width: 40px;
+  outline: none;
+}
+
+.tab-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.tab-new-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.tab-new-btn svg {
+  width: 14px;
+  height: 14px;
 }
 `);

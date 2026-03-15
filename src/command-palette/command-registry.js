@@ -1,4 +1,5 @@
 import { openFileSwitcher } from './file-switcher.js';
+import { tabStore } from '../store/tab-store.js';
 
 const commands = [];
 
@@ -40,6 +41,27 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'file:open', label: 'Open File', category: 'File', shortcut: 'Ctrl+O', keywords: ['open', 'load'], action: () => fileSaver.openFile() },
     { id: 'file:open-folder', label: 'Open Folder', category: 'File', keywords: ['folder', 'directory', 'link'], action: () => localSync.linkFolder() },
     { id: 'file:quick-switch', label: 'Quick Open File', category: 'File', shortcut: 'Ctrl+P', keywords: ['switch', 'quick', 'open', 'find', 'file', 'recent'], action: () => openFileSwitcher() },
+
+    // --- Tabs ---
+    { id: 'tab:new', label: 'New Tab', category: 'Tab', shortcut: 'Ctrl+T', keywords: ['tab', 'new'], action: () => documentStore.newDocument() },
+    { id: 'tab:close', label: 'Close Tab', category: 'Tab', shortcut: 'Ctrl+W', keywords: ['tab', 'close'], action: () => {
+      const tabs = tabStore.getTabs();
+      if (tabs.length <= 1) return;
+      const next = tabStore.closeTab(tabStore.getActiveTabId());
+      if (next) documentStore.setFile(next.id, next.name, next.content, next.source);
+    }},
+    { id: 'tab:reopen', label: 'Reopen Closed Tab', category: 'Tab', shortcut: 'Ctrl+Shift+T', keywords: ['tab', 'reopen', 'restore', 'undo close'], action: () => {
+      const tab = tabStore.reopenTab();
+      if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
+    }},
+    { id: 'tab:next', label: 'Next Tab', category: 'Tab', shortcut: 'Ctrl+Tab', keywords: ['tab', 'next', 'switch'], action: () => {
+      const tab = tabStore.nextTab();
+      if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
+    }},
+    { id: 'tab:prev', label: 'Previous Tab', category: 'Tab', shortcut: 'Ctrl+Shift+Tab', keywords: ['tab', 'previous', 'switch'], action: () => {
+      const tab = tabStore.prevTab();
+      if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
+    }},
 
     // --- View ---
     { id: 'view:toggle-sidebar', label: 'Toggle Sidebar', category: 'View', shortcut: 'Ctrl+Shift+B', keywords: ['sidebar', 'panel'], action: toggleSidebar },
