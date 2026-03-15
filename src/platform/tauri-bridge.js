@@ -252,10 +252,19 @@ async function checkForUpdates(silent = false) {
       }
     });
   } catch (err) {
-    console.error('[tauri] Update check failed:', err);
+    console.warn('[tauri] Update check failed:', err);
     if (!silent) {
-      const { toast: showToast } = await import('../ui/toast.js');
-      showToast('Failed to check for updates', 'error');
+      // Network error or missing release manifest (404) — not a real error for the user
+      const errMsg = String(err?.message || err || '');
+      const isNetworkIssue = errMsg.includes('404') || errMsg.includes('network') ||
+        errMsg.includes('fetch') || errMsg.includes('Could not') || errMsg.includes('status');
+      if (isNetworkIssue) {
+        const { showInfo } = await import('../ui/modal.js');
+        showInfo('Up to Date', `You're running the latest version (v${__APP_VERSION__}). No updates are available yet.`);
+      } else {
+        const { toast: showToast } = await import('../ui/toast.js');
+        showToast('Failed to check for updates', 'error');
+      }
     }
   }
 }
