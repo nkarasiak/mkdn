@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Desktop App Menus** — Tools menu (Command Palette, Writing Statistics, Theme Editor, Templates) and Help menu (Keyboard Shortcuts, Check for Updates, About MKDN)
+- **Keyboard Shortcuts Dialog** — categorized reference of all shortcuts, accessible from Help menu
+- **About Dialog** — app description, version, and GitHub links
+- **Auto-Updater** — automatic update checks on startup with manual check via Help menu; downloads and installs updates from GitHub releases with signature verification
+
 ### Fixed
 
 - CI: add missing `tauri` npm script so `tauri-apps/tauri-action` can run desktop builds
