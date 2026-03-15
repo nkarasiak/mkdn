@@ -89,47 +89,97 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     onClick: onSave,
   }, statusDot, statusText);
 
-  // Open file button
-  const openBtn = el('button', {
-    className: 'toolbar-secondary-btn',
-    'data-tooltip': 'Open file (Ctrl+O)',
-    onClick: onOpen,
-  },
-    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.file }),
-    'Open',
-  );
+  // === MENU BAR (File, Edit, View, Help) ===
+  function createMenu(label, items) {
+    const menu = el('div', { className: 'toolbar-dropdown-menu menubar-menu' });
+    items.forEach(item => {
+      if (item === '---') {
+        menu.appendChild(el('div', { className: 'menubar-separator' }));
+        return;
+      }
+      const shortcutEl = item.shortcut
+        ? el('span', { className: 'menubar-shortcut' }, item.shortcut)
+        : null;
+      menu.appendChild(el('button', {
+        className: 'toolbar-dropdown-item menubar-item',
+        onClick: () => { item.action(); closeAllDropdowns(); },
+      },
+        el('span', {}, item.label),
+        shortcutEl,
+      ));
+    });
 
-  // Open folder button
-  const openFolderBtn = el('button', {
-    className: 'toolbar-secondary-btn',
-    'data-tooltip': 'Open folder',
-    onClick: onOpenFolder,
-  },
-    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.folderOpen }),
-    'Folder',
-  );
+    const trigger = el('button', {
+      className: 'menubar-trigger',
+      onClick: (e) => {
+        e.stopPropagation();
+        const wasOpen = menu.classList.contains('open');
+        closeAllDropdowns();
+        if (!wasOpen) menu.classList.add('open');
+      },
+      onMouseenter: () => {
+        // If any sibling menu is open, switch to this one on hover
+        const anyOpen = menuBar.querySelector('.toolbar-dropdown-menu.open');
+        if (anyOpen && anyOpen !== menu) {
+          closeAllDropdowns();
+          menu.classList.add('open');
+        }
+      },
+    }, label);
 
-  // Share / Collab button
-  const shareBtn = el('button', {
-    className: 'toolbar-secondary-btn',
-    'data-tooltip': 'Collaborate',
-    onClick: () => openCollabDialog(),
-  },
-    el('span', { className: 'toolbar-btn-icon', unsafeHTML: icons.share }),
-    'Share',
-  );
+    return el('div', { className: 'toolbar-dropdown menubar-dropdown' }, trigger, menu);
+  }
 
-  // Update share button label when collab is active
-  eventBus.on('collab:started', () => {
-    shareBtn.querySelector('span:last-child')?.remove();
-    shareBtn.appendChild(document.createTextNode('Live'));
-    shareBtn.classList.add('toolbar-btn-active');
-  });
-  eventBus.on('collab:stopped', () => {
-    shareBtn.classList.remove('toolbar-btn-active');
-    while (shareBtn.childNodes.length > 1) shareBtn.lastChild.remove();
-    shareBtn.appendChild(document.createTextNode('Share'));
-  });
+  const fileMenu = createMenu('File', [
+    { label: 'New', shortcut: 'Ctrl+N', action: () => documentStore.newDocument() },
+    { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
+    { label: 'Open Folder', action: onOpenFolder },
+    { label: 'Quick Open', shortcut: 'Ctrl+P', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
+    '---',
+    { label: 'Save', shortcut: 'Ctrl+S', action: onSave },
+    { label: 'Save As', shortcut: 'Ctrl+Shift+S', action: () => import('../save/file-saver.js').then(m => m.fileSaver.saveAs()) },
+    '---',
+    { label: 'Download .md', action: () => downloadMarkdown() },
+    { label: 'Export HTML', action: () => import('../export/html-export.js').then(m => m.exportStyledHtml()) },
+    { label: 'Export DOCX', action: () => import('../export/docx-export.js').then(m => m.exportDocx()) },
+    { label: 'Print / PDF', shortcut: 'Ctrl+P', action: () => printDocument() },
+  ]);
+
+  const editMenu = createMenu('Edit', [
+    { label: 'Undo', shortcut: 'Ctrl+Z', action: () => milkdown.runCommand(milkdown.commands.undo) },
+    { label: 'Redo', shortcut: 'Ctrl+Shift+Z', action: () => milkdown.runCommand(milkdown.commands.redo) },
+    '---',
+    { label: 'Find', shortcut: 'Ctrl+F', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(false)) },
+    { label: 'Find & Replace', shortcut: 'Ctrl+H', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(true)) },
+  ]);
+
+  const viewMenu = createMenu('View', [
+    { label: 'Toggle Sidebar', shortcut: 'Ctrl+Shift+B', action: onToggleSidebar },
+    { label: 'Toggle Outline', action: () => import('../sidebar/sidebar.js').then(m => m.toggleOutlineSection()) },
+    { label: 'Toggle History', shortcut: 'Ctrl+Shift+H', action: () => import('../sidebar/sidebar.js').then(m => m.toggleHistorySection()) },
+    '---',
+    { label: 'Source View', shortcut: 'Ctrl+U', action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
+    { label: 'Split Editor', shortcut: 'Ctrl+\\', action: () => import('../editor/split-pane.js').then(m => m.toggleSplitPane()) },
+    { label: 'Present Slides', action: () => import('../export/slides.js').then(m => m.enterSlideMode()) },
+    '---',
+    { label: 'Zen Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
+    '---',
+    { label: 'Theme: Light', action: () => settingsStore.set('theme', 'light') },
+    { label: 'Theme: Dark', action: () => settingsStore.set('theme', 'dark') },
+    { label: 'Theme: Auto', action: () => settingsStore.set('theme', 'auto') },
+    { label: 'Theme Editor', action: () => import('../themes/theme-editor.js').then(m => m.openThemeEditor()) },
+  ]);
+
+  const helpMenu = createMenu('Help', [
+    { label: 'Command Palette', shortcut: 'Ctrl+K', action: () => import('../command-palette/command-palette.js').then(m => m.openCommandPalette()) },
+    { label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
+    { label: 'Knowledge Graph', shortcut: 'Ctrl+Shift+G', action: () => import('../graph/graph-view.js').then(m => m.openGraphView()) },
+    { label: 'Plugins', action: () => import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager()) },
+    '---',
+    { label: 'Collaborate', action: () => openCollabDialog() },
+  ]);
+
+  const menuBar = el('div', { className: 'menubar' }, fileMenu, editMenu, viewMenu, helpMenu);
 
   // === BREADCRUMB ===
   const breadcrumbEl = el('div', { className: 'toolbar-breadcrumb' });
@@ -199,9 +249,57 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   eventBus.on('local:folder-linked', updateBreadcrumb);
   eventBus.on('local:folder-unlinked', updateBreadcrumb);
 
+  // === HEADER-RIGHT ICON BUTTONS (moved from status bar) ===
+
+  // Theme toggle (cycles: light → dark → auto)
+  function themeIcon(theme) {
+    if (theme === 'dark') return icons.sun;
+    if (theme === 'auto') return icons.monitor;
+    return icons.moon;
+  }
+  function themeTooltip(theme) {
+    if (theme === 'dark') return 'Theme: Dark';
+    if (theme === 'auto') return 'Theme: Auto';
+    return 'Theme: Light';
+  }
+  const themeBtn = el('button', {
+    className: 'toolbar-icon-btn',
+    'data-tooltip': themeTooltip(settingsStore.getTheme()),
+    'aria-label': themeTooltip(settingsStore.getTheme()),
+    unsafeHTML: themeIcon(settingsStore.getTheme()),
+    onClick: () => {
+      const current = settingsStore.getTheme();
+      const next = current === 'light' ? 'dark' : current === 'dark' ? 'auto' : 'light';
+      settingsStore.set('theme', next);
+    },
+  });
+
+  eventBus.on('settings:theme', (theme) => {
+    themeBtn.innerHTML = themeIcon(theme);
+    themeBtn.setAttribute('data-tooltip', themeTooltip(theme));
+  });
+
+  // Collaborate button
+  const collabBtn = el('button', {
+    className: 'toolbar-icon-btn',
+    'data-tooltip': 'Collaborate',
+    'aria-label': 'Collaborate',
+    unsafeHTML: icons.share,
+    onClick: () => openCollabDialog(),
+  });
+
+  eventBus.on('collab:started', () => {
+    collabBtn.classList.add('toolbar-btn-active');
+    collabBtn.setAttribute('data-tooltip', 'Live collaboration');
+  });
+  eventBus.on('collab:stopped', () => {
+    collabBtn.classList.remove('toolbar-btn-active');
+    collabBtn.setAttribute('data-tooltip', 'Collaborate');
+  });
+
   const headerRow = el('div', { className: 'toolbar-header' },
-    el('div', { className: 'toolbar-header-left' }, backBtn, breadcrumbEl, statusBadge),
-    el('div', { className: 'toolbar-header-right' }, shareBtn, openBtn, openFolderBtn),
+    el('div', { className: 'toolbar-header-left' }, backBtn, menuBar),
+    el('div', { className: 'toolbar-header-right' }, breadcrumbEl, statusBadge, collabBtn, themeBtn),
   );
 
   // === FORMATTING TOOLBAR ROW ===

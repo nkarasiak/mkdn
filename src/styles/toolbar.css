@@ -14,9 +14,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 52px;
-  padding: 0 16px;
+  height: 36px;
+  padding: 0 8px;
   position: relative;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .toolbar-header-left {
@@ -571,4 +572,108 @@
 .toolbar-btn-active-format:hover {
   background: var(--accent-light);
   color: var(--accent);
+}
+
+/* === Menu bar (File, Edit, View, Help) === */
+
+.menubar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.menubar-dropdown {
+  position: relative;
+}
+
+.menubar-trigger {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menubar-trigger:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.menubar-menu {
+  min-width: 200px;
+  left: 0;
+}
+
+.menubar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.menubar-shortcut {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.menubar-separator {
+  height: 1px;
+  background: var(--border-light);
+  margin: 4px 8px;
+}
+
+/* === Header-right icon buttons === */
+
+.toolbar-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.toolbar-icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.toolbar-icon-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.toolbar-icon-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  padding: 4px 10px;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  z-index: 100;
+}
+
+.toolbar-icon-btn:hover[data-tooltip]::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }

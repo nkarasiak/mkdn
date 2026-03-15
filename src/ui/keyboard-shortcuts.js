@@ -9,6 +9,7 @@ import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '.
 import { openFileSwitcher, closeFileSwitcher } from '../command-palette/file-switcher.js';
 import { openFindBar, closeFindBar, isFindBarOpen } from '../find-replace/find-bar.js';
 import { sourceFormat } from '../editor/source-formatter.js';
+import { tabStore } from '../store/tab-store.js';
 
 let focusManagerRef = null;
 
@@ -74,6 +75,23 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
           .then(ok => { if (ok) documentStore.newDocument(); })
           .catch(() => {});
       } else {
+        documentStore.newDocument();
+      }
+      return;
+    }
+
+    // Ctrl+W — Close current tab
+    if (key === 'w' && !shift) {
+      e.preventDefault();
+      const tabs = tabStore.getTabs();
+      const activeId = tabStore.getActiveTabId();
+      if (tabs.length > 1) {
+        const next = tabStore.closeTab(activeId);
+        if (next) {
+          documentStore.setFile(next.id, next.name, next.content, next.source);
+        }
+      } else {
+        // Last tab — create new blank document
         documentStore.newDocument();
       }
       return;

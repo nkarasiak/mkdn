@@ -36,9 +36,14 @@ import { initPWA } from './pwa/pwa-manager.js';
 let sidebarWrapper, sidebarOverlay;
 
 function applyTheme() {
-  const theme = settingsStore.getTheme();
+  const theme = settingsStore.getResolvedTheme();
   document.documentElement.setAttribute('data-theme', theme);
 }
+
+// Listen for OS dark/light mode changes when theme is 'auto'
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (settingsStore.getTheme() === 'auto') applyTheme();
+});
 
 function updateDocTitle() {
   const md = documentStore.getMarkdown();
