@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **Default Font** — switched from SF Pro Display / Spectral to Inter as the default editor font (cross-platform via Google Fonts)
+- **Heading Font** — headings now use `var(--font-sans)` (Inter) instead of hardcoded `system-ui` stack
+
+### Added
+
+- **Geek-Friendly Fonts** — theme editor font selector now includes JetBrains Mono, Fira Code, Source Code Pro, IBM Plex Mono, Space Mono, and Inconsolata
+- **Grouped Font Selector** — fonts organized into Serif, Sans-Serif, and Monospace optgroups in the theme editor
+- **Full Font Override** — custom font selection now applies to headings, paragraphs, blockquotes, and list items (not just body text)
+
 ## [2.4.0] - 2026-03-15
 
 ### Added
