@@ -8,7 +8,7 @@ const PRESETS = {
   forest: { label: 'Forest Green', accent: '#16a34a', font: null },
   sunset: { label: 'Sunset', accent: '#dc2626', font: null },
   lavender: { label: 'Lavender', accent: '#7c3aed', font: null },
-  mono: { label: 'Monochrome', accent: '#525252', font: 'var(--font-mono)' },
+  mono: { label: 'Monochrome', accent: '#525252', font: "'JetBrains Mono', monospace" },
 };
 
 let customStyleEl = null;
@@ -42,9 +42,19 @@ function isValidNumber(val, min, max) {
 // Allowed font-family values (whitelist) — blocks CSS injection via font property
 const ALLOWED_FONTS = new Set([
   '',
+  // Sans
   'system-ui, -apple-system, sans-serif',
+  "'Inter', system-ui, sans-serif",
+  // Serif
   "'Georgia', serif",
   "'Palatino Linotype', serif",
+  // Mono — geek-friendly
+  "'JetBrains Mono', monospace",
+  "'Fira Code', monospace",
+  "'Source Code Pro', monospace",
+  "'IBM Plex Mono', monospace",
+  "'Space Mono', monospace",
+  "'Inconsolata', monospace",
   "'Courier New', monospace",
   'var(--font-mono)',
 ]);
@@ -84,6 +94,32 @@ function applyCustomTheme(theme = null) {
       .editor-pane .ProseMirror,
       .milkdown .ProseMirror {
         font-family: ${theme.font} !important;
+      }
+      .editor-pane .ProseMirror h1,
+      .editor-pane .ProseMirror h2,
+      .editor-pane .ProseMirror h3,
+      .editor-pane .ProseMirror h4,
+      .editor-pane .ProseMirror h5,
+      .editor-pane .ProseMirror h6,
+      .milkdown .ProseMirror h1,
+      .milkdown .ProseMirror h2,
+      .milkdown .ProseMirror h3,
+      .milkdown .ProseMirror h4,
+      .milkdown .ProseMirror h5,
+      .milkdown .ProseMirror h6 {
+        font-family: ${theme.font} !important;
+      }
+      .editor-pane .ProseMirror p,
+      .editor-pane .ProseMirror blockquote,
+      .editor-pane .ProseMirror li,
+      .milkdown .ProseMirror p,
+      .milkdown .ProseMirror blockquote,
+      .milkdown .ProseMirror li {
+        font-family: ${theme.font} !important;
+      }
+      [data-theme="light"] .milkdown,
+      [data-theme="dark"] .milkdown {
+        --crepe-font-family: ${theme.font};
       }
     `);
   }
@@ -142,14 +178,31 @@ export function openThemeEditor() {
     style: { width: '40px', height: '32px', padding: '2px', cursor: 'pointer' },
   });
 
-  const fontSelect = el('select', {},
-    el('option', { value: '' }, 'Default (Spectral Serif)'),
-    el('option', { value: 'system-ui, -apple-system, sans-serif' }, 'System Sans-Serif'),
-    el('option', { value: "'Georgia', serif" }, 'Georgia'),
-    el('option', { value: "'Palatino Linotype', serif" }, 'Palatino'),
-    el('option', { value: "'Courier New', monospace" }, 'Courier New'),
-    el('option', { value: "var(--font-mono)" }, 'Monospace'),
-  );
+  const fontSelect = el('select', {});
+  // Build grouped font options
+  const defaultOpt = el('option', { value: '' }, 'Default (Inter)');
+  fontSelect.appendChild(defaultOpt);
+
+  const serifGroup = el('optgroup', { label: 'Serif' });
+  serifGroup.appendChild(el('option', { value: "'Georgia', serif" }, 'Georgia'));
+  serifGroup.appendChild(el('option', { value: "'Palatino Linotype', serif" }, 'Palatino'));
+  fontSelect.appendChild(serifGroup);
+
+  const sansGroup = el('optgroup', { label: 'Sans-Serif' });
+  sansGroup.appendChild(el('option', { value: 'system-ui, -apple-system, sans-serif' }, 'System Sans'));
+  sansGroup.appendChild(el('option', { value: "'Inter', system-ui, sans-serif" }, 'Inter'));
+  fontSelect.appendChild(sansGroup);
+
+  const monoGroup = el('optgroup', { label: 'Monospace' });
+  monoGroup.appendChild(el('option', { value: "'JetBrains Mono', monospace" }, 'JetBrains Mono'));
+  monoGroup.appendChild(el('option', { value: "'Fira Code', monospace" }, 'Fira Code'));
+  monoGroup.appendChild(el('option', { value: "'Source Code Pro', monospace" }, 'Source Code Pro'));
+  monoGroup.appendChild(el('option', { value: "'IBM Plex Mono', monospace" }, 'IBM Plex Mono'));
+  monoGroup.appendChild(el('option', { value: "'Space Mono', monospace" }, 'Space Mono'));
+  monoGroup.appendChild(el('option', { value: "'Inconsolata', monospace" }, 'Inconsolata'));
+  monoGroup.appendChild(el('option', { value: "'Courier New', monospace" }, 'Courier New'));
+  monoGroup.appendChild(el('option', { value: "var(--font-mono)" }, 'System Mono'));
+  fontSelect.appendChild(monoGroup);
   if (theme.font) fontSelect.value = theme.font;
 
   const fontSizeInput = el('input', {
