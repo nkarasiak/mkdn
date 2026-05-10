@@ -1,6 +1,9 @@
 /* Tauri desktop app overrides */
 
-/* Hide in-app menubar in Tauri — native menus handle the same actions */
-.is-tauri .menubar {
-  display: none;
+/* No native menu in Tauri — show the in-app menubar instead */
+/* (intentionally no .is-tauri .menubar { display: none } rule) */
+
+/* Hide the custom window controls — native decorations handle close/min/max */
+.is-tauri .window-controls {
+  display: none !important;
 }

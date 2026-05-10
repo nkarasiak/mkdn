@@ -4,10 +4,15 @@ import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { toast } from '../ui/toast.js';
+import { confirm as confirmModal } from '../ui/modal.js';
+
+const EXTERNAL_CHECK_INTERVAL = 5000;
 
 let dirHandle = null;
 let fileList = [];
 let autoSaveTimer = null;
+let externalCheckTimer = null;
+let externalCheckInFlight = false;
 let standaloneFileHandle = null; // for files opened via picker (outside linked folder)
 
 export const localSync = {
@@ -15,6 +20,7 @@ export const localSync = {
     if (!localFs.isSupported()) return;
     this.restoreHandle();
     this.startAutoSave();
+    this.startExternalChangeWatcher();
   },
 
   async restoreHandle() {
@@ -27,6 +33,19 @@ export const localSync = {
         dirHandle = saved;
         eventBus.emit('local:folder-linked', { name: dirHandle.name });
         await this.refreshFileList();
+
+        // Re-open the file from disk if session had a local file open
+        const fileId = documentStore.getFileId();
+        const fileSource = documentStore.getFileSource();
+        if (fileId && fileSource === 'local') {
+          try {
+            const fileHandle = await localFs.getFileHandle(dirHandle, fileId);
+            const { name, content, modifiedTime } = await localFs.readFile(fileHandle);
+            documentStore.setFile(fileId, name, content, 'local', modifiedTime);
+          } catch {
+            // File may have been deleted/moved — keep session copy
+          }
+        }
       } else {
         await handleStore.clearHandle();
       }
@@ -80,8 +99,9 @@ export const localSync = {
     if (!dirHandle) return;
     try {
       const fileHandle = await localFs.getFileHandle(dirHandle, filePath);
-      const { name, content } = await localFs.readFile(fileHandle);
-      documentStore.setFile(filePath, name, content, 'local');
+      const { name, content, modifiedTime } = await localFs.readFile(fileHandle);
+      standaloneFileHandle = null;
+      documentStore.setFile(filePath, name, content, 'local', modifiedTime);
     } catch (err) {
       toast(`Failed to open: ${err.message}`, 'error');
     }
@@ -90,9 +110,9 @@ export const localSync = {
   async openFile() {
     try {
       const fileHandle = await localFs.pickFile();
-      const { name, content } = await localFs.readFile(fileHandle);
+      const { name, content, modifiedTime } = await localFs.readFile(fileHandle);
       standaloneFileHandle = fileHandle;
-      documentStore.setFile(name, name, content, 'local');
+      documentStore.setFile(name, name, content, 'local', modifiedTime);
     } catch {
       // User cancelled picker
     }
@@ -106,7 +126,7 @@ export const localSync = {
       await localFs.writeFile(fileHandle, content);
       standaloneFileHandle = fileHandle;
       const file = await fileHandle.getFile();
-      documentStore.setFile(file.name, file.name, content, 'local');
+      documentStore.setFile(file.name, file.name, content, 'local', file.lastModified);
       documentStore.markSaved();
       eventBus.emit('sync:saved', { fileName: file.name });
       toast(`Saved as "${file.name}"`, 'success');
@@ -125,6 +145,8 @@ export const localSync = {
       try {
         eventBus.emit('sync:saving', {});
         await localFs.writeFile(standaloneFileHandle, documentStore.getMarkdown());
+        const savedFile = await standaloneFileHandle.getFile();
+        documentStore.setLastModifiedOnDisk(savedFile.lastModified);
         documentStore.markSaved();
         eventBus.emit('sync:saved', { fileName: documentStore.getFileName() });
         toast('Saved locally', 'success');
@@ -153,6 +175,8 @@ export const localSync = {
       eventBus.emit('sync:saving', {});
       const fileHandle = await localFs.getFileHandle(dirHandle, fileId);
       await localFs.writeFile(fileHandle, content);
+      const savedFile = await fileHandle.getFile();
+      documentStore.setLastModifiedOnDisk(savedFile.lastModified);
       documentStore.markSaved();
       eventBus.emit('sync:saved', { fileName: documentStore.getFileName() });
       toast('Saved locally', 'success');
@@ -172,8 +196,9 @@ export const localSync = {
 
     try {
       eventBus.emit('sync:saving', {});
-      await localFs.createFile(dirHandle, name, content);
-      documentStore.setFile(name, name, content, 'local');
+      const newHandle = await localFs.createFile(dirHandle, name, content);
+      const savedFile = await newHandle.getFile();
+      documentStore.setFile(name, name, content, 'local', savedFile.lastModified);
       documentStore.markSaved();
       await this.refreshFileList();
       eventBus.emit('sync:saved', { fileName: name });
@@ -230,6 +255,8 @@ export const localSync = {
       // Standalone file handle (opened via picker)
       if (standaloneFileHandle) {
         await localFs.writeFile(standaloneFileHandle, content);
+        const savedFile = await standaloneFileHandle.getFile();
+        documentStore.setLastModifiedOnDisk(savedFile.lastModified);
         documentStore.markSaved();
         return;
       }
@@ -238,6 +265,8 @@ export const localSync = {
       if (!dirHandle) return;
       const fileHandle = await localFs.getFileHandle(dirHandle, documentStore.getFileId());
       await localFs.writeFile(fileHandle, content);
+      const savedFile = await fileHandle.getFile();
+      documentStore.setLastModifiedOnDisk(savedFile.lastModified);
       documentStore.markSaved();
     } catch (err) {
       console.warn('Local auto-save failed:', err.message);
@@ -259,10 +288,88 @@ export const localSync = {
     return fileList;
   },
 
+  startExternalChangeWatcher() {
+    if (externalCheckTimer) clearInterval(externalCheckTimer);
+    const onVisible = () => {
+      if (!document.hidden) this.checkForExternalChanges();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    externalCheckTimer = setInterval(() => {
+      if (!document.hidden) this.checkForExternalChanges();
+    }, EXTERNAL_CHECK_INTERVAL);
+  },
+
+  async checkForExternalChanges() {
+    if (externalCheckInFlight) return;
+    if (documentStore.getFileSource() !== 'local') return;
+    const fileId = documentStore.getFileId();
+    if (!fileId) return;
+    const baseline = documentStore.getLastModifiedOnDisk();
+    if (baseline == null) return;
+
+    externalCheckInFlight = true;
+    try {
+      let fileHandle;
+      if (standaloneFileHandle) {
+        fileHandle = standaloneFileHandle;
+      } else if (dirHandle) {
+        try {
+          fileHandle = await localFs.getFileHandle(dirHandle, fileId);
+        } catch {
+          return; // file deleted/moved
+        }
+      } else {
+        return;
+      }
+
+      let file;
+      try {
+        file = await fileHandle.getFile();
+      } catch {
+        return; // permission revoked or handle invalid
+      }
+
+      if (file.lastModified <= baseline) return;
+
+      const content = await file.text();
+      const name = documentStore.getFileName();
+
+      if (!documentStore.isDirty()) {
+        documentStore.setFile(fileId, name, content, 'local', file.lastModified);
+        toast('File reloaded from disk', 'info');
+        return;
+      }
+
+      let reload = false;
+      try {
+        reload = await confirmModal(
+          `"${name}" changed on disk. Load from disk and discard your unsaved edits?`,
+          { title: 'External change detected', okText: 'Load from disk', cancelText: 'Keep mine' },
+        );
+      } catch {
+        reload = false; // modal dismissed via ESC/overlay
+      }
+
+      if (reload) {
+        documentStore.setFile(fileId, name, content, 'local', file.lastModified);
+        toast('File reloaded from disk', 'info');
+      } else {
+        documentStore.setLastModifiedOnDisk(file.lastModified);
+      }
+    } finally {
+      externalCheckInFlight = false;
+    }
+  },
+
   destroy() {
     if (autoSaveTimer) {
       clearInterval(autoSaveTimer);
       autoSaveTimer = null;
+    }
+    if (externalCheckTimer) {
+      clearInterval(externalCheckTimer);
+      externalCheckTimer = null;
     }
   },
 };

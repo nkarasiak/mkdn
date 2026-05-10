@@ -9,6 +9,7 @@ import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '.
 import { openFileSwitcher, closeFileSwitcher } from '../command-palette/file-switcher.js';
 import { openFindBar, closeFindBar, isFindBarOpen } from '../find-replace/find-bar.js';
 import { sourceFormat } from '../editor/source-formatter.js';
+import { editorZoom } from '../editor/editor-zoom.js';
 import { tabStore } from '../store/tab-store.js';
 
 let focusManagerRef = null;
@@ -46,6 +47,19 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     }
 
     if (!ctrl) return;
+
+    // Ctrl+Q — Quit (Tauri only)
+    if (key === 'q' && !shift) {
+      e.preventDefault();
+      import('../platform/tauri-bridge.js').then(({ isTauri }) => {
+        if (isTauri()) {
+          import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+            getCurrentWindow().close();
+          });
+        }
+      });
+      return;
+    }
 
     // Source mode formatting shortcuts (Ctrl+B/I/E)
     // ProseMirror doesn't see keys when textarea has focus, so we handle them here.
@@ -210,6 +224,32 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     if (e.code === 'Backslash' && !shift) {
       e.preventDefault();
       import('../editor/split-pane.js').then(m => m.toggleSplitPane());
+      return;
+    }
+
+    // Ctrl+= / Ctrl++ — Zoom in
+    if ((key === '=' || key === '+') && !shift) {
+      e.preventDefault();
+      editorZoom.zoomIn();
+      return;
+    }
+    if (key === '+' && shift) {
+      e.preventDefault();
+      editorZoom.zoomIn();
+      return;
+    }
+
+    // Ctrl+- — Zoom out
+    if (key === '-' && !shift) {
+      e.preventDefault();
+      editorZoom.zoomOut();
+      return;
+    }
+
+    // Ctrl+0 — Reset zoom
+    if (key === '0' && !shift) {
+      e.preventDefault();
+      editorZoom.reset();
       return;
     }
 

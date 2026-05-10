@@ -10,6 +10,7 @@ import { openCollabDialog } from '../collab/collab-ui.js';
 import { settingsStore } from '../store/settings-store.js';
 import { localSync } from '../local/local-sync.js';
 import { saveImageToAssets, saveImageToAssetsTauri, isTauri } from '../editor/image-paste-plugin.js';
+import { isTauri as isTauriBridge } from '../platform/tauri-bridge.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
@@ -163,6 +164,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'Split Editor', shortcut: 'Ctrl+\\', action: () => import('../editor/split-pane.js').then(m => m.toggleSplitPane()) },
     { label: 'Present Slides', action: () => import('../export/slides.js').then(m => m.enterSlideMode()) },
     '---',
+    { label: 'Full Width', action: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')) },
     { label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
     { label: 'Zen Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
     '---',
@@ -309,10 +311,53 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     onClick: () => import('../export/export-menu.js').then(m => m.showExportMenu(exportBtn)),
   });
 
+  // === WINDOW CONTROLS (Tauri — custom title bar) ===
+  const windowMinBtn = el('button', {
+    className: 'window-control-btn minimize',
+    'aria-label': 'Minimize',
+    unsafeHTML: '<svg viewBox="0 0 12 12"><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.2"/></svg>',
+    onClick: async () => {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      getCurrentWindow().minimize();
+    },
+  });
+  const windowMaxBtn = el('button', {
+    className: 'window-control-btn maximize',
+    'aria-label': 'Maximize',
+    unsafeHTML: '<svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
+    onClick: async () => {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      getCurrentWindow().toggleMaximize();
+    },
+  });
+  const windowCloseBtn = el('button', {
+    className: 'window-control-btn close',
+    'aria-label': 'Close',
+    unsafeHTML: '<svg viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>',
+    onClick: async () => {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      getCurrentWindow().close();
+    },
+  });
+  const windowControls = el('div', { className: 'window-controls' }, windowMinBtn, windowMaxBtn, windowCloseBtn);
+
   const headerRow = el('div', { className: 'toolbar-header' },
     el('div', { className: 'toolbar-header-left' }, backBtn, menuBar),
-    el('div', { className: 'toolbar-header-right' }, breadcrumbEl, statusBadge, exportBtn, collabBtn, themeBtn),
+    el('div', { className: 'toolbar-header-center' }, breadcrumbEl),
+    el('div', { className: 'toolbar-header-right' }, statusBadge, exportBtn, collabBtn, themeBtn, windowControls),
   );
+
+  // Make toolbar-header a Tauri drag region + double-click to maximize
+  if (isTauriBridge()) {
+    headerRow.setAttribute('data-tauri-drag-region', '');
+    headerRow.addEventListener('dblclick', async (e) => {
+      // Only maximize if the double-click was on the header itself, not on a button/menu
+      if (e.target === headerRow || e.target.classList.contains('toolbar-header-center') || e.target.classList.contains('toolbar-header-left') || e.target.classList.contains('toolbar-header-right')) {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        getCurrentWindow().toggleMaximize();
+      }
+    });
+  }
 
   // === FORMATTING TOOLBAR ROW ===
 

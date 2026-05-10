@@ -75,7 +75,7 @@
   outline: none;
   min-height: 100%;
   font-family: var(--font-sans);
-  font-size: var(--font-size-lg);
+  font-size: calc(var(--font-size-lg) * var(--editor-zoom, 1));
   line-height: 1.6;
   color: var(--text-primary);
   letter-spacing: -0.003em;
@@ -83,10 +83,19 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* Full-width mode — like Confluence "extend page width" */
+body.full-width .editor-pane .ProseMirror,
+body.full-width .milkdown .ProseMirror,
+body.full-width .source-editor {
+  max-width: 100%;
+  padding-left: 32px !important;
+  padding-right: 32px !important;
+}
+
 /* Paragraphs — Substack spacing */
 .editor-pane .ProseMirror p,
 .milkdown .ProseMirror p {
-  font-size: var(--font-size-lg) !important;
+  font-size: calc(var(--font-size-lg) * var(--editor-zoom, 1)) !important;
   margin-bottom: 0.86em;
   line-height: 1.6 !important;
 }
@@ -379,7 +388,7 @@
   background: var(--editor-bg);
   color: var(--text-primary);
   font-family: 'JetBrains Mono', var(--font-mono);
-  font-size: 14px;
+  font-size: calc(14px * var(--editor-zoom, 1));
   line-height: 1.6;
   border: none;
   outline: none;

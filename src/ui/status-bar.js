@@ -33,6 +33,18 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   eventBus.on('file:new', updateStats);
   updateStats();
 
+  // Full-width toggle
+  const fullWidthBtn = el('button', {
+    className: 'statusbar-icon-btn',
+    'data-tooltip': 'Full width',
+    'aria-label': 'Full width',
+    unsafeHTML: icons.fullWidth,
+    onClick: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')),
+  });
+  eventBus.on('settings:fullWidth', (on) => {
+    fullWidthBtn.classList.toggle('active', on);
+  });
+
   // Focus mode toggle
   const focusModeLabel = el('span', { className: 'statusbar-stats statusbar-focus-label' });
   const focusBtn = el('button', {
@@ -85,7 +97,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
 
   const statusEl = el('div', { className: 'statusbar' },
     el('div', { className: 'statusbar-left' }, statsEl),
-    el('div', { className: 'statusbar-right' }, focusModeLabel, focusBtn, historyBtn, graphBtn, infoBtn),
+    el('div', { className: 'statusbar-right' }, focusModeLabel, fullWidthBtn, focusBtn, historyBtn, graphBtn, infoBtn),
   );
 
   return statusEl;

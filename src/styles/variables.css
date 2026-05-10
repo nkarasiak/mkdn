@@ -50,13 +50,13 @@
   --font-size-xs: 11px;
   --font-size-sm: 13px;
   --font-size-base: 15px;
-  --font-size-lg: 19px;
+  --font-size-lg: 17px;
   --font-size-xl: 21px;
 
   --toolbar-height: auto;
   --statusbar-height: 44px;
   --sidebar-width: 260px;
-  --content-max-width: 728px;
+  --content-max-width: 820px;
 
   --icon-sm: 14px;
   --icon-md: 17px;
@@ -121,13 +121,13 @@
   --font-size-xs: 11px;
   --font-size-sm: 13px;
   --font-size-base: 15px;
-  --font-size-lg: 19px;
+  --font-size-lg: 17px;
   --font-size-xl: 21px;
 
   --toolbar-height: auto;
   --statusbar-height: 44px;
   --sidebar-width: 260px;
-  --content-max-width: 728px;
+  --content-max-width: 820px;
 
   --icon-sm: 14px;
   --icon-md: 17px;

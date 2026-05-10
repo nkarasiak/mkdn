@@ -23,6 +23,23 @@ export async function initTauri() {
   setTimeout(() => checkForUpdates(true), 3000);
 }
 
+// Re-read a file from disk in Tauri mode (for session restore of absolute-path files)
+export async function restoreTauriFile(fileId) {
+  if (!isTauri()) return false;
+  // Only handle absolute paths (Tauri file-open uses absolute paths)
+  if (!fileId || (!fileId.startsWith('/') && !fileId.includes('\\'))) return false;
+  try {
+    const { readTextFile } = await import('@tauri-apps/plugin-fs');
+    const content = await readTextFile(fileId);
+    const name = fileId.split('/').pop().split('\\').pop();
+    const { documentStore } = await import('../store/document-store.js');
+    documentStore.setFile(fileId, name, content, 'local');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Listen for native menu events and file-open from CLI/OS
 export async function initTauriEvents({ toggleSidebar, fileSaver, documentStore, focusManager, settingsStore }) {
   if (!isTauri()) return;

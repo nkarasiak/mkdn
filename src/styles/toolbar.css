@@ -26,6 +26,18 @@
   gap: 12px;
 }
 
+.toolbar-header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  max-width: 40%;
+  overflow: hidden;
+}
+
 .toolbar-header-right {
   display: flex;
   align-items: center;

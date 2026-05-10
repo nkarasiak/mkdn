@@ -69,6 +69,9 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'view:toggle-history', label: 'Toggle History', category: 'View', shortcut: 'Ctrl+Shift+H', keywords: ['history', 'versions'], action: toggleHistory },
     { id: 'view:source-mode', label: 'Toggle Source View', category: 'View', shortcut: 'Ctrl+U', keywords: ['source', 'raw', 'markdown', 'code', 'textarea'], action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
     { id: 'view:toggle-outline', label: 'Toggle Outline', category: 'View', keywords: ['outline', 'toc', 'table of contents', 'headings', 'navigation'], action: toggleOutline },
+    { id: 'view:zoom-in', label: 'Zoom In', category: 'View', shortcut: 'Ctrl+=', keywords: ['zoom', 'in', 'bigger', 'larger', 'enlarge'], action: () => import('../editor/editor-zoom.js').then(m => m.editorZoom.zoomIn()) },
+    { id: 'view:zoom-out', label: 'Zoom Out', category: 'View', shortcut: 'Ctrl+-', keywords: ['zoom', 'out', 'smaller', 'shrink'], action: () => import('../editor/editor-zoom.js').then(m => m.editorZoom.zoomOut()) },
+    { id: 'view:zoom-reset', label: 'Reset Zoom', category: 'View', shortcut: 'Ctrl+0', keywords: ['zoom', 'reset', 'default', '100%'], action: () => import('../editor/editor-zoom.js').then(m => m.editorZoom.reset()) },
 
     // --- Format ---
     { id: 'format:bold', label: 'Bold', category: 'Format', shortcut: 'Ctrl+B', keywords: ['bold', 'strong'], action: () => milkdown.runCommand(milkdown.commands.toggleBold) },

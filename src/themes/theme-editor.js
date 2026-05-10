@@ -209,22 +209,22 @@ export function openThemeEditor() {
     type: 'range',
     min: '14',
     max: '24',
-    value: String(theme.fontSize || 19),
+    value: String(theme.fontSize || 17),
     style: { width: '150px' },
   });
   const fontSizeLabel = el('span', { style: { fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', minWidth: '32px' } },
-    `${theme.fontSize || 19}px`,
+    `${theme.fontSize || 17}px`,
   );
 
   const widthInput = el('input', {
     type: 'range',
     min: '500',
     max: '1200',
-    value: String(theme.contentWidth || 728),
+    value: String(theme.contentWidth || 820),
     style: { width: '150px' },
   });
   const widthLabel = el('span', { style: { fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', minWidth: '40px' } },
-    `${theme.contentWidth || 728}px`,
+    `${theme.contentWidth || 820}px`,
   );
 
   const lineHeightInput = el('input', {
@@ -243,8 +243,8 @@ export function openThemeEditor() {
     const updated = {
       accent: accentInput.value !== '#E8850C' ? accentInput.value : null,
       font: fontSelect.value || null,
-      fontSize: parseInt(fontSizeInput.value) !== 19 ? parseInt(fontSizeInput.value) : null,
-      contentWidth: parseInt(widthInput.value) !== 728 ? parseInt(widthInput.value) : null,
+      fontSize: parseInt(fontSizeInput.value) !== 17 ? parseInt(fontSizeInput.value) : null,
+      contentWidth: parseInt(widthInput.value) !== 820 ? parseInt(widthInput.value) : null,
       lineHeight: parseFloat(lineHeightInput.value) !== 1.6 ? parseFloat(lineHeightInput.value) : null,
     };
     // Clean nulls
@@ -294,10 +294,10 @@ export function openThemeEditor() {
       applyCustomTheme({});
       accentInput.value = '#E8850C';
       fontSelect.value = '';
-      fontSizeInput.value = '19';
-      fontSizeLabel.textContent = '19px';
-      widthInput.value = '728';
-      widthLabel.textContent = '728px';
+      fontSizeInput.value = '17';
+      fontSizeLabel.textContent = '17px';
+      widthInput.value = '820';
+      widthLabel.textContent = '820px';
       lineHeightInput.value = '1.6';
       lineHeightLabel.textContent = '1.6';
     },

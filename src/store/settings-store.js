@@ -4,6 +4,8 @@ import { STORAGE_SETTINGS } from '../constants.js';
 const defaults = {
   theme: 'auto',
   fontSize: 15,
+  editorZoom: 1,
+  contentMaxWidth: null,
   sidebarOpen: false,
   autoSaveInterval: 30000,
   zenMode: false,
@@ -11,6 +13,7 @@ const defaults = {
   paragraphFocus: false,
   typewriterMode: false,
   sourceMode: false,
+  fullWidth: false,
   sidebarSections: { localFolder: true, outline: true, history: true, backlinks: true },
   sidebarOrder: ['localFolder', 'outline', 'backlinks', 'history'],
   accentColor: null,
@@ -38,6 +41,7 @@ function load() {
     parsed.paragraphFocus = false;
     parsed.typewriterMode = false;
     parsed.sourceMode = false;
+    parsed.fullWidth = false;
     return parsed;
   } catch {
     return { ...defaults };
