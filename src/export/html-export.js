@@ -79,6 +79,10 @@ const themes = {
   },
 };
 
+export function renderMarkdownToHtml(markdown) {
+  return markdownToHtml(markdown);
+}
+
 function markdownToHtml(markdown) {
   // Simple markdown-to-HTML converter for export
   // Handles: headings, bold, italic, code, links, images, lists, blockquotes, tables, hr

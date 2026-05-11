@@ -29,3 +29,89 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ================================================================
+   Footnotes
+   ================================================================ */
+
+.ProseMirror sup[data-type="footnote_reference"] {
+  display: inline-block;
+  font-size: calc(0.72em * var(--editor-zoom, 1));
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent);
+  cursor: help;
+  margin: 0 0 0 1px;
+  padding: 0 3px;
+  border-radius: 3px;
+  transition: background 0.12s ease;
+  vertical-align: super;
+}
+
+.ProseMirror sup[data-type="footnote_reference"]:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.ProseMirror dl[data-type="footnote_definition"] {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  opacity: 0.7;
+  font-size: calc(0.88em * var(--editor-zoom, 1));
+  color: var(--text-secondary);
+  padding-top: 4px;
+  margin-top: 1.2em;
+  border-top: 1px dashed var(--border-light);
+}
+
+.ProseMirror dl[data-type="footnote_definition"]:first-of-type {
+  margin-top: 2em;
+}
+
+.ProseMirror dl[data-type="footnote_definition"]:hover {
+  opacity: 1;
+}
+
+.ProseMirror dl[data-type="footnote_definition"] dt {
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 1.5em;
+}
+
+.ProseMirror dl[data-type="footnote_definition"] dd {
+  margin: 0;
+  flex: 1;
+}
+
+.ProseMirror dl[data-type="footnote_definition"] dd p {
+  margin: 0;
+}
+
+/* Floating popover (inserted at document body by footnote plugin) */
+.footnote-popover-floating {
+  position: fixed;
+  width: max-content;
+  max-width: 320px;
+  padding: 8px 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.14));
+  white-space: normal;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  z-index: 220;
+}
+
+.footnote-popover-floating.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}

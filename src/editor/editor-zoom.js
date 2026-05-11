@@ -13,7 +13,15 @@ function clamp(v) {
 }
 
 function apply(zoom) {
+  // Keep CSS var (used by source editor and theme rules) but ALSO set the
+  // legacy `zoom` CSS property directly on the editor surfaces. WebKitGTK
+  // honors `zoom` and forces full layout recalc — bypasses the CSS-variable
+  // invalidation bug that left text unchanged on Tauri.
   document.documentElement.style.setProperty('--editor-zoom', String(zoom));
+  const pane = document.querySelector('.editor-pane');
+  if (pane) pane.style.zoom = String(zoom);
+  const src = document.querySelector('.source-editor');
+  if (src) src.style.zoom = String(zoom);
 }
 
 function showZoomToast(zoom) {

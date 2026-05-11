@@ -204,6 +204,13 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
+    // Ctrl+Shift+E — Reader view (avoid Ctrl+Shift+R webview hard-refresh)
+    if (key === 'e' && shift) {
+      e.preventDefault();
+      import('../ui/reader-view.js').then(m => m.openReaderView());
+      return;
+    }
+
     // Ctrl+Shift+G — Knowledge graph (only when folder linked)
     if (key === 'g' && shift) {
       e.preventDefault();

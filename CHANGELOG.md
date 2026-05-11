@@ -8,9 +8,20 @@ All notable changes to this project will be documented in this file.
 
 - **Default Font** — switched from SF Pro Display / Spectral to Inter as the default editor font (cross-platform via Google Fonts)
 - **Heading Font** — headings now use `var(--font-sans)` (Inter) instead of hardcoded `system-ui` stack
+- **Quiet Status Bar** — status bar now shows only a save-state dot + word count by default. Secondary controls (Writing statistics, Reader view, Focus mode, Full width, History, Knowledge graph, About) move into a popover triggered by the ⋯ button. Collab peer count appears only when a session is active.
+- **GNOME-style Top Bar** — header redesigned to match modern Linux editors (e.g. GNOME Text Editor): the classic `File / Edit / View / Help` text menubar is replaced by a single hamburger (☰) menu on the right with grouped Edit / View / Theme / Tools sections, each item showing an icon + label + shortcut chip. Theme picker is a 3-pill segmented control (Light / Dark / Auto). Left side now has an `Open ▾` pill button with file operations and a `+` new-tab button. Header height bumped to 46 px with rounded pill controls. About & Shortcuts dialog promoted to a top-level Info (ⓘ) button.
+
+### Fixed
+
+- **Tauri double-click maximize** — removed app-level dblclick handler on the header drag region; the platform already handles this natively, so the previous behavior toggled twice and snapped back. Double-click now maximizes once as expected.
 
 ### Added
 
+- **Reader View (`Ctrl+Shift+R`)** — Substack-styled preview modal: serif typography, drop cap on first paragraph, byline + date header, smart-quote/em-dash/ellipsis typographer applied to text on render. Copy-markdown button + `Esc` to close. Reusable export-ready renderer.
+- **Smart Paste** — clipboard-aware paste handler: URL while text selected → wraps selection in a link; bare URL → inserts as link paragraph (YouTube/Twitter still upgraded to embeds); multi-line code with language heuristics (Python, JS, TS, Rust, Go, Java, SQL, HTML, CSS, JSON, YAML, bash) → fenced code block with detected language.
+- **Footnote Popovers** — hovering an inline footnote ref (`[^id]`) reveals the footnote body inline in a floating popover; no scroll jump. Definitions at the bottom of the document are dimmed and use a definition-list layout.
+- **Writing Mode Drop Cap** — when Writing Mode is active, the first paragraph after the H1 (or the first paragraph if no H1) gets a large serif drop cap. Toggleable via `Settings → Toggle Drop Cap`.
+- **Author Byline** — new setting (`settings:author-byline` command) sets the byline displayed in Reader View.
 - **Geek-Friendly Fonts** — theme editor font selector now includes JetBrains Mono, Fira Code, Source Code Pro, IBM Plex Mono, Space Mono, and Inconsolata
 - **Grouped Font Selector** — fonts organized into Serif, Sans-Serif, and Monospace optgroups in the theme editor
 - **Full Font Override** — custom font selection now applies to headings, paragraphs, blockquotes, and list items (not just body text)

@@ -69,6 +69,21 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'view:toggle-history', label: 'Toggle History', category: 'View', shortcut: 'Ctrl+Shift+H', keywords: ['history', 'versions'], action: toggleHistory },
     { id: 'view:source-mode', label: 'Toggle Source View', category: 'View', shortcut: 'Ctrl+U', keywords: ['source', 'raw', 'markdown', 'code', 'textarea'], action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
     { id: 'view:toggle-outline', label: 'Toggle Outline', category: 'View', keywords: ['outline', 'toc', 'table of contents', 'headings', 'navigation'], action: toggleOutline },
+    { id: 'view:reader-view', label: 'Reader View', category: 'View', shortcut: 'Ctrl+Shift+E', keywords: ['reader', 'preview', 'substack', 'published', 'article', 'view'], action: () => import('../ui/reader-view.js').then(m => m.openReaderView()) },
+    { id: 'settings:author-byline', label: 'Set Author Byline', category: 'Settings', keywords: ['author', 'byline', 'name', 'signature', 'writing'], action: async () => {
+      const { prompt } = await import('../ui/modal.js');
+      try {
+        const v = await prompt('Author byline (shown in writing mode & reader view):', {
+          title: 'Author Byline',
+          defaultValue: settingsStore.get('authorByline') || '',
+          placeholder: 'e.g. Jane Doe',
+        });
+        if (v !== null) settingsStore.set('authorByline', v.trim());
+      } catch { /* cancelled */ }
+    }},
+    { id: 'settings:toggle-drop-cap', label: 'Toggle Drop Cap (Writing Mode)', category: 'Settings', keywords: ['drop cap', 'dropcap', 'initial', 'writing', 'typography'], action: () => {
+      settingsStore.set('writingDropCap', !settingsStore.get('writingDropCap'));
+    }},
     { id: 'view:zoom-in', label: 'Zoom In', category: 'View', shortcut: 'Ctrl+=', keywords: ['zoom', 'in', 'bigger', 'larger', 'enlarge'], action: () => import('../editor/editor-zoom.js').then(m => m.editorZoom.zoomIn()) },
     { id: 'view:zoom-out', label: 'Zoom Out', category: 'View', shortcut: 'Ctrl+-', keywords: ['zoom', 'out', 'smaller', 'shrink'], action: () => import('../editor/editor-zoom.js').then(m => m.editorZoom.zoomOut()) },
     { id: 'view:zoom-reset', label: 'Reset Zoom', category: 'View', shortcut: 'Ctrl+0', keywords: ['zoom', 'reset', 'default', '100%'], action: () => import('../editor/editor-zoom.js').then(m => m.editorZoom.reset()) },

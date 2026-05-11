@@ -94,6 +94,26 @@
   padding-bottom: 40vh;
 }
 
+/* Drop cap on first paragraph after the first H1 (or first paragraph overall) */
+.app.writing-mode.writing-mode-dropcap .editor-pane .ProseMirror > h1:first-of-type + p,
+.app.writing-mode.writing-mode-dropcap .editor-pane .ProseMirror > p:first-of-type {
+  overflow: hidden;
+  min-height: 1.2em;
+}
+.app.writing-mode.writing-mode-dropcap .editor-pane .ProseMirror > h1:first-of-type + p::first-letter,
+.app.writing-mode.writing-mode-dropcap .editor-pane .ProseMirror > p:first-of-type::first-letter {
+  font-family: 'Charter', 'Iowan Old Style', 'Georgia', var(--font-serif, serif);
+  font-size: 4em;
+  float: left;
+  line-height: 0.86;
+  margin: 0.06em 0.08em 0 -0.04em;
+  font-weight: 700;
+  color: var(--accent, var(--text-primary));
+}
+.app.writing-mode.writing-mode-dropcap .editor-pane .ProseMirror > h1,
+.app.writing-mode.writing-mode-dropcap .editor-pane .ProseMirror > h2,
+.app.writing-mode.writing-mode-dropcap .editor-pane .ProseMirror > h3 { clear: left; }
+
 .app.writing-mode .app-statusbar {
   opacity: 0.3;
   transition: opacity 0.3s ease;

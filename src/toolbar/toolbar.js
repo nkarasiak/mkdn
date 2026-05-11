@@ -186,6 +186,153 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
 
   const menuBar = el('div', { className: 'menubar' }, fileMenu, editMenu, viewMenu, helpMenu);
 
+  // === GNOME-style condensed controls ===
+
+  // "Open ▾" dropdown — primary file actions on the left
+  const openMenu = createMenu('Open', [
+    { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
+    { label: 'Open Folder', action: onOpenFolder },
+    { label: 'Quick Open', shortcut: 'Ctrl+P', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
+    { label: 'Document Library', action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
+    '---',
+    { label: 'Save', shortcut: 'Ctrl+S', action: onSave },
+    { label: 'Save As', shortcut: 'Ctrl+Shift+S', action: () => import('../save/file-saver.js').then(m => m.fileSaver.saveAs()) },
+  ]);
+  openMenu.classList.add('open-menu');
+
+  // "+" new tab button
+  const newTabBtn = el('button', {
+    className: 'toolbar-nav-btn',
+    'data-tooltip': 'New (Ctrl+N)',
+    'aria-label': 'New',
+    unsafeHTML: icons.plus,
+    onClick: () => documentStore.newDocument(),
+  });
+
+  // Info / About button
+  const infoBtn = el('button', {
+    className: 'toolbar-icon-btn',
+    'data-tooltip': 'About & Shortcuts',
+    'aria-label': 'About & Shortcuts',
+    unsafeHTML: icons.infoCircle,
+    onClick: async () => {
+      const { showInfo } = await import('../ui/modal.js');
+      const { buildAboutContent } = await import('../ui/about-content.js');
+      showInfo('About mkdn', buildAboutContent());
+    },
+  });
+
+  // Hamburger menu — consolidates Edit / View / More items with icons + polish
+  const hamburgerMenu = el('div', { className: 'toolbar-dropdown-menu hamburger-menu' });
+
+  function hamburgerItem({ icon, label, shortcut, action }) {
+    const children = [];
+    children.push(el('span', { className: 'hb-item-icon', unsafeHTML: icon || '' }));
+    children.push(el('span', { className: 'hb-item-label' }, label));
+    if (shortcut) children.push(el('span', { className: 'hb-item-shortcut' }, shortcut));
+    return el('button', {
+      className: 'hb-item',
+      onClick: () => { action(); closeAllDropdowns(); },
+    }, ...children);
+  }
+
+  function hamburgerSection(label, items) {
+    const section = el('div', { className: 'hb-section' });
+    section.appendChild(el('div', { className: 'hb-section-header' }, label));
+    items.forEach(it => {
+      if (it === '---') {
+        section.appendChild(el('div', { className: 'hb-divider' }));
+      } else {
+        section.appendChild(hamburgerItem(it));
+      }
+    });
+    return section;
+  }
+
+  function themeRow() {
+    const row = el('div', { className: 'hb-theme-row' });
+    const opts = [
+      { theme: 'light', icon: icons.sun, label: 'Light' },
+      { theme: 'dark', icon: icons.moon, label: 'Dark' },
+      { theme: 'auto', icon: icons.monitor, label: 'Auto' },
+    ];
+    function refresh() {
+      const current = settingsStore.getTheme();
+      row.querySelectorAll('.hb-theme-pill').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.theme === current);
+      });
+    }
+    opts.forEach(({ theme, icon, label }) => {
+      const pill = el('button', {
+        className: 'hb-theme-pill',
+        'aria-label': `Theme: ${label}`,
+        'data-tooltip': `Theme: ${label}`,
+        dataset: { theme },
+        onClick: () => { settingsStore.set('theme', theme); refresh(); },
+      }, el('span', { unsafeHTML: icon }), el('span', { className: 'hb-theme-pill-label' }, label));
+      row.appendChild(pill);
+    });
+    refresh();
+    eventBus.on('settings:theme', refresh);
+    return row;
+  }
+
+  hamburgerMenu.appendChild(hamburgerSection('Edit', [
+    { icon: icons.undo, label: 'Undo', shortcut: 'Ctrl+Z', action: () => milkdown.runCommand(milkdown.commands.undo) },
+    { icon: icons.redo, label: 'Redo', shortcut: 'Ctrl+Shift+Z', action: () => milkdown.runCommand(milkdown.commands.redo) },
+    { icon: icons.search, label: 'Find', shortcut: 'Ctrl+F', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(false)) },
+    { icon: icons.rename, label: 'Find & Replace', shortcut: 'Ctrl+H', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(true)) },
+  ]));
+
+  hamburgerMenu.appendChild(hamburgerSection('View', [
+    { icon: icons.sidebar, label: 'Toggle Sidebar', shortcut: 'Ctrl+Shift+B', action: onToggleSidebar },
+    { icon: icons.file, label: 'Toggle Outline', action: () => import('../sidebar/sidebar.js').then(m => m.toggleOutlineSection()) },
+    { icon: icons.clock, label: 'History', shortcut: 'Ctrl+Shift+H', action: () => import('../sidebar/sidebar.js').then(m => m.toggleHistorySection()) },
+    { icon: icons.code, label: 'Source View', shortcut: 'Ctrl+U', action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
+    { icon: icons.diff, label: 'Split Editor', shortcut: 'Ctrl+\\', action: () => import('../editor/split-pane.js').then(m => m.toggleSplitPane()) },
+    { icon: icons.eye, label: 'Reader View', shortcut: 'Ctrl+Shift+E', action: () => import('../ui/reader-view.js').then(m => m.openReaderView()) },
+    { icon: icons.play, label: 'Present Slides', action: () => import('../export/slides.js').then(m => m.enterSlideMode()) },
+    '---',
+    { icon: icons.fullWidth, label: 'Full Width', action: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')) },
+    { icon: icons.rename, label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
+    { icon: icons.focus, label: 'Focus Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
+  ]));
+
+  // Theme row + theme editor
+  const viewExtra = el('div', { className: 'hb-section' });
+  viewExtra.appendChild(el('div', { className: 'hb-section-header' }, 'Theme'));
+  viewExtra.appendChild(themeRow());
+  viewExtra.appendChild(hamburgerItem({
+    icon: icons.gear,
+    label: 'Theme Editor',
+    action: () => import('../themes/theme-editor.js').then(m => m.openThemeEditor()),
+  }));
+  hamburgerMenu.appendChild(viewExtra);
+
+  hamburgerMenu.appendChild(hamburgerSection('Tools', [
+    { icon: icons.command, label: 'Command Palette', shortcut: 'Ctrl+K', action: () => import('../command-palette/command-palette.js').then(m => m.openCommandPalette()) },
+    { icon: icons.infoCircle, label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
+    { icon: icons.fullWidth, label: 'Writing Goals', action: () => import('../stats/writing-goals.js').then(m => m.openGoalSettings()) },
+    { icon: icons.graph, label: 'Knowledge Graph', shortcut: 'Ctrl+Shift+G', action: () => import('../graph/graph-view.js').then(m => m.openGraphView()) },
+    { icon: icons.puzzle, label: 'Plugins', action: () => import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager()) },
+    { icon: icons.share, label: 'Collaborate', action: () => openCollabDialog() },
+  ]));
+
+  const hamburgerTrigger = el('button', {
+    className: 'toolbar-icon-btn hamburger-trigger',
+    'data-tooltip': 'Main menu',
+    'aria-label': 'Main menu',
+    unsafeHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+    onClick: (e) => {
+      e.stopPropagation();
+      const wasOpen = hamburgerMenu.classList.contains('open');
+      closeAllDropdowns();
+      if (!wasOpen) hamburgerMenu.classList.add('open');
+    },
+  });
+
+  const hamburgerWrapper = el('div', { className: 'toolbar-dropdown hamburger-dropdown' }, hamburgerTrigger, hamburgerMenu);
+
   // === BREADCRUMB ===
   const breadcrumbEl = el('div', { className: 'toolbar-breadcrumb' });
 
@@ -311,52 +458,95 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     onClick: () => import('../export/export-menu.js').then(m => m.showExportMenu(exportBtn)),
   });
 
-  // === WINDOW CONTROLS (Tauri — custom title bar) ===
-  const windowMinBtn = el('button', {
-    className: 'window-control-btn minimize',
-    'aria-label': 'Minimize',
-    unsafeHTML: '<svg viewBox="0 0 12 12"><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.2"/></svg>',
-    onClick: async () => {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      getCurrentWindow().minimize();
-    },
-  });
-  const windowMaxBtn = el('button', {
-    className: 'window-control-btn maximize',
-    'aria-label': 'Maximize',
-    unsafeHTML: '<svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
-    onClick: async () => {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      getCurrentWindow().toggleMaximize();
-    },
-  });
-  const windowCloseBtn = el('button', {
-    className: 'window-control-btn close',
-    'aria-label': 'Close',
-    unsafeHTML: '<svg viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>',
-    onClick: async () => {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      getCurrentWindow().close();
-    },
-  });
-  const windowControls = el('div', { className: 'window-controls' }, windowMinBtn, windowMaxBtn, windowCloseBtn);
+  // Tauri runs frameless (decorations: false). The toolbar header doubles as
+  // the custom title bar: drag region + min/max/close controls.
+  let windowControls = null;
+  if (isTauriBridge()) {
+    const lazyWin = async () => (await import('@tauri-apps/api/window')).getCurrentWindow();
+    const winBtn = (cls, label, svg, onClick) => el('button', {
+      className: `window-control-btn ${cls}`,
+      'aria-label': label,
+      'data-tooltip': label,
+      unsafeHTML: svg,
+      onClick,
+    });
+    windowControls = el('div', { className: 'window-controls' },
+      winBtn('minimize', 'Minimize',
+        '<svg viewBox="0 0 12 12"><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.2"/></svg>',
+        async () => (await lazyWin()).minimize()),
+      winBtn('maximize', 'Maximize',
+        '<svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
+        async () => (await lazyWin()).toggleMaximize()),
+      winBtn('close', 'Close',
+        '<svg viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>',
+        async () => (await lazyWin()).close()),
+    );
+  }
 
-  const headerRow = el('div', { className: 'toolbar-header' },
-    el('div', { className: 'toolbar-header-left' }, backBtn, menuBar),
+  // In Tauri: split titlebar (menubar + window controls only) from the toolbar row.
+  // In browser: keep everything in one header row.
+  const titleBar = isTauriBridge()
+    ? el('div', { className: 'toolbar-titlebar' },
+        el('div', { className: 'titlebar-left' }, menuBar),
+        el('div', { className: 'titlebar-drag' }),
+        el('div', { className: 'titlebar-right' }, ...(windowControls ? [windowControls] : [])),
+      )
+    : null;
+
+  const headerRow = el('div', { className: 'toolbar-header toolbar-header-gnome' },
+    el('div', { className: 'toolbar-header-left' },
+      backBtn, openMenu, newTabBtn,
+      ...(isTauriBridge() ? [] : [menuBar]),
+    ),
     el('div', { className: 'toolbar-header-center' }, breadcrumbEl),
-    el('div', { className: 'toolbar-header-right' }, statusBadge, exportBtn, collabBtn, themeBtn, windowControls),
+    el('div', { className: 'toolbar-header-right' },
+      statusBadge, exportBtn, collabBtn, themeBtn, infoBtn, hamburgerWrapper,
+      ...(isTauriBridge() ? [] : (windowControls ? [windowControls] : [])),
+    ),
   );
 
-  // Make toolbar-header a Tauri drag region + double-click to maximize
   if (isTauriBridge()) {
-    headerRow.setAttribute('data-tauri-drag-region', '');
-    headerRow.addEventListener('dblclick', async (e) => {
-      // Only maximize if the double-click was on the header itself, not on a button/menu
-      if (e.target === headerRow || e.target.classList.contains('toolbar-header-center') || e.target.classList.contains('toolbar-header-left') || e.target.classList.contains('toolbar-header-right')) {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        getCurrentWindow().toggleMaximize();
-      }
+    const dragHost = titleBar || headerRow;
+    dragHost.setAttribute('data-tauri-drag-region', '');
+
+    // Programmatic drag — WebKitGTK can drop Tauri's auto data-tauri-drag-region
+    // handling, so call startDragging directly on mousedown over non-interactive areas.
+    dragHost.addEventListener('mousedown', async (e) => {
+      if (e.button !== 0) return;
+      if (e.target.closest('button, input, select, textarea, .toolbar-dropdown-menu, [contenteditable]')) return;
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().startDragging();
     });
+
+    dragHost.addEventListener('dblclick', async (e) => {
+      const t = e.target;
+      if (t.closest('button, input, select, textarea, .toolbar-dropdown-menu, [contenteditable]')) return;
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      getCurrentWindow().toggleMaximize();
+    });
+
+    // Frameless WebKitGTK windows do NOT get invisible resize edges from the WM.
+    // Overlay 8 thin edge handles that trigger startResizeDragging.
+    const mkResize = (cls, cursor, dir) => el('div', {
+      className: `tauri-resize-edge ${cls}`,
+      style: { cursor },
+      onMousedown: async (ev) => {
+        if (ev.button !== 0) return;
+        ev.preventDefault();
+        const win = await import('@tauri-apps/api/window');
+        await win.getCurrentWindow().startResizeDragging(dir);
+      },
+    });
+    document.body.append(
+      mkResize('edge-n', 'ns-resize', 'North'),
+      mkResize('edge-s', 'ns-resize', 'South'),
+      mkResize('edge-e', 'ew-resize', 'East'),
+      mkResize('edge-w', 'ew-resize', 'West'),
+      mkResize('edge-ne', 'nesw-resize', 'NorthEast'),
+      mkResize('edge-nw', 'nwse-resize', 'NorthWest'),
+      mkResize('edge-se', 'nwse-resize', 'SouthEast'),
+      mkResize('edge-sw', 'nwse-resize', 'SouthWest'),
+    );
   }
 
   // === FORMATTING TOOLBAR ROW ===
@@ -691,7 +881,11 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   setTimeout(updateActiveFormatting, 2500);
 
   // === COMBINED TOOLBAR ===
-  const toolbar = el('div', { className: 'toolbar' }, headerRow, formattingRow);
+  const toolbar = el('div', { className: 'toolbar' },
+    ...(titleBar ? [titleBar] : []),
+    headerRow,
+    formattingRow,
+  );
 
   // Listen for save status
   const setSaved = () => {

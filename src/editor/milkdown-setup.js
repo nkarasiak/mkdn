@@ -30,6 +30,8 @@ import { createEmbedPlugin } from './embed-plugin.js';
 import { createFindReplacePlugin } from '../find-replace/find-replace-plugin.js';
 import { createWikilinkPlugin } from '../backlinks/wikilink-plugin.js';
 import { createImagePastePlugin } from './image-paste-plugin.js';
+import { createSmartPastePlugin } from './smart-paste-plugin.js';
+import { createFootnotePlugin } from './footnote-plugin.js';
 import { createMermaidPlugin } from './mermaid-plugin.js';
 import { createCalloutPlugin } from './callout-plugin.js';
 import { createEmojiPlugin } from './emoji-plugin.js';
@@ -138,6 +140,8 @@ export const milkdown = {
     crepe.editor.use($prose(() => createFindReplacePlugin()));
     crepe.editor.use($prose(() => createWikilinkPlugin()));
     crepe.editor.use($prose(() => createImagePastePlugin()));
+    crepe.editor.use($prose(() => createSmartPastePlugin()));
+    crepe.editor.use($prose(() => createFootnotePlugin()));
     crepe.editor.use($prose(() => createMermaidPlugin()));
     crepe.editor.use($prose(() => createCalloutPlugin()));
     crepe.editor.use($prose(() => createEmojiPlugin()));

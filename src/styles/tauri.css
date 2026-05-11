@@ -1,9 +1,15 @@
 /* Tauri desktop app overrides */
 
-/* No native menu in Tauri — show the in-app menubar instead */
-/* (intentionally no .is-tauri .menubar { display: none } rule) */
+/* Frameless transparent window: body must be transparent so rounded corners reveal nothing behind. */
+.is-tauri html,
+.is-tauri body {
+  background: transparent !important;
+}
 
-/* Hide the custom window controls — native decorations handle close/min/max */
-.is-tauri .window-controls {
-  display: none !important;
+/* Round the app shell to mimic libadwaita / gedit window corners. */
+.is-tauri #app {
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 1px var(--border-color), 0 12px 32px rgba(0, 0, 0, 0.35);
 }

@@ -43,6 +43,7 @@ function applyZen(on) {
 function applyWritingMode(on) {
   if (!appEl) return;
   appEl.classList.toggle('writing-mode', on);
+  appEl.classList.toggle('writing-mode-dropcap', on && settingsStore.get('writingDropCap'));
   if (on) {
     showSessionStats();
   } else {
@@ -145,6 +146,10 @@ export const focusManager = {
     eventBus.on('settings:writingMode', applyWritingMode);
     eventBus.on('settings:paragraphFocus', applyParagraphFocus);
     eventBus.on('settings:typewriterMode', applyTypewriter);
+    eventBus.on('settings:writingDropCap', (on) => {
+      if (!appEl) return;
+      appEl.classList.toggle('writing-mode-dropcap', !!on && settingsStore.get('writingMode'));
+    });
 
     // Apply initial state (all false on load, but just in case)
     applyZen(settingsStore.get('zenMode'));

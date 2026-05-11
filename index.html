@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' https://platform.twitter.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; frame-src https://www.youtube.com https://platform.twitter.com; connect-src 'self' wss://*.partykit.dev ws://localhost:* http://localhost:* https://*.partykit.dev; img-src 'self' data: https:; worker-src 'self';" />
+    content="default-src 'self' ipc: ipc://localhost http://ipc.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://platform.twitter.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; frame-src https://www.youtube.com https://platform.twitter.com; connect-src 'self' ipc: ipc://localhost http://ipc.localhost wss://*.partykit.dev ws://localhost:* http://localhost:* https://*.partykit.dev https://github.com https://api.github.com https://raw.githubusercontent.com https://huggingface.co https://*.hf.co; img-src 'self' data: blob: https:; worker-src 'self' blob:;" />
   <meta name="theme-color" content="#2563eb" />
   <title>mkdn</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
