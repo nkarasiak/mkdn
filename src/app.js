@@ -321,7 +321,7 @@ export const App = {
     // Show template chooser on new document
     eventBus.on('file:new', () => {
       setTimeout(() => {
-        import('./templates/template-system.js').then(m => m.openTemplateChooser());
+        import('./templates/template-system.js').then(m => m.openTemplateChooser({ fromFileNew: true }));
       }, 150);
     });
 

@@ -55,10 +55,6 @@ export const tabStore = {
     if (idx === -1) return null;
 
     const closed = tabs[idx];
-    // Save content before closing if it's the active tab
-    if (closed.id === activeTabId) {
-      closed.content = documentStore.getMarkdown();
-    }
     closedTabs.push({ ...closed });
     if (closedTabs.length > 20) closedTabs.shift();
 
@@ -101,7 +97,6 @@ export const tabStore = {
     const tab = tabs.find(t => t.id === (id || activeTabId));
     if (tab) {
       tab.dirty = false;
-      tab.content = documentStore.getMarkdown();
     }
     eventBus.emit('tabs:changed', { tabs, activeTabId });
   },
@@ -143,13 +138,32 @@ export const tabStore = {
     eventBus.emit('tabs:changed', { tabs, activeTabId });
   },
 
-  /** Save current tab's content state from documentStore */
+  /** Persist dirty flag of active tab before switching away. Content/name kept in sync via event listeners. */
   _saveCurrentTab() {
     const tab = this.getActiveTab();
     if (tab) {
-      tab.content = documentStore.getMarkdown();
-      tab.name = documentStore.getFileName();
       tab.dirty = documentStore.isDirty();
     }
+  },
+
+  persist() {
+    try {
+      localStorage.setItem('mkdn-tabs', JSON.stringify({ tabs, activeTabId }));
+    } catch { /* quota */ }
+  },
+
+  loadPersistedTabs() {
+    try {
+      const raw = localStorage.getItem('mkdn-tabs');
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!Array.isArray(data?.tabs) || data.tabs.length === 0) return null;
+      return data;
+    } catch { return null; }
+  },
+
+  restoreTabs(savedTabs, savedActiveTabId) {
+    tabs = savedTabs;
+    activeTabId = savedActiveTabId || savedTabs[0]?.id || null;
   },
 };

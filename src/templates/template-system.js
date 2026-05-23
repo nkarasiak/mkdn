@@ -282,7 +282,7 @@ function saveCustomTemplates(templates) {
   } catch { /* quota exceeded */ }
 }
 
-export function openTemplateChooser() {
+export function openTemplateChooser({ fromFileNew = false } = {}) {
   const customTemplates = loadCustomTemplates();
   const allTemplates = [...BUILTIN_TEMPLATES, ...customTemplates];
 
@@ -319,8 +319,8 @@ export function openTemplateChooser() {
     const card = el('div', {
       className: 'template-card',
       onClick: () => {
-        documentStore.newDocument();
-        // Small delay to let newDocument clear state
+        // If opened from file:new, a tab was already created — don't fire file:new again
+        if (!fromFileNew) documentStore.newDocument();
         requestAnimationFrame(() => {
           documentStore.setMarkdown(template.content, 'new-document');
           import('../ui/modal.js').then(({ closeModal }) => closeModal());

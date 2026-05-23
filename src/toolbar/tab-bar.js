@@ -146,9 +146,11 @@ export function initTabs() {
     tabStore.openTab(id, 'Untitled.md', '', null);
   });
 
-  // Track dirty state
-  eventBus.on('content:changed', ({ source }) => {
+  // Track dirty state and keep active tab's content in sync
+  eventBus.on('content:changed', ({ content, source }) => {
     if (source === 'file-open' || source === 'new-document' || source === 'session-restore') return;
+    const tab = tabStore.getActiveTab();
+    if (tab) tab.content = content;
     tabStore.markDirty();
   });
 
@@ -161,6 +163,30 @@ export function initTabs() {
     const id = tabStore.getActiveTabId();
     if (id) tabStore.updateName(id, name);
   });
+
+  // Persist tabs on every change (debounced — fires on every keystroke via markDirty)
+  let _persistTimer = null;
+  eventBus.on('tabs:changed', () => {
+    clearTimeout(_persistTimer);
+    _persistTimer = setTimeout(() => tabStore.persist(), 800);
+  });
+
+  // Restore tabs from previous session
+  const persisted = tabStore.loadPersistedTabs();
+  if (persisted) {
+    tabStore.restoreTabs(persisted.tabs, persisted.activeTabId);
+    const activeTab = tabStore.getActiveTab();
+    if (activeTab) {
+      documentStore.restoreState({
+        markdown: activeTab.content,
+        fileName: activeTab.name,
+        fileId: activeTab.id,
+        fileSource: activeTab.source,
+        dirty: activeTab.dirty,
+      });
+    }
+    eventBus.emit('tabs:changed', { tabs: tabStore.getTabs(), activeTabId: tabStore.getActiveTabId() });
+  }
 }
 
 injectStyles(`
