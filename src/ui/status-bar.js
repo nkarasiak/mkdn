@@ -3,6 +3,7 @@ import { icons } from '../toolbar/toolbar-icons.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { settingsStore } from '../store/settings-store.js';
+import { editorZoom } from '../editor/editor-zoom.js';
 import { buildAboutContent } from './about-content.js';
 
 export function createStatusBar({ onToggleHistory, focusManager } = {}) {
@@ -42,19 +43,6 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   eventBus.on('file:new', updateStats);
   updateStats();
 
-  // --- Collab peer badge (only visible when active) ---
-  const peerBadge = el('span', {
-    className: 'statusbar-peer-badge',
-    style: { display: 'none' },
-    'data-tooltip': 'Live collaborators',
-  }, '0');
-  eventBus.on('collab:started', () => { peerBadge.style.display = ''; });
-  eventBus.on('collab:stopped', () => { peerBadge.style.display = 'none'; });
-  eventBus.on('collab:peers-changed', ({ peers } = {}) => {
-    const n = peers?.length ?? 0;
-    peerBadge.textContent = String(n);
-  });
-
   // --- Focus mode pill (only when active) ---
   const focusPill = el('span', { className: 'statusbar-focus-pill', style: { display: 'none' } });
   function updateFocusPill() {
@@ -71,6 +59,37 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   eventBus.on('settings:typewriterMode', updateFocusPill);
   updateFocusPill();
 
+  // --- Zoom control ([−] 100% [+], click % to reset) ---
+  const zoomOutBtn = el('button', {
+    className: 'statusbar-zoom-btn',
+    'aria-label': 'Zoom out',
+    'data-tooltip': 'Zoom out (Ctrl+-)',
+    onClick: () => editorZoom.zoomOut(),
+    unsafeHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  });
+  const zoomLabel = el('button', {
+    className: 'statusbar-zoom-label',
+    'aria-label': 'Reset zoom to 100%',
+    'data-tooltip': 'Reset zoom (Ctrl+0)',
+    onClick: () => editorZoom.reset(),
+  }, '100%');
+  const zoomInBtn = el('button', {
+    className: 'statusbar-zoom-btn',
+    'aria-label': 'Zoom in',
+    'data-tooltip': 'Zoom in (Ctrl++)',
+    onClick: () => editorZoom.zoomIn(),
+    unsafeHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  });
+  const zoomControl = el('div', { className: 'statusbar-zoom' }, zoomOutBtn, zoomLabel, zoomInBtn);
+
+  function updateZoom() {
+    const pct = Math.round(editorZoom.getZoom() * 100);
+    zoomLabel.textContent = `${pct}%`;
+    zoomControl.classList.toggle('zoomed', pct !== 100);
+  }
+  eventBus.on('settings:editorZoom', updateZoom);
+  updateZoom();
+
   // --- Expand button → popover ---
   const expandBtn = el('button', {
     className: 'statusbar-expand-btn',
@@ -85,9 +104,6 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
 
   // --- Popover with secondary controls ---
   let popover = null;
-  let folderLinked = false;
-  eventBus.on('local:folder-linked', () => { folderLinked = true; });
-  eventBus.on('local:folder-unlinked', () => { folderLinked = false; });
 
   function buildPopover() {
     const { words } = getStats(documentStore.getMarkdown());
@@ -111,7 +127,6 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
     }
 
     rows.push(action('Writing statistics', '', () => import('../stats/writing-stats.js').then(m => m.openWritingStats())));
-    rows.push(action('Reader view', 'Ctrl+Shift+E', () => import('./reader-view.js').then(m => m.openReaderView())));
     rows.push(action('Focus mode', 'Ctrl+Shift+F', () => focusManager?.cycleMode()));
     rows.push(action(
       settingsStore.get('fullWidth') ? 'Disable full width' : 'Enable full width',
@@ -119,9 +134,6 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
       () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')),
     ));
     rows.push(action('History', 'Ctrl+Shift+H', () => onToggleHistory?.()));
-    if (folderLinked) {
-      rows.push(action('Knowledge graph', 'Ctrl+Shift+G', () => import('../graph/graph-view.js').then(m => m.openGraphView())));
-    }
     rows.push(action('About & shortcuts', '', async () => {
       const { showInfo } = await import('./modal.js');
       showInfo('About mkdn', buildAboutContent());
@@ -165,10 +177,10 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
     el('div', { className: 'statusbar-left' },
       saveDot,
       wordsEl,
-      peerBadge,
     ),
     el('div', { className: 'statusbar-right' },
       focusPill,
+      zoomControl,
       expandBtn,
     ),
   );
@@ -264,6 +276,82 @@ injectStyles(`
   padding: 2px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Zoom control — segmented pill: [−] 100% [+] */
+.statusbar-zoom {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.statusbar-zoom:hover {
+  box-shadow: 0 2px 9px rgba(0, 0, 0, 0.09);
+}
+
+.statusbar-zoom.zoomed {
+  border-color: var(--border-color);
+}
+
+.statusbar-zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.statusbar-zoom-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.statusbar-zoom-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.statusbar-zoom-btn:active {
+  background: var(--bg-tertiary);
+}
+
+.statusbar-zoom-label {
+  height: 100%;
+  min-width: 44px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.statusbar-zoom-label:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.statusbar-zoom.zoomed .statusbar-zoom-label {
+  color: var(--text-secondary);
 }
 
 .statusbar-expand-btn {

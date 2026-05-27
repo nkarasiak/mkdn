@@ -6,8 +6,6 @@ import { localFs } from '../local/local-fs.js';
 import { prompt as promptModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { extractHeadings } from '../command-palette/heading-utils.js';
-import { collabManager } from '../collab/collab-manager.js';
-import { pushSnapshot } from '../collab/collab-history.js';
 
 function showSaveLocationPicker() {
   return new Promise((resolve) => {
@@ -137,15 +135,6 @@ export const fileSaver = {
   },
 
   async save() {
-    // Collab active — save snapshot to PartyKit cloud
-    if (collabManager.isActive()) {
-      const content = documentStore.getMarkdown();
-      await pushSnapshot({ content, trigger: 'save' });
-      documentStore.markSaved();
-      toast('Saved to cloud', 'success');
-      return;
-    }
-
     const source = documentStore.getFileSource();
 
     // File already has a source — save directly

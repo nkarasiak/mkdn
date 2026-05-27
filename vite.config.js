@@ -5,13 +5,10 @@ import { readFileSync } from 'node:fs';
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 const isTauri = !!process.env.TAURI_BUILD || !!process.env.TAURI_ENV_PLATFORM;
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   base: isTauri ? '/' : '/mkdn/',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
-    __PARTYKIT_URL__: JSON.stringify(
-      mode === 'development' ? 'http://localhost:1999' : 'https://mkdn-collab.nkarasiak.partykit.dev',
-    ),
     __VUE_OPTIONS_API__: false,
     __VUE_PROD_DEVTOOLS__: false,
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
@@ -76,7 +73,6 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           milkdown: ['@milkdown/crepe', '@milkdown/utils'],
-          collab: ['yjs', 'y-partykit', 'y-prosemirror'],
         },
       },
     },

@@ -28,8 +28,6 @@ export function buildAboutContent() {
       shortcutRow(['Ctrl', 'Shift', 'H'], 'Toggle history'),
       shortcutRow(['Ctrl', 'U'], 'Toggle source view'),
       shortcutRow(['Ctrl', 'Shift', 'F'], 'Cycle focus modes'),
-      shortcutRow(['Ctrl', 'Shift', 'R'], 'Reader view'),
-      shortcutRow(['Ctrl', 'Shift', 'G'], 'Knowledge graph'),
       shortcutRow(['Ctrl', 'W'], 'Close tab'),
       shortcutRow(['Esc'], 'Close dialog / exit focus'),
     ),

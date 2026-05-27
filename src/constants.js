@@ -25,8 +25,5 @@ export const PLUGIN_STORAGE_PREFIX = 'mkdn-plugin-';
 // Recent files (file switcher)
 export const STORAGE_RECENT_FILES = 'mkdn-recent-files';
 
-// PartyKit room prefix
-export const PARTYKIT_ROOM_PREFIX = 'mkdn-';
-
 // DOM element IDs
 export const CUSTOM_THEME_STYLE_ID = 'mkdn-custom-theme';

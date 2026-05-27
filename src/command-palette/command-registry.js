@@ -1,4 +1,3 @@
-import { openFileSwitcher } from './file-switcher.js';
 import { tabStore } from '../store/tab-store.js';
 
 const commands = [];
@@ -40,8 +39,6 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'file:new', label: 'New Document', category: 'File', shortcut: 'Ctrl+N', keywords: ['new', 'create', 'blank'], action: () => documentStore.newDocument() },
     { id: 'file:open', label: 'Open File', category: 'File', shortcut: 'Ctrl+O', keywords: ['open', 'load'], action: () => fileSaver.openFile() },
     { id: 'file:open-folder', label: 'Open Folder', category: 'File', keywords: ['folder', 'directory', 'link'], action: () => localSync.linkFolder() },
-    { id: 'file:quick-switch', label: 'Quick Open File', category: 'File', shortcut: 'Ctrl+Shift+O', keywords: ['switch', 'quick', 'open', 'find', 'file', 'recent'], action: () => openFileSwitcher() },
-    { id: 'file:library', label: 'Document Library', category: 'File', keywords: ['library', 'documents', 'browse', 'all', 'collection'], action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
 
     // --- Tabs ---
     { id: 'tab:new', label: 'New Tab', category: 'Tab', shortcut: 'Ctrl+T', keywords: ['tab', 'new'], action: () => documentStore.newDocument() },
@@ -69,7 +66,6 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'view:toggle-history', label: 'Toggle History', category: 'View', shortcut: 'Ctrl+Shift+H', keywords: ['history', 'versions'], action: toggleHistory },
     { id: 'view:source-mode', label: 'Toggle Source View', category: 'View', shortcut: 'Ctrl+U', keywords: ['source', 'raw', 'markdown', 'code', 'textarea'], action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
     { id: 'view:toggle-outline', label: 'Toggle Outline', category: 'View', keywords: ['outline', 'toc', 'table of contents', 'headings', 'navigation'], action: toggleOutline },
-    { id: 'view:reader-view', label: 'Reader View', category: 'View', shortcut: 'Ctrl+Shift+E', keywords: ['reader', 'preview', 'substack', 'published', 'article', 'view'], action: () => import('../ui/reader-view.js').then(m => m.openReaderView()) },
     { id: 'settings:author-byline', label: 'Set Author Byline', category: 'Settings', keywords: ['author', 'byline', 'name', 'signature', 'writing'], action: async () => {
       const { prompt } = await import('../ui/modal.js');
       try {
@@ -135,9 +131,6 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'tools:theme-editor', label: 'Theme Editor', category: 'Tools', keywords: ['theme', 'color', 'accent', 'font', 'customize', 'appearance', 'style'], action: () => {
       import('../themes/theme-editor.js').then(m => m.openThemeEditor());
     }},
-    { id: 'tools:templates', label: 'New from Template', category: 'Tools', keywords: ['template', 'new', 'blog', 'meeting', 'journal', 'readme', 'todo', 'preset'], action: () => {
-      import('../templates/template-system.js').then(m => m.openTemplateChooser());
-    }},
 
     // --- Focus ---
     { id: 'focus:zen', label: 'Zen Mode', category: 'Focus', shortcut: 'Ctrl+Shift+F', keywords: ['zen', 'distraction', 'free', 'focus', 'fullscreen'], action: () => focusManager.cycleMode() },
@@ -149,14 +142,6 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     }},
     { id: 'focus:typewriter', label: 'Typewriter Mode', category: 'Focus', keywords: ['typewriter', 'scroll', 'center'], action: () => {
       settingsStore.set('typewriterMode', !settingsStore.get('typewriterMode'));
-    }},
-
-    // --- Comments ---
-    { id: 'edit:add-comment', label: 'Add Comment', category: 'Edit', keywords: ['comment', 'annotate', 'note', 'review'], action: () => import('../comments/comment-plugin.js').then(m => m.addComment()) },
-
-    // --- Writing Goals ---
-    { id: 'tools:writing-goals', label: 'Writing Goals & Streaks', category: 'Tools', keywords: ['goal', 'target', 'streak', 'daily', 'progress', 'words'], action: () => {
-      import('../stats/writing-goals.js').then(m => m.openGoalSettings());
     }},
   ]);
 }

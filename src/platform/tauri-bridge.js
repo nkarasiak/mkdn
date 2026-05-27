@@ -65,9 +65,6 @@ export async function initTauriEvents({ toggleSidebar, fileSaver, documentStore,
       case 'tools:theme-editor':
         import('../themes/theme-editor.js').then(m => m.openThemeEditor());
         break;
-      case 'tools:templates':
-        import('../templates/template-system.js').then(m => m.openTemplateChooser());
-        break;
       case 'help:shortcuts': showShortcutsDialog(); break;
       case 'help:about': showAboutDialog(); break;
       case 'help:check-updates': checkForUpdates(); break;
@@ -150,7 +147,7 @@ function showAboutDialog() {
       const version = __APP_VERSION__ || '?';
       const container = el('div', { className: 'about-content' },
         el('div', { className: 'about-description' },
-          'A minimal, beautiful markdown editor with real-time collaboration, local folder sync, version history, and a plugin system.'
+          'A minimal, beautiful markdown editor with local folder sync and version history.'
         ),
         el('div', { className: 'about-section-title' }, 'Links'),
         el('div', {},

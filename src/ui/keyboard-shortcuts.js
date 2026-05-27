@@ -1,12 +1,10 @@
 import { documentStore } from '../store/document-store.js';
 import { fileSaver } from '../save/file-saver.js';
 import { localFs } from '../local/local-fs.js';
-import { localSync } from '../local/local-sync.js';
 import { settingsStore } from '../store/settings-store.js';
 import { closeModal, confirm as confirmModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
-import { openFileSwitcher, closeFileSwitcher } from '../command-palette/file-switcher.js';
 import { openFindBar, closeFindBar, isFindBarOpen } from '../find-replace/find-bar.js';
 import { sourceFormat } from '../editor/source-formatter.js';
 import { editorZoom } from '../editor/editor-zoom.js';
@@ -22,10 +20,9 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     const shift = e.shiftKey;
     const key = e.key.toLowerCase();
 
-    // Escape: close find bar → close file switcher → close palette → close sidebar → exit focus modes → close modal (priority chain)
+    // Escape: close find bar → close palette → close sidebar → exit focus modes → close modal (priority chain)
     if (key === 'escape') {
       if (closeFindBar()) return;
-      if (closeFileSwitcher()) return;
       if (closeCommandPalette()) return;
       if (settingsStore.get('sidebarOpen')) {
         settingsStore.set('sidebarOpen', false);
@@ -204,40 +201,10 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+Shift+O — Quick file switcher
-    if (key === 'o' && shift) {
-      e.preventDefault();
-      openFileSwitcher();
-      return;
-    }
-
-    // Ctrl+Shift+E — Reader view (avoid Ctrl+Shift+R webview hard-refresh)
-    if (key === 'e' && shift) {
-      e.preventDefault();
-      import('../ui/reader-view.js').then(m => m.openReaderView());
-      return;
-    }
-
-    // Ctrl+Shift+G — Knowledge graph (only when folder linked)
-    if (key === 'g' && shift) {
-      e.preventDefault();
-      if (localSync.isLinked()) {
-        import('../graph/graph-view.js').then(m => m.openGraphView());
-      }
-      return;
-    }
-
     // Ctrl+U — Toggle source view
     if (key === 'u' && !shift) {
       e.preventDefault();
       settingsStore.set('sourceMode', !settingsStore.get('sourceMode'));
-      return;
-    }
-
-    // Ctrl+\ — Toggle split pane
-    if (e.code === 'Backslash' && !shift) {
-      e.preventDefault();
-      import('../editor/split-pane.js').then(m => m.toggleSplitPane());
       return;
     }
 

@@ -129,7 +129,6 @@ const SLASH_ITEMS = [
   { id: 'hr', icon: '\u2500', label: 'Divider', desc: 'Horizontal rule', group: 'Advanced', keywords: ['divider', 'hr', 'line', 'separator', 'horizontal'] },
   { id: 'details', icon: '\u25B6', label: 'Toggle Block', desc: 'Collapsible section', group: 'Advanced', keywords: ['toggle', 'details', 'collapsible', 'accordion', 'expand'] },
   { id: 'date', icon: '\u{1F4C5}', label: "Today's Date", desc: 'Insert current date', group: 'Advanced', keywords: ['date', 'today', 'time'] },
-  { id: 'template', icon: '\u{1F4C4}', label: 'From Template', desc: 'Insert from template', group: 'Advanced', keywords: ['template', 'snippet'] },
 ];
 
 function executeItem(id, view) {
@@ -211,9 +210,6 @@ function executeItem(id, view) {
       dispatch(state.tr.insertText(date).scrollIntoView());
       break;
     }
-    case 'template':
-      import('../templates/template-system.js').then(m => m.openTemplateChooser());
-      break;
   }
 }
 

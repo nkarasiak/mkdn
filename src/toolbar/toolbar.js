@@ -6,7 +6,6 @@ import { eventBus } from '../store/event-bus.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
 import { createTablePicker } from './table-picker.js';
-import { openCollabDialog } from '../collab/collab-ui.js';
 import { settingsStore } from '../store/settings-store.js';
 import { localSync } from '../local/local-sync.js';
 import { saveImageToAssets, saveImageToAssetsTauri, isTauri } from '../editor/image-paste-plugin.js';
@@ -135,15 +134,12 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'New', shortcut: 'Ctrl+N', action: () => documentStore.newDocument() },
     { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
     { label: 'Open Folder', action: onOpenFolder },
-    { label: 'Quick Open', shortcut: 'Ctrl+Shift+O', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
-    { label: 'Document Library', action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
     '---',
     { label: 'Save', shortcut: 'Ctrl+S', action: onSave },
     { label: 'Save As', shortcut: 'Ctrl+Shift+S', action: () => import('../save/file-saver.js').then(m => m.fileSaver.saveAs()) },
     '---',
     { label: 'Download .md', action: () => downloadMarkdown() },
     { label: 'Export HTML', action: () => import('../export/html-export.js').then(m => m.exportStyledHtml()) },
-    { label: 'Export DOCX', action: () => import('../export/docx-export.js').then(m => m.exportDocx()) },
     { label: 'Print / PDF', shortcut: 'Ctrl+P', action: () => printDocument() },
   ]);
 
@@ -161,8 +157,6 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'Toggle History', shortcut: 'Ctrl+Shift+H', action: () => import('../sidebar/sidebar.js').then(m => m.toggleHistorySection()) },
     '---',
     { label: 'Source View', shortcut: 'Ctrl+U', action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
-    { label: 'Split Editor', shortcut: 'Ctrl+\\', action: () => import('../editor/split-pane.js').then(m => m.toggleSplitPane()) },
-    { label: 'Present Slides', action: () => import('../export/slides.js').then(m => m.enterSlideMode()) },
     '---',
     { label: 'Full Width', action: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')) },
     { label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
@@ -177,37 +171,11 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const helpMenu = createMenu('Help', [
     { label: 'Command Palette', shortcut: 'Ctrl+K', action: () => import('../command-palette/command-palette.js').then(m => m.openCommandPalette()) },
     { label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
-    { label: 'Knowledge Graph', shortcut: 'Ctrl+Shift+G', action: () => import('../graph/graph-view.js').then(m => m.openGraphView()) },
-    { label: 'Plugins', action: () => import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager()) },
-    { label: 'Writing Goals', action: () => import('../stats/writing-goals.js').then(m => m.openGoalSettings()) },
-    '---',
-    { label: 'Collaborate', action: () => openCollabDialog() },
   ]);
 
   const menuBar = el('div', { className: 'menubar' }, fileMenu, editMenu, viewMenu, helpMenu);
 
   // === GNOME-style condensed controls ===
-
-  // "Open ▾" dropdown — primary file actions on the left
-  const openMenu = createMenu('Open', [
-    { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
-    { label: 'Open Folder', action: onOpenFolder },
-    { label: 'Quick Open', shortcut: 'Ctrl+Shift+O', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
-    { label: 'Document Library', action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
-    '---',
-    { label: 'Save', shortcut: 'Ctrl+S', action: onSave },
-    { label: 'Save As', shortcut: 'Ctrl+Shift+S', action: () => import('../save/file-saver.js').then(m => m.fileSaver.saveAs()) },
-  ]);
-  openMenu.classList.add('open-menu');
-
-  // "+" new tab button
-  const newTabBtn = el('button', {
-    className: 'toolbar-nav-btn',
-    'data-tooltip': 'New (Ctrl+N)',
-    'aria-label': 'New',
-    unsafeHTML: icons.plus,
-    onClick: () => documentStore.newDocument(),
-  });
 
   // Info / About button
   const infoBtn = el('button', {
@@ -289,9 +257,6 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { icon: icons.file, label: 'Toggle Outline', action: () => import('../sidebar/sidebar.js').then(m => m.toggleOutlineSection()) },
     { icon: icons.clock, label: 'History', shortcut: 'Ctrl+Shift+H', action: () => import('../sidebar/sidebar.js').then(m => m.toggleHistorySection()) },
     { icon: icons.code, label: 'Source View', shortcut: 'Ctrl+U', action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
-    { icon: icons.diff, label: 'Split Editor', shortcut: 'Ctrl+\\', action: () => import('../editor/split-pane.js').then(m => m.toggleSplitPane()) },
-    { icon: icons.eye, label: 'Reader View', shortcut: 'Ctrl+Shift+E', action: () => import('../ui/reader-view.js').then(m => m.openReaderView()) },
-    { icon: icons.play, label: 'Present Slides', action: () => import('../export/slides.js').then(m => m.enterSlideMode()) },
     '---',
     { icon: icons.fullWidth, label: 'Full Width', action: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')) },
     { icon: icons.rename, label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
@@ -312,10 +277,6 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   hamburgerMenu.appendChild(hamburgerSection('Tools', [
     { icon: icons.command, label: 'Command Palette', shortcut: 'Ctrl+K', action: () => import('../command-palette/command-palette.js').then(m => m.openCommandPalette()) },
     { icon: icons.infoCircle, label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
-    { icon: icons.fullWidth, label: 'Writing Goals', action: () => import('../stats/writing-goals.js').then(m => m.openGoalSettings()) },
-    { icon: icons.graph, label: 'Knowledge Graph', shortcut: 'Ctrl+Shift+G', action: () => import('../graph/graph-view.js').then(m => m.openGraphView()) },
-    { icon: icons.puzzle, label: 'Plugins', action: () => import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager()) },
-    { icon: icons.share, label: 'Collaborate', action: () => openCollabDialog() },
   ]));
 
   const hamburgerTrigger = el('button', {
@@ -431,24 +392,6 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     themeBtn.setAttribute('data-tooltip', themeTooltip(theme));
   });
 
-  // Collaborate button
-  const collabBtn = el('button', {
-    className: 'toolbar-icon-btn',
-    'data-tooltip': 'Collaborate',
-    'aria-label': 'Collaborate',
-    unsafeHTML: icons.share,
-    onClick: () => openCollabDialog(),
-  });
-
-  eventBus.on('collab:started', () => {
-    collabBtn.classList.add('toolbar-btn-active');
-    collabBtn.setAttribute('data-tooltip', 'Live collaboration');
-  });
-  eventBus.on('collab:stopped', () => {
-    collabBtn.classList.remove('toolbar-btn-active');
-    collabBtn.setAttribute('data-tooltip', 'Collaborate');
-  });
-
   // Export button
   const exportBtn = el('button', {
     className: 'toolbar-icon-btn',
@@ -495,12 +438,12 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
 
   const headerRow = el('div', { className: 'toolbar-header toolbar-header-gnome' },
     el('div', { className: 'toolbar-header-left' },
-      backBtn, openMenu, newTabBtn,
+      backBtn,
       ...(isTauriBridge() ? [] : [menuBar]),
     ),
     el('div', { className: 'toolbar-header-center' }, breadcrumbEl),
     el('div', { className: 'toolbar-header-right' },
-      statusBadge, exportBtn, collabBtn, themeBtn, infoBtn, hamburgerWrapper,
+      statusBadge, exportBtn, themeBtn, infoBtn, hamburgerWrapper,
       ...(isTauriBridge() ? [] : (windowControls ? [windowControls] : [])),
     ),
   );
@@ -773,22 +716,6 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   moreMenu.appendChild(menuItem('\u{1F5A8}\uFE0F', 'Print / PDF', () => printDocument()));
   moreMenu.appendChild(menuItem('\u{1F310}', 'Export as HTML', () =>
     import('../export/html-export.js').then(m => m.exportStyledHtml())));
-  moreMenu.appendChild(menuItem('\u{1F4C4}', 'Export as DOCX', () =>
-    import('../export/docx-export.js').then(m => m.exportDocx())));
-  moreMenu.appendChild(menuItem('\u{1F4FD}\uFE0F', 'Present as Slides', () =>
-    import('../export/slides.js').then(m => m.enterSlideMode())));
-
-  // --- Tools group ---
-  moreMenu.appendChild(menuGroupHeader('Tools'));
-
-  moreMenu.appendChild(menuItem('\u{1F50D}', 'Semantic Search', () =>
-    import('../search/semantic-search-ui.js').then(m => m.openSearchPanel())));
-  moreMenu.appendChild(menuItem('\u{1F578}\uFE0F', 'Knowledge Graph', () =>
-    import('../graph/graph-view.js').then(m => m.openGraphView())));
-  moreMenu.appendChild(menuItem('\u{1F4E4}', 'Publish to GitHub', () =>
-    import('../export/github-publish.js').then(m => m.openGithubPublish())));
-  moreMenu.appendChild(menuItem('\u{1F9E9}', 'Plugins', () =>
-    import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager())));
 
   const moreTrigger = el('button', {
     className: 'toolbar-dropdown-btn',

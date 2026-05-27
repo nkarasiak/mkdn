@@ -5,7 +5,6 @@ import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { confirm as confirmModal } from '../ui/modal.js';
 import { computeDiff, collapseDiff } from './diff.js';
-import { collabManager } from '../collab/collab-manager.js';
 import { createEmptyState } from '../ui/empty-state.js';
 
 let listEl = null;
@@ -157,58 +156,6 @@ async function restoreSnapshot(snap) {
   } catch { /* cancelled */ }
 }
 
-function createCollabSnapshotItem(snap) {
-  const triggerText = TRIGGER_LABELS[snap.trigger] || snap.trigger;
-  const label = snap.userName ? `${triggerText} by ${snap.userName}` : triggerText;
-
-  const actions = el('div', { className: 'history-item-actions' },
-    el('button', {
-      className: 'toolbar-btn history-action-btn',
-      title: 'Diff',
-      unsafeHTML: icons.diff,
-      onClick: (e) => { e.stopPropagation(); showDiff(snap); },
-    }),
-    el('button', {
-      className: 'toolbar-btn history-action-btn',
-      title: 'Preview',
-      unsafeHTML: icons.eye,
-      onClick: (e) => { e.stopPropagation(); showPreview(snap); },
-    }),
-    el('button', {
-      className: 'toolbar-btn history-action-btn',
-      title: 'Restore',
-      unsafeHTML: icons.restore,
-      onClick: (e) => { e.stopPropagation(); restoreCollabSnapshot(snap); },
-    }),
-  );
-
-  const infoChildren = [
-    el('span', { className: 'history-item-time' }, formatTime(snap.timestamp)),
-    el('span', { className: 'history-item-trigger collab-trigger' }, label),
-  ];
-  if (snap.message) {
-    infoChildren.push(el('span', { className: 'history-item-message' }, snap.message));
-  }
-
-  return el('div', { className: 'history-item is-collab' },
-    el('div', { className: 'history-item-info' }, ...infoChildren),
-    actions,
-  );
-}
-
-async function restoreCollabSnapshot(snap) {
-  try {
-    const ok = await confirmModal(
-      `Restore shared snapshot from ${formatTime(snap.timestamp)}? This will replace your current content.`,
-      { title: 'Restore Shared Version', okText: 'Restore' },
-    );
-    if (ok) {
-      documentStore.setMarkdown(snap.content, 'history-restore');
-      eventBus.emit('history:restored', {});
-    }
-  } catch { /* cancelled */ }
-}
-
 async function renderList() {
   if (!listEl) return;
   listEl.replaceChildren();
@@ -218,31 +165,13 @@ async function renderList() {
 
   // Local history section
   if (snapshots.length > 0) {
-    if (collabManager.isActive()) {
-      listEl.appendChild(el('div', { className: 'history-section-header' }, 'Local'));
-    }
     for (const snap of snapshots) {
       listEl.appendChild(createSnapshotItem(snap));
     }
   }
 
-  // Shared collab history section
-  if (collabManager.isActive()) {
-    const collabSnapshots = await historyManager.getCollabHistory();
-    listEl.appendChild(el('div', { className: 'history-section-header' }, 'Shared'));
-    if (collabSnapshots.length > 0) {
-      for (const snap of collabSnapshots) {
-        listEl.appendChild(createCollabSnapshotItem(snap));
-      }
-    } else {
-      listEl.appendChild(
-        el('div', { className: 'sidebar-empty' }, 'No shared history yet'),
-      );
-    }
-  }
-
-  // Empty state when no history at all and not collaborating
-  if (snapshots.length === 0 && !collabManager.isActive()) {
+  // Empty state when no history at all
+  if (snapshots.length === 0) {
     listEl.appendChild(
       createEmptyState({
         icon: icons.clock,
@@ -261,8 +190,6 @@ export function createHistoryPanel() {
   eventBus.on('file:saved', () => renderList());
   eventBus.on('history:restored', () => renderList());
   eventBus.on('history:updated', () => renderList());
-  eventBus.on('collab:started', () => renderList());
-  eventBus.on('collab:stopped', () => renderList());
 
   // Initial render (deferred so the DOM is ready)
   setTimeout(renderList, 0);

@@ -109,15 +109,6 @@ function renderTabs() {
 
     barEl.appendChild(tabEl);
   });
-
-  // "New tab" button
-  const newTabBtn = el('button', {
-    className: 'tab-new-btn',
-    'aria-label': 'New tab',
-    unsafeHTML: icons.plus,
-    onClick: () => documentStore.newDocument(),
-  });
-  barEl.appendChild(newTabBtn);
 }
 
 export function createTabBar() {

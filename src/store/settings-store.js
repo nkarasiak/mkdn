@@ -20,7 +20,6 @@ const defaults = {
   customFont: null,
   authorByline: '',
   writingDropCap: true,
-  collabServerUrl: __PARTYKIT_URL__,
 };
 
 function load() {

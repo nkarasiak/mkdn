@@ -181,12 +181,6 @@ function getToolbarEl() {
     'Quote',
     () => milkdown.toggleBlockquote(),
   );
-  const commentBtn = mkBtn(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-    'Comment',
-    () => import('../comments/comment-plugin.js').then(m => m.addComment()),
-  );
-
   toolbarEl = el('div', { className: 'floating-toolbar' },
     headingBtn,
     divider(),
@@ -197,7 +191,6 @@ function getToolbarEl() {
     divider(),
     linkBtn,
     quoteBtn,
-    commentBtn,
   );
 
   // Store refs for active state updates
