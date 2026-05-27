@@ -44,6 +44,12 @@
     display: none !important;
   }
 
+  /* html/body lock to 100vh + overflow:hidden on screen — clips print to one page */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
   /* Reset grid layout for print */
   .app {
     display: block !important;
@@ -60,6 +66,16 @@
     display: block !important;
     overflow: visible !important;
     background: #ffffff !important;
+  }
+
+  /* Inner Crepe scroll host clips to one viewport page — unclip for print */
+  .editor-pane milkdown-crepe-editor,
+  .editor-pane .crepe,
+  .milkdown,
+  .ProseMirror {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   /* Typography */
