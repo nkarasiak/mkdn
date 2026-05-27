@@ -44,6 +44,13 @@ button:disabled {
   box-shadow: var(--focus-ring);
 }
 
+/* The editor surface is always focused while writing — don't wrap it in the
+   focus ring (it framed the whole content area in orange). */
+.ProseMirror:focus-visible,
+.source-editor:focus-visible {
+  box-shadow: none;
+}
+
 input, textarea {
   font-family: inherit;
   font-size: inherit;

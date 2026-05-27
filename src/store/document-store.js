@@ -35,6 +35,7 @@ let state = {
   fileSource: null,
   dirty: false,
   lastSaved: null,
+  lastModifiedOnDisk: null,
 };
 
 export const documentStore = {
@@ -66,15 +67,24 @@ export const documentStore = {
     return state.fileSource;
   },
 
-  setFile(id, name, content, source = null) {
+  setFile(id, name, content, source = null, lastModifiedOnDisk = null) {
     state.fileId = id;
     state.fileName = name;
     state.markdown = content;
     state.fileSource = source;
     state.dirty = false;
     state.lastSaved = Date.now();
+    state.lastModifiedOnDisk = lastModifiedOnDisk;
     eventBus.emit('file:opened', { id, name, source });
     eventBus.emit('content:changed', { content, source: 'file-open' });
+  },
+
+  getLastModifiedOnDisk() {
+    return state.lastModifiedOnDisk;
+  },
+
+  setLastModifiedOnDisk(ts) {
+    state.lastModifiedOnDisk = ts;
   },
 
   markSaved() {
@@ -98,6 +108,7 @@ export const documentStore = {
     state.markdown = '';
     state.dirty = false;
     state.lastSaved = null;
+    state.lastModifiedOnDisk = null;
     eventBus.emit('file:new', {});
     eventBus.emit('content:changed', { content: '', source: 'new-document' });
   },
@@ -110,6 +121,11 @@ export const documentStore = {
     state.fileSource = saved.fileSource ?? null;
     state.dirty = saved.dirty ?? false;
     state.lastSaved = saved.lastSaved ?? null;
+    state.lastModifiedOnDisk = saved.lastModifiedOnDisk ?? null;
+    // Emit file:opened so breadcrumb/UI updates with the restored filename
+    if (state.fileId) {
+      eventBus.emit('file:opened', { id: state.fileId, name: state.fileName, source: state.fileSource });
+    }
     eventBus.emit('content:changed', { content: state.markdown, source: 'session-restore' });
   },
 

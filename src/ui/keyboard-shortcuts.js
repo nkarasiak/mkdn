@@ -1,14 +1,13 @@
 import { documentStore } from '../store/document-store.js';
 import { fileSaver } from '../save/file-saver.js';
 import { localFs } from '../local/local-fs.js';
-import { localSync } from '../local/local-sync.js';
 import { settingsStore } from '../store/settings-store.js';
 import { closeModal, confirm as confirmModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
-import { openFileSwitcher, closeFileSwitcher } from '../command-palette/file-switcher.js';
 import { openFindBar, closeFindBar, isFindBarOpen } from '../find-replace/find-bar.js';
 import { sourceFormat } from '../editor/source-formatter.js';
+import { editorZoom } from '../editor/editor-zoom.js';
 import { tabStore } from '../store/tab-store.js';
 
 let focusManagerRef = null;
@@ -21,10 +20,9 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     const shift = e.shiftKey;
     const key = e.key.toLowerCase();
 
-    // Escape: close find bar → close file switcher → close palette → close sidebar → exit focus modes → close modal (priority chain)
+    // Escape: close find bar → close palette → close sidebar → exit focus modes → close modal (priority chain)
     if (key === 'escape') {
       if (closeFindBar()) return;
-      if (closeFileSwitcher()) return;
       if (closeCommandPalette()) return;
       if (settingsStore.get('sidebarOpen')) {
         settingsStore.set('sidebarOpen', false);
@@ -46,6 +44,19 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     }
 
     if (!ctrl) return;
+
+    // Ctrl+Q — Quit (Tauri only)
+    if (key === 'q' && !shift) {
+      e.preventDefault();
+      import('../platform/tauri-bridge.js').then(({ isTauri }) => {
+        if (isTauri()) {
+          import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+            getCurrentWindow().close();
+          });
+        }
+      });
+      return;
+    }
 
     // Source mode formatting shortcuts (Ctrl+B/I/E)
     // ProseMirror doesn't see keys when textarea has focus, so we handle them here.
@@ -183,19 +194,10 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+P — Quick file switcher
+    // Ctrl+P — Print / Export PDF
     if (key === 'p' && !shift) {
       e.preventDefault();
-      openFileSwitcher();
-      return;
-    }
-
-    // Ctrl+Shift+G — Knowledge graph (only when folder linked)
-    if (key === 'g' && shift) {
-      e.preventDefault();
-      if (localSync.isLinked()) {
-        import('../graph/graph-view.js').then(m => m.openGraphView());
-      }
+      import('../utils/export.js').then(m => m.printDocument());
       return;
     }
 
@@ -206,10 +208,29 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+\ — Toggle split pane
-    if (e.code === 'Backslash' && !shift) {
+    // Ctrl+= / Ctrl++ — Zoom in
+    if ((key === '=' || key === '+') && !shift) {
       e.preventDefault();
-      import('../editor/split-pane.js').then(m => m.toggleSplitPane());
+      editorZoom.zoomIn();
+      return;
+    }
+    if (key === '+' && shift) {
+      e.preventDefault();
+      editorZoom.zoomIn();
+      return;
+    }
+
+    // Ctrl+- — Zoom out
+    if (key === '-' && !shift) {
+      e.preventDefault();
+      editorZoom.zoomOut();
+      return;
+    }
+
+    // Ctrl+0 — Reset zoom
+    if (key === '0' && !shift) {
+      e.preventDefault();
+      editorZoom.reset();
       return;
     }
 

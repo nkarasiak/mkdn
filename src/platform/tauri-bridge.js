@@ -23,6 +23,23 @@ export async function initTauri() {
   setTimeout(() => checkForUpdates(true), 3000);
 }
 
+// Re-read a file from disk in Tauri mode (for session restore of absolute-path files)
+export async function restoreTauriFile(fileId) {
+  if (!isTauri()) return false;
+  // Only handle absolute paths (Tauri file-open uses absolute paths)
+  if (!fileId || (!fileId.startsWith('/') && !fileId.includes('\\'))) return false;
+  try {
+    const { readTextFile } = await import('@tauri-apps/plugin-fs');
+    const content = await readTextFile(fileId);
+    const name = fileId.split('/').pop().split('\\').pop();
+    const { documentStore } = await import('../store/document-store.js');
+    documentStore.setFile(fileId, name, content, 'local');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Listen for native menu events and file-open from CLI/OS
 export async function initTauriEvents({ toggleSidebar, fileSaver, documentStore, focusManager, settingsStore }) {
   if (!isTauri()) return;
@@ -47,9 +64,6 @@ export async function initTauriEvents({ toggleSidebar, fileSaver, documentStore,
         break;
       case 'tools:theme-editor':
         import('../themes/theme-editor.js').then(m => m.openThemeEditor());
-        break;
-      case 'tools:templates':
-        import('../templates/template-system.js').then(m => m.openTemplateChooser());
         break;
       case 'help:shortcuts': showShortcutsDialog(); break;
       case 'help:about': showAboutDialog(); break;
@@ -133,7 +147,7 @@ function showAboutDialog() {
       const version = __APP_VERSION__ || '?';
       const container = el('div', { className: 'about-content' },
         el('div', { className: 'about-description' },
-          'A minimal, beautiful markdown editor with real-time collaboration, local folder sync, version history, and a plugin system.'
+          'A minimal, beautiful markdown editor with local folder sync and version history.'
         ),
         el('div', { className: 'about-section-title' }, 'Links'),
         el('div', {},

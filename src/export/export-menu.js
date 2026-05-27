@@ -20,7 +20,6 @@ export function showExportMenu(anchorEl) {
   const items = [
     { label: 'Download .md', icon: '\u{1F4DD}', action: () => import('../utils/export.js').then(m => m.downloadMarkdown()) },
     { label: 'Export HTML', icon: '\u{1F310}', action: () => import('./html-export.js').then(m => m.exportStyledHtml()) },
-    { label: 'Export DOCX', icon: '\u{1F4C4}', action: () => import('./docx-export.js').then(m => m.exportDocx()) },
     { label: 'Print / PDF', icon: '\u{1F5A8}\uFE0F', action: () => import('../utils/export.js').then(m => m.printDocument()) },
   ];
 

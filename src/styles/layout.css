@@ -69,6 +69,40 @@ body.resizing * {
   position: relative;
 }
 
+.content-width-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% + var(--content-max-width) / 2);
+  width: 12px;
+  margin-left: -6px;
+  cursor: col-resize;
+  z-index: 5;
+}
+
+.content-width-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--accent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.content-width-handle:hover::before,
+.content-width-handle.active::before {
+  opacity: 1;
+}
+
+body.full-width .content-width-handle {
+  display: none;
+}
+
 .app-statusbar {
   position: fixed;
   bottom: 0;
@@ -151,6 +185,10 @@ body.resizing * {
   color: var(--text-secondary);
 }
 
+.statusbar-icon-btn.active {
+  color: var(--accent);
+}
+
 .statusbar-icon-btn svg {
   width: var(--icon-md);
   height: var(--icon-md);
@@ -188,4 +226,5 @@ body.resizing * {
   display: flex;
   flex-direction: column;
   background: var(--editor-bg);
+  position: relative;
 }

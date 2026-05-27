@@ -6,10 +6,10 @@ import { eventBus } from '../store/event-bus.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
 import { createTablePicker } from './table-picker.js';
-import { openCollabDialog } from '../collab/collab-ui.js';
 import { settingsStore } from '../store/settings-store.js';
 import { localSync } from '../local/local-sync.js';
 import { saveImageToAssets, saveImageToAssetsTauri, isTauri } from '../editor/image-paste-plugin.js';
+import { isTauri as isTauriBridge } from '../platform/tauri-bridge.js';
 
 function btn(icon, tooltip, onClick, extraClass = '') {
   return el('button', {
@@ -134,15 +134,12 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'New', shortcut: 'Ctrl+N', action: () => documentStore.newDocument() },
     { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
     { label: 'Open Folder', action: onOpenFolder },
-    { label: 'Quick Open', shortcut: 'Ctrl+P', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
-    { label: 'Document Library', action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
     '---',
     { label: 'Save', shortcut: 'Ctrl+S', action: onSave },
     { label: 'Save As', shortcut: 'Ctrl+Shift+S', action: () => import('../save/file-saver.js').then(m => m.fileSaver.saveAs()) },
     '---',
     { label: 'Download .md', action: () => downloadMarkdown() },
     { label: 'Export HTML', action: () => import('../export/html-export.js').then(m => m.exportStyledHtml()) },
-    { label: 'Export DOCX', action: () => import('../export/docx-export.js').then(m => m.exportDocx()) },
     { label: 'Print / PDF', shortcut: 'Ctrl+P', action: () => printDocument() },
   ]);
 
@@ -160,9 +157,8 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'Toggle History', shortcut: 'Ctrl+Shift+H', action: () => import('../sidebar/sidebar.js').then(m => m.toggleHistorySection()) },
     '---',
     { label: 'Source View', shortcut: 'Ctrl+U', action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
-    { label: 'Split Editor', shortcut: 'Ctrl+\\', action: () => import('../editor/split-pane.js').then(m => m.toggleSplitPane()) },
-    { label: 'Present Slides', action: () => import('../export/slides.js').then(m => m.enterSlideMode()) },
     '---',
+    { label: 'Full Width', action: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')) },
     { label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
     { label: 'Zen Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
     '---',
@@ -175,14 +171,128 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const helpMenu = createMenu('Help', [
     { label: 'Command Palette', shortcut: 'Ctrl+K', action: () => import('../command-palette/command-palette.js').then(m => m.openCommandPalette()) },
     { label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
-    { label: 'Knowledge Graph', shortcut: 'Ctrl+Shift+G', action: () => import('../graph/graph-view.js').then(m => m.openGraphView()) },
-    { label: 'Plugins', action: () => import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager()) },
-    { label: 'Writing Goals', action: () => import('../stats/writing-goals.js').then(m => m.openGoalSettings()) },
-    '---',
-    { label: 'Collaborate', action: () => openCollabDialog() },
   ]);
 
   const menuBar = el('div', { className: 'menubar' }, fileMenu, editMenu, viewMenu, helpMenu);
+
+  // === GNOME-style condensed controls ===
+
+  // Info / About button
+  const infoBtn = el('button', {
+    className: 'toolbar-icon-btn',
+    'data-tooltip': 'About & Shortcuts',
+    'aria-label': 'About & Shortcuts',
+    unsafeHTML: icons.infoCircle,
+    onClick: async () => {
+      const { showInfo } = await import('../ui/modal.js');
+      const { buildAboutContent } = await import('../ui/about-content.js');
+      showInfo('About mkdn', buildAboutContent());
+    },
+  });
+
+  // Hamburger menu — consolidates Edit / View / More items with icons + polish
+  const hamburgerMenu = el('div', { className: 'toolbar-dropdown-menu hamburger-menu' });
+
+  function hamburgerItem({ icon, label, shortcut, action }) {
+    const children = [];
+    children.push(el('span', { className: 'hb-item-icon', unsafeHTML: icon || '' }));
+    children.push(el('span', { className: 'hb-item-label' }, label));
+    if (shortcut) children.push(el('span', { className: 'hb-item-shortcut' }, shortcut));
+    return el('button', {
+      className: 'hb-item',
+      onClick: () => { action(); closeAllDropdowns(); },
+    }, ...children);
+  }
+
+  function hamburgerSection(label, items) {
+    const section = el('div', { className: 'hb-section' });
+    section.appendChild(el('div', { className: 'hb-section-header' }, label));
+    items.forEach(it => {
+      if (it === '---') {
+        section.appendChild(el('div', { className: 'hb-divider' }));
+      } else {
+        section.appendChild(hamburgerItem(it));
+      }
+    });
+    return section;
+  }
+
+  function themeRow() {
+    const row = el('div', { className: 'hb-theme-row' });
+    const opts = [
+      { theme: 'light', icon: icons.sun, label: 'Light' },
+      { theme: 'dark', icon: icons.moon, label: 'Dark' },
+      { theme: 'auto', icon: icons.monitor, label: 'Auto' },
+    ];
+    function refresh() {
+      const current = settingsStore.getTheme();
+      row.querySelectorAll('.hb-theme-pill').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.theme === current);
+      });
+    }
+    opts.forEach(({ theme, icon, label }) => {
+      const pill = el('button', {
+        className: 'hb-theme-pill',
+        'aria-label': `Theme: ${label}`,
+        'data-tooltip': `Theme: ${label}`,
+        dataset: { theme },
+        onClick: () => { settingsStore.set('theme', theme); refresh(); },
+      }, el('span', { unsafeHTML: icon }), el('span', { className: 'hb-theme-pill-label' }, label));
+      row.appendChild(pill);
+    });
+    refresh();
+    eventBus.on('settings:theme', refresh);
+    return row;
+  }
+
+  hamburgerMenu.appendChild(hamburgerSection('Edit', [
+    { icon: icons.undo, label: 'Undo', shortcut: 'Ctrl+Z', action: () => milkdown.runCommand(milkdown.commands.undo) },
+    { icon: icons.redo, label: 'Redo', shortcut: 'Ctrl+Shift+Z', action: () => milkdown.runCommand(milkdown.commands.redo) },
+    { icon: icons.search, label: 'Find', shortcut: 'Ctrl+F', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(false)) },
+    { icon: icons.rename, label: 'Find & Replace', shortcut: 'Ctrl+H', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(true)) },
+  ]));
+
+  hamburgerMenu.appendChild(hamburgerSection('View', [
+    { icon: icons.sidebar, label: 'Toggle Sidebar', shortcut: 'Ctrl+Shift+B', action: onToggleSidebar },
+    { icon: icons.file, label: 'Toggle Outline', action: () => import('../sidebar/sidebar.js').then(m => m.toggleOutlineSection()) },
+    { icon: icons.clock, label: 'History', shortcut: 'Ctrl+Shift+H', action: () => import('../sidebar/sidebar.js').then(m => m.toggleHistorySection()) },
+    { icon: icons.code, label: 'Source View', shortcut: 'Ctrl+U', action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
+    '---',
+    { icon: icons.fullWidth, label: 'Full Width', action: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')) },
+    { icon: icons.rename, label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
+    { icon: icons.focus, label: 'Focus Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
+  ]));
+
+  // Theme row + theme editor
+  const viewExtra = el('div', { className: 'hb-section' });
+  viewExtra.appendChild(el('div', { className: 'hb-section-header' }, 'Theme'));
+  viewExtra.appendChild(themeRow());
+  viewExtra.appendChild(hamburgerItem({
+    icon: icons.gear,
+    label: 'Theme Editor',
+    action: () => import('../themes/theme-editor.js').then(m => m.openThemeEditor()),
+  }));
+  hamburgerMenu.appendChild(viewExtra);
+
+  hamburgerMenu.appendChild(hamburgerSection('Tools', [
+    { icon: icons.command, label: 'Command Palette', shortcut: 'Ctrl+K', action: () => import('../command-palette/command-palette.js').then(m => m.openCommandPalette()) },
+    { icon: icons.infoCircle, label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
+  ]));
+
+  const hamburgerTrigger = el('button', {
+    className: 'toolbar-icon-btn hamburger-trigger',
+    'data-tooltip': 'Main menu',
+    'aria-label': 'Main menu',
+    unsafeHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+    onClick: (e) => {
+      e.stopPropagation();
+      const wasOpen = hamburgerMenu.classList.contains('open');
+      closeAllDropdowns();
+      if (!wasOpen) hamburgerMenu.classList.add('open');
+    },
+  });
+
+  const hamburgerWrapper = el('div', { className: 'toolbar-dropdown hamburger-dropdown' }, hamburgerTrigger, hamburgerMenu);
 
   // === BREADCRUMB ===
   const breadcrumbEl = el('div', { className: 'toolbar-breadcrumb' });
@@ -282,24 +392,6 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     themeBtn.setAttribute('data-tooltip', themeTooltip(theme));
   });
 
-  // Collaborate button
-  const collabBtn = el('button', {
-    className: 'toolbar-icon-btn',
-    'data-tooltip': 'Collaborate',
-    'aria-label': 'Collaborate',
-    unsafeHTML: icons.share,
-    onClick: () => openCollabDialog(),
-  });
-
-  eventBus.on('collab:started', () => {
-    collabBtn.classList.add('toolbar-btn-active');
-    collabBtn.setAttribute('data-tooltip', 'Live collaboration');
-  });
-  eventBus.on('collab:stopped', () => {
-    collabBtn.classList.remove('toolbar-btn-active');
-    collabBtn.setAttribute('data-tooltip', 'Collaborate');
-  });
-
   // Export button
   const exportBtn = el('button', {
     className: 'toolbar-icon-btn',
@@ -309,10 +401,96 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     onClick: () => import('../export/export-menu.js').then(m => m.showExportMenu(exportBtn)),
   });
 
-  const headerRow = el('div', { className: 'toolbar-header' },
-    el('div', { className: 'toolbar-header-left' }, backBtn, menuBar),
-    el('div', { className: 'toolbar-header-right' }, breadcrumbEl, statusBadge, exportBtn, collabBtn, themeBtn),
+  // Tauri runs frameless (decorations: false). The toolbar header doubles as
+  // the custom title bar: drag region + min/max/close controls.
+  let windowControls = null;
+  if (isTauriBridge()) {
+    const lazyWin = async () => (await import('@tauri-apps/api/window')).getCurrentWindow();
+    const winBtn = (cls, label, svg, onClick) => el('button', {
+      className: `window-control-btn ${cls}`,
+      'aria-label': label,
+      'data-tooltip': label,
+      unsafeHTML: svg,
+      onClick,
+    });
+    windowControls = el('div', { className: 'window-controls' },
+      winBtn('minimize', 'Minimize',
+        '<svg viewBox="0 0 12 12"><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.2"/></svg>',
+        async () => (await lazyWin()).minimize()),
+      winBtn('maximize', 'Maximize',
+        '<svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
+        async () => (await lazyWin()).toggleMaximize()),
+      winBtn('close', 'Close',
+        '<svg viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>',
+        async () => (await lazyWin()).close()),
+    );
+  }
+
+  // In Tauri: split titlebar (menubar + window controls only) from the toolbar row.
+  // In browser: keep everything in one header row.
+  const titleBar = isTauriBridge()
+    ? el('div', { className: 'toolbar-titlebar' },
+        el('div', { className: 'titlebar-left' }, menuBar),
+        el('div', { className: 'titlebar-drag' }),
+        el('div', { className: 'titlebar-right' }, ...(windowControls ? [windowControls] : [])),
+      )
+    : null;
+
+  const headerRow = el('div', { className: 'toolbar-header toolbar-header-gnome' },
+    el('div', { className: 'toolbar-header-left' },
+      backBtn,
+      ...(isTauriBridge() ? [] : [menuBar]),
+    ),
+    el('div', { className: 'toolbar-header-center' }, breadcrumbEl),
+    el('div', { className: 'toolbar-header-right' },
+      statusBadge, exportBtn, themeBtn, infoBtn, hamburgerWrapper,
+      ...(isTauriBridge() ? [] : (windowControls ? [windowControls] : [])),
+    ),
   );
+
+  if (isTauriBridge()) {
+    const dragHost = titleBar || headerRow;
+    dragHost.setAttribute('data-tauri-drag-region', '');
+
+    // Programmatic drag — WebKitGTK can drop Tauri's auto data-tauri-drag-region
+    // handling, so call startDragging directly on mousedown over non-interactive areas.
+    dragHost.addEventListener('mousedown', async (e) => {
+      if (e.button !== 0) return;
+      if (e.target.closest('button, input, select, textarea, .toolbar-dropdown-menu, [contenteditable]')) return;
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().startDragging();
+    });
+
+    dragHost.addEventListener('dblclick', async (e) => {
+      const t = e.target;
+      if (t.closest('button, input, select, textarea, .toolbar-dropdown-menu, [contenteditable]')) return;
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      getCurrentWindow().toggleMaximize();
+    });
+
+    // Frameless WebKitGTK windows do NOT get invisible resize edges from the WM.
+    // Overlay 8 thin edge handles that trigger startResizeDragging.
+    const mkResize = (cls, cursor, dir) => el('div', {
+      className: `tauri-resize-edge ${cls}`,
+      style: { cursor },
+      onMousedown: async (ev) => {
+        if (ev.button !== 0) return;
+        ev.preventDefault();
+        const win = await import('@tauri-apps/api/window');
+        await win.getCurrentWindow().startResizeDragging(dir);
+      },
+    });
+    document.body.append(
+      mkResize('edge-n', 'ns-resize', 'North'),
+      mkResize('edge-s', 'ns-resize', 'South'),
+      mkResize('edge-e', 'ew-resize', 'East'),
+      mkResize('edge-w', 'ew-resize', 'West'),
+      mkResize('edge-ne', 'nesw-resize', 'NorthEast'),
+      mkResize('edge-nw', 'nwse-resize', 'NorthWest'),
+      mkResize('edge-se', 'nwse-resize', 'SouthEast'),
+      mkResize('edge-sw', 'nwse-resize', 'SouthWest'),
+    );
+  }
 
   // === FORMATTING TOOLBAR ROW ===
 
@@ -538,22 +716,6 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   moreMenu.appendChild(menuItem('\u{1F5A8}\uFE0F', 'Print / PDF', () => printDocument()));
   moreMenu.appendChild(menuItem('\u{1F310}', 'Export as HTML', () =>
     import('../export/html-export.js').then(m => m.exportStyledHtml())));
-  moreMenu.appendChild(menuItem('\u{1F4C4}', 'Export as DOCX', () =>
-    import('../export/docx-export.js').then(m => m.exportDocx())));
-  moreMenu.appendChild(menuItem('\u{1F4FD}\uFE0F', 'Present as Slides', () =>
-    import('../export/slides.js').then(m => m.enterSlideMode())));
-
-  // --- Tools group ---
-  moreMenu.appendChild(menuGroupHeader('Tools'));
-
-  moreMenu.appendChild(menuItem('\u{1F50D}', 'Semantic Search', () =>
-    import('../search/semantic-search-ui.js').then(m => m.openSearchPanel())));
-  moreMenu.appendChild(menuItem('\u{1F578}\uFE0F', 'Knowledge Graph', () =>
-    import('../graph/graph-view.js').then(m => m.openGraphView())));
-  moreMenu.appendChild(menuItem('\u{1F4E4}', 'Publish to GitHub', () =>
-    import('../export/github-publish.js').then(m => m.openGithubPublish())));
-  moreMenu.appendChild(menuItem('\u{1F9E9}', 'Plugins', () =>
-    import('../plugins/plugin-manager-ui.js').then(m => m.openPluginManager())));
 
   const moreTrigger = el('button', {
     className: 'toolbar-dropdown-btn',
@@ -646,7 +808,11 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   setTimeout(updateActiveFormatting, 2500);
 
   // === COMBINED TOOLBAR ===
-  const toolbar = el('div', { className: 'toolbar' }, headerRow, formattingRow);
+  const toolbar = el('div', { className: 'toolbar' },
+    ...(titleBar ? [titleBar] : []),
+    headerRow,
+    formattingRow,
+  );
 
   // Listen for save status
   const setSaved = () => {

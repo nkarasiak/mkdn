@@ -13,24 +13,18 @@ import { historyManager } from './history/history-manager.js';
 import { focusManager } from './focus/focus-manager.js';
 import { documentStore } from './store/document-store.js';
 import { toast } from './ui/toast.js';
-import { registerBuiltinCommands, commandRegistry } from './command-palette/command-registry.js';
+import { registerBuiltinCommands } from './command-palette/command-registry.js';
 import { setMilkdownRef } from './command-palette/command-palette.js';
-import { initRecentFileTracking } from './command-palette/file-switcher.js';
 import { extractHeadings } from './command-palette/heading-utils.js';
 import { setSourceTextarea } from './editor/source-formatter.js';
+import { editorZoom } from './editor/editor-zoom.js';
+import { initContentWidthHandle } from './editor/content-width.js';
 import { initFindBar } from './find-replace/find-bar.js';
 import { registerExportCommands } from './export/export-commands.js';
-import { registerCollabCommands } from './collab/collab-commands.js';
-import { registerPluginCommands } from './plugins/plugin-commands.js';
-import { registerSearchCommands } from './search/search-commands.js';
 import { initBacklinks } from './backlinks/backlinks-ui.js';
 import { initWritingStats } from './stats/writing-stats.js';
-import { initWritingGoals } from './stats/writing-goals.js';
 import { initThemeEditor } from './themes/theme-editor.js';
-import { initLibraryAutoSave } from './library/library-view.js';
-import { registerGraphCommands } from './graph/graph-commands.js';
-import { registerCanvasCommands } from './canvas/canvas-commands.js';
-import { isTauri, initTauri, initTauriEvents } from './platform/tauri-bridge.js';
+import { isTauri, initTauri, initTauriEvents, restoreTauriFile } from './platform/tauri-bridge.js';
 import { loadFromShareLink } from './share/share-link.js';
 import { createTabBar, initTabs } from './toolbar/tab-bar.js';
 import { initPWA } from './pwa/pwa-manager.js';
@@ -48,10 +42,19 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 });
 
 function updateDocTitle() {
-  const md = documentStore.getMarkdown();
-  const headings = extractHeadings(md);
-  const h1 = headings.find(h => h.level === 1);
-  document.title = h1 ? `${h1.text} — MKDN` : 'MKDN';
+  const fileName = documentStore.getFileName();
+  const displayName = fileName && fileName !== 'Untitled.md'
+    ? fileName.replace(/\.md$/i, '')
+    : null;
+  const title = displayName ? `MKDN — ${displayName}` : 'MKDN';
+  document.title = title;
+
+  // Also set the native Tauri window title
+  if (isTauri()) {
+    import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+      getCurrentWindow().setTitle(title);
+    }).catch(() => {});
+  }
 }
 
 function applySidebarState(open) {
@@ -116,6 +119,12 @@ export const App = {
 
     // Main content area
     const main = el('div', { className: 'app-main' }, editorPane, sourceWrapper);
+
+    // Ctrl/Cmd + wheel zoom (browser-like)
+    editorZoom.init(main);
+
+    // Drag handle on right edge to resize content column width
+    initContentWidthHandle(main);
 
     // Drag & drop file open
     let dragCounter = 0;
@@ -190,7 +199,15 @@ export const App = {
     const isSharedDoc = await loadFromShareLink();
 
     // Restore session before Milkdown init so restored content is the initial value
-    if (!isSharedDoc) await sessionStore.restoreSession();
+    if (!isSharedDoc) {
+      await sessionStore.restoreSession();
+      // In Tauri, re-read absolute-path files from disk (files opened via OS/CLI)
+      const fileId = documentStore.getFileId();
+      const fileSource = documentStore.getFileSource();
+      if (fileId && fileSource === 'local') {
+        await restoreTauriFile(fileId);
+      }
+    }
 
     // Initialize Milkdown (always-on)
     await milkdown.init(editorPane);
@@ -271,10 +288,16 @@ export const App = {
       }
     });
 
+    // Full-width toggle
+    eventBus.on('settings:fullWidth', (on) => {
+      document.body.classList.toggle('full-width', on);
+    });
+
     // Document title sync — derive from first H1
     eventBus.on('content:changed', updateDocTitle);
     eventBus.on('file:opened', updateDocTitle);
     eventBus.on('file:new', updateDocTitle);
+    eventBus.on('file:renamed', updateDocTitle);
     updateDocTitle();
 
     // Init keyboard shortcuts
@@ -295,47 +318,11 @@ export const App = {
 
     // Register feature commands
     registerExportCommands();
-    registerCollabCommands();
-    registerSearchCommands();
-    registerPluginCommands();
-    registerGraphCommands();
-    registerCanvasCommands();
-
-    // Register Tier 3 commands
-    commandRegistry.register({
-      id: 'view:split-pane',
-      label: 'Toggle Split Editor',
-      category: 'View',
-      shortcut: 'Ctrl+\\',
-      keywords: ['split', 'pane', 'side', 'dual', 'two', 'reference'],
-      action: () => import('./editor/split-pane.js').then(m => m.toggleSplitPane()),
-    });
-    commandRegistry.register({
-      id: 'tools:canvas',
-      label: 'Canvas / Whiteboard',
-      category: 'Tools',
-      keywords: ['canvas', 'whiteboard', 'board', 'freeform', 'diagram', 'mindmap', 'cards'],
-      action: () => import('./canvas/canvas-mode.js').then(m => m.openCanvasMode()),
-    });
-
-    // Show template chooser on new document
-    eventBus.on('file:new', () => {
-      setTimeout(() => {
-        import('./templates/template-system.js').then(m => m.openTemplateChooser({ fromFileNew: true }));
-      }, 150);
-    });
-
-    // Initialize recent file tracking for quick file switcher
-    initRecentFileTracking();
 
     // Initialize backlinks, writing stats, and custom theme
     initBacklinks();
     initWritingStats();
-    initWritingGoals(statusbar.querySelector('.statusbar-left'));
     initThemeEditor();
-
-    // Initialize library auto-save
-    initLibraryAutoSave();
 
     // Initialize PWA features (install prompt, offline detection, file handler)
     initPWA();
