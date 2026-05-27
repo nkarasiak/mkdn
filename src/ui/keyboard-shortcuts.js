@@ -197,8 +197,15 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+P — Quick file switcher
+    // Ctrl+P — Print / Export PDF
     if (key === 'p' && !shift) {
+      e.preventDefault();
+      import('../utils/export.js').then(m => m.printDocument());
+      return;
+    }
+
+    // Ctrl+Shift+O — Quick file switcher
+    if (key === 'o' && shift) {
       e.preventDefault();
       openFileSwitcher();
       return;

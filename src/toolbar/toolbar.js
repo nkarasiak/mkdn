@@ -135,7 +135,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     { label: 'New', shortcut: 'Ctrl+N', action: () => documentStore.newDocument() },
     { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
     { label: 'Open Folder', action: onOpenFolder },
-    { label: 'Quick Open', shortcut: 'Ctrl+P', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
+    { label: 'Quick Open', shortcut: 'Ctrl+Shift+O', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
     { label: 'Document Library', action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
     '---',
     { label: 'Save', shortcut: 'Ctrl+S', action: onSave },
@@ -192,7 +192,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
   const openMenu = createMenu('Open', [
     { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
     { label: 'Open Folder', action: onOpenFolder },
-    { label: 'Quick Open', shortcut: 'Ctrl+P', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
+    { label: 'Quick Open', shortcut: 'Ctrl+Shift+O', action: () => import('../command-palette/file-switcher.js').then(m => m.openFileSwitcher()) },
     { label: 'Document Library', action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
     '---',
     { label: 'Save', shortcut: 'Ctrl+S', action: onSave },

@@ -40,7 +40,7 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'file:new', label: 'New Document', category: 'File', shortcut: 'Ctrl+N', keywords: ['new', 'create', 'blank'], action: () => documentStore.newDocument() },
     { id: 'file:open', label: 'Open File', category: 'File', shortcut: 'Ctrl+O', keywords: ['open', 'load'], action: () => fileSaver.openFile() },
     { id: 'file:open-folder', label: 'Open Folder', category: 'File', keywords: ['folder', 'directory', 'link'], action: () => localSync.linkFolder() },
-    { id: 'file:quick-switch', label: 'Quick Open File', category: 'File', shortcut: 'Ctrl+P', keywords: ['switch', 'quick', 'open', 'find', 'file', 'recent'], action: () => openFileSwitcher() },
+    { id: 'file:quick-switch', label: 'Quick Open File', category: 'File', shortcut: 'Ctrl+Shift+O', keywords: ['switch', 'quick', 'open', 'find', 'file', 'recent'], action: () => openFileSwitcher() },
     { id: 'file:library', label: 'Document Library', category: 'File', keywords: ['library', 'documents', 'browse', 'all', 'collection'], action: () => import('../library/library-view.js').then(m => m.openLibrary()) },
 
     // --- Tabs ---
@@ -124,7 +124,7 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'export:copy-html', label: 'Copy as HTML', category: 'Export', keywords: ['copy', 'html', 'clipboard'], action: () => {
       import('../utils/export.js').then(m => m.copyHtml());
     }},
-    { id: 'export:print', label: 'Print / Export PDF', category: 'Export', keywords: ['print', 'pdf', 'export'], action: () => {
+    { id: 'export:print', label: 'Print / Export PDF', category: 'Export', shortcut: 'Ctrl+P', keywords: ['print', 'pdf', 'export'], action: () => {
       import('../utils/export.js').then(m => m.printDocument());
     }},
 
