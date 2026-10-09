@@ -38,45 +38,21 @@ export function registerBuiltinCommands({ toggleSidebar, toggleHistory, toggleOu
     { id: 'file:save-as', label: 'Save As', category: 'File', shortcut: 'Ctrl+Shift+S', keywords: ['save as', 'export'], action: () => fileSaver.saveAs() },
     { id: 'file:new', label: 'New Document', category: 'File', shortcut: 'Ctrl+N', keywords: ['new', 'create', 'blank'], action: () => documentStore.newDocument() },
     { id: 'file:open', label: 'Open File', category: 'File', shortcut: 'Ctrl+O', keywords: ['open', 'load'], action: () => fileSaver.openFile() },
+    { id: 'file:share-link', label: 'Copy Share Link', category: 'File', keywords: ['share', 'link', 'url', 'copy'], action: () => import('../share/share-link.js').then(m => m.generateShareLink()) },
     { id: 'file:open-folder', label: 'Open Folder', category: 'File', keywords: ['folder', 'directory', 'link'], action: () => localSync.linkFolder() },
 
     // --- Tabs ---
     { id: 'tab:new', label: 'New Tab', category: 'Tab', shortcut: 'Ctrl+T', keywords: ['tab', 'new'], action: () => documentStore.newDocument() },
-    { id: 'tab:close', label: 'Close Tab', category: 'Tab', shortcut: 'Ctrl+W', keywords: ['tab', 'close'], action: () => {
-      const tabs = tabStore.getTabs();
-      if (tabs.length <= 1) return;
-      const next = tabStore.closeTab(tabStore.getActiveTabId());
-      if (next) documentStore.setFile(next.id, next.name, next.content, next.source);
-    }},
-    { id: 'tab:reopen', label: 'Reopen Closed Tab', category: 'Tab', shortcut: 'Ctrl+Shift+T', keywords: ['tab', 'reopen', 'restore', 'undo close'], action: () => {
-      const tab = tabStore.reopenTab();
-      if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
-    }},
-    { id: 'tab:next', label: 'Next Tab', category: 'Tab', shortcut: 'Ctrl+Tab', keywords: ['tab', 'next', 'switch'], action: () => {
-      const tab = tabStore.nextTab();
-      if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
-    }},
-    { id: 'tab:prev', label: 'Previous Tab', category: 'Tab', shortcut: 'Ctrl+Shift+Tab', keywords: ['tab', 'previous', 'switch'], action: () => {
-      const tab = tabStore.prevTab();
-      if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
-    }},
+    { id: 'tab:close', label: 'Close Tab', category: 'Tab', shortcut: 'Ctrl+W', keywords: ['tab', 'close'], action: () => tabStore.closeTab(tabStore.getActiveTabId()) },
+    { id: 'tab:reopen', label: 'Reopen Closed Tab', category: 'Tab', shortcut: 'Ctrl+Shift+T', keywords: ['tab', 'reopen', 'restore', 'undo close'], action: () => tabStore.reopenTab() },
+    { id: 'tab:next', label: 'Next Tab', category: 'Tab', shortcut: 'Ctrl+Tab', keywords: ['tab', 'next', 'switch'], action: () => tabStore.nextTab() },
+    { id: 'tab:prev', label: 'Previous Tab', category: 'Tab', shortcut: 'Ctrl+Shift+Tab', keywords: ['tab', 'previous', 'switch'], action: () => tabStore.prevTab() },
 
     // --- View ---
     { id: 'view:toggle-sidebar', label: 'Toggle Sidebar', category: 'View', shortcut: 'Ctrl+Shift+B', keywords: ['sidebar', 'panel'], action: toggleSidebar },
     { id: 'view:toggle-history', label: 'Toggle History', category: 'View', shortcut: 'Ctrl+Shift+H', keywords: ['history', 'versions'], action: toggleHistory },
     { id: 'view:source-mode', label: 'Toggle Source View', category: 'View', shortcut: 'Ctrl+U', keywords: ['source', 'raw', 'markdown', 'code', 'textarea'], action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
     { id: 'view:toggle-outline', label: 'Toggle Outline', category: 'View', keywords: ['outline', 'toc', 'table of contents', 'headings', 'navigation'], action: toggleOutline },
-    { id: 'settings:author-byline', label: 'Set Author Byline', category: 'Settings', keywords: ['author', 'byline', 'name', 'signature', 'writing'], action: async () => {
-      const { prompt } = await import('../ui/modal.js');
-      try {
-        const v = await prompt('Author byline (shown in writing mode & reader view):', {
-          title: 'Author Byline',
-          defaultValue: settingsStore.get('authorByline') || '',
-          placeholder: 'e.g. Jane Doe',
-        });
-        if (v !== null) settingsStore.set('authorByline', v.trim());
-      } catch { /* cancelled */ }
-    }},
     { id: 'settings:toggle-drop-cap', label: 'Toggle Drop Cap (Writing Mode)', category: 'Settings', keywords: ['drop cap', 'dropcap', 'initial', 'writing', 'typography'], action: () => {
       settingsStore.set('writingDropCap', !settingsStore.get('writingDropCap'));
     }},

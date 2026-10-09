@@ -67,12 +67,13 @@ export const documentStore = {
     return state.fileSource;
   },
 
-  setFile(id, name, content, source = null, lastModifiedOnDisk = null) {
+  setFile(id, name, content, source = null, lastModifiedOnDisk = null, dirty = false) {
+    eventBus.emit('document:will-change');
     state.fileId = id;
     state.fileName = name;
     state.markdown = content;
     state.fileSource = source;
-    state.dirty = false;
+    state.dirty = dirty;
     state.lastSaved = Date.now();
     state.lastModifiedOnDisk = lastModifiedOnDisk;
     eventBus.emit('file:opened', { id, name, source });
@@ -102,6 +103,7 @@ export const documentStore = {
   },
 
   newDocument() {
+    eventBus.emit('document:will-change');
     state.fileId = null;
     state.fileSource = null;
     state.fileName = 'Untitled.md';

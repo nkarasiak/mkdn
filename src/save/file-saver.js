@@ -124,7 +124,21 @@ export const fileSaver = {
     if (localFs.isSupported()) {
       return localSync.openFile();
     }
+    // No File System Access API (Firefox/Safari): plain picker, opened without a save location
+    const input = el('input', { type: 'file', accept: '.md,.markdown,.txt,text/markdown,text/plain' });
+    input.addEventListener('change', () => input.files[0] && this.openFromFile(input.files[0]));
+    input.click();
     return Promise.resolve();
+  },
+
+  /** Open a File (drop, plain picker) in a new tab. It has no handle, so Save asks where to write. */
+  async openFromFile(file) {
+    if (!/\.(md|markdown|mdx|txt)$/i.test(file.name)) {
+      toast('Only .md, .markdown, and .txt files are supported', 'warning');
+      return;
+    }
+    documentStore.setFile(`dropped-${Date.now()}`, file.name, await file.text(), null);
+    toast(`Opened ${file.name}`, 'success');
   },
 
   saveAsFile() {

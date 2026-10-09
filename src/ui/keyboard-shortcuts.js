@@ -1,8 +1,8 @@
 import { documentStore } from '../store/document-store.js';
 import { fileSaver } from '../save/file-saver.js';
-import { localFs } from '../local/local-fs.js';
 import { settingsStore } from '../store/settings-store.js';
-import { closeModal, confirm as confirmModal } from '../ui/modal.js';
+import { closeModal } from '../ui/modal.js';
+import { closeAllDropdowns } from '../toolbar/toolbar.js';
 import { openLinkPopover } from '../ui/link-popover.js';
 import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
 import { openFindBar, closeFindBar, isFindBarOpen } from '../find-replace/find-bar.js';
@@ -20,26 +20,24 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     const shift = e.shiftKey;
     const key = e.key.toLowerCase();
 
-    // Escape: close find bar → close palette → close sidebar → exit focus modes → close modal (priority chain)
+    // Escape: topmost thing first — modal → menus → find bar → palette → focus modes → sidebar.
     if (key === 'escape') {
+      if (closeModal()) return;
+      if (closeAllDropdowns()) return;
       if (closeFindBar()) return;
       if (closeCommandPalette()) return;
-      if (settingsStore.get('sidebarOpen')) {
-        settingsStore.set('sidebarOpen', false);
-        return;
-      }
+      // A component (slash menu, tab rename…) already used this Escape. ProseMirror's own
+      // keymap also claims it, so only skip when the event didn't come from the editor.
+      if (e.defaultPrevented && !e.target.closest?.('.ProseMirror')) return;
       if (focusManagerRef?.exitAllModes()) return;
-      closeModal();
+      if (settingsStore.get('sidebarOpen')) settingsStore.set('sidebarOpen', false);
       return;
     }
 
     // Ctrl+Tab / Ctrl+Shift+Tab — Next/Previous tab
     if (ctrl && key === 'tab') {
       e.preventDefault();
-      const tab = shift ? tabStore.prevTab() : tabStore.nextTab();
-      if (tab) {
-        documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
-      }
+      if (shift) tabStore.prevTab(); else tabStore.nextTab();
       return;
     }
 
@@ -92,16 +90,10 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+N — New document (with dirty check)
+    // Ctrl+N — New document (opens in a new tab; nothing is discarded)
     if (key === 'n' && !shift) {
       e.preventDefault();
-      if (documentStore.isDirty()) {
-        confirmModal('You have unsaved changes. Create a new document anyway?', { title: 'Unsaved Changes', okText: 'New Document', danger: true })
-          .then(ok => { if (ok) documentStore.newDocument(); })
-          .catch(() => {});
-      } else {
-        documentStore.newDocument();
-      }
+      documentStore.newDocument();
       return;
     }
 
@@ -115,22 +107,14 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
     // Ctrl+Shift+T — Reopen last closed tab
     if (key === 't' && shift) {
       e.preventDefault();
-      const tab = tabStore.reopenTab();
-      if (tab) {
-        documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
-      }
+      tabStore.reopenTab();
       return;
     }
 
     // Ctrl+W / Ctrl+Shift+W — Close current tab (no-op on last tab)
     if (key === 'w') {
       e.preventDefault();
-      const tabs = tabStore.getTabs();
-      if (tabs.length <= 1) return;
-      const next = tabStore.closeTab(tabStore.getActiveTabId());
-      if (next) {
-        documentStore.setFile(next.id, next.name, next.content, next.source);
-      }
+      tabStore.closeTab(tabStore.getActiveTabId());
       return;
     }
 
@@ -148,14 +132,10 @@ export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManag
       return;
     }
 
-    // Ctrl+O — Open file from disk (or toggle sidebar if unsupported)
+    // Ctrl+O — Open file from disk
     if (key === 'o' && !shift) {
       e.preventDefault();
-      if (localFs.isSupported()) {
-        fileSaver.openFile();
-      } else {
-        toggleSidebar();
-      }
+      fileSaver.openFile();
       return;
     }
 

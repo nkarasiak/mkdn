@@ -1,6 +1,9 @@
 #!/bin/bash
 source ~/.bashrc 2>/dev/null
 export PATH="$HOME/.nvm/versions/node/v22.17.1/bin:$HOME/.cargo/bin:$PATH"
+# Resolve file arguments before cd'ing away from the caller's directory
+ARGS=()
+for a in "$@"; do ARGS+=("$(realpath -- "$a")"); done
 cd /home/nkk/git/mkdn
 
 # Check current commit before pull
@@ -31,4 +34,4 @@ fi
 
 # Force X11 backend to get native window decorations on GNOME/Wayland
 export GDK_BACKEND=x11
-exec "$BINARY"
+exec "$BINARY" "${ARGS[@]}"

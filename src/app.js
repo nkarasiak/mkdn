@@ -12,7 +12,6 @@ import { sessionStore } from './storage/session-store.js';
 import { historyManager } from './history/history-manager.js';
 import { focusManager } from './focus/focus-manager.js';
 import { documentStore } from './store/document-store.js';
-import { toast } from './ui/toast.js';
 import { registerBuiltinCommands } from './command-palette/command-registry.js';
 import { setMilkdownRef } from './command-palette/command-palette.js';
 import { extractHeadings } from './command-palette/heading-utils.js';
@@ -24,7 +23,7 @@ import { registerExportCommands } from './export/export-commands.js';
 import { initBacklinks } from './backlinks/backlinks-ui.js';
 import { initWritingStats } from './stats/writing-stats.js';
 import { initThemeEditor } from './themes/theme-editor.js';
-import { isTauri, initTauri, initTauriEvents, restoreTauriFile } from './platform/tauri-bridge.js';
+import { isTauri, initTauri, initTauriEvents } from './platform/tauri-bridge.js';
 import { loadFromShareLink } from './share/share-link.js';
 import { createTabBar, initTabs } from './toolbar/tab-bar.js';
 import { initPWA } from './pwa/pwa-manager.js';
@@ -104,7 +103,7 @@ export const App = {
       onOpen: () => fileSaver.openFile(),
       onOpenFolder: async () => {
         await localSync.linkFolder();
-        settingsStore.set('sidebarOpen', true);
+        if (localSync.isLinked()) settingsStore.set('sidebarOpen', true);
       },
     });
 
@@ -126,42 +125,36 @@ export const App = {
     // Drag handle on right edge to resize content column width
     initContentWidthHandle(main);
 
-    // Drag & drop file open
+    // Drag & drop file open — anywhere in the window, so a stray drop never navigates away.
+    // Only external file drags; text/tab drags inside the app keep their own handling.
     let dragCounter = 0;
-    main.addEventListener('dragenter', (e) => {
+    const isFileDrag = (e) => e.dataTransfer?.types.includes('Files');
+    window.addEventListener('dragenter', (e) => {
+      if (!isFileDrag(e)) return;
       e.preventDefault();
       dragCounter++;
       app.classList.add('drag-over');
     });
-    main.addEventListener('dragover', (e) => {
+    window.addEventListener('dragover', (e) => {
+      if (!isFileDrag(e)) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
     });
-    main.addEventListener('dragleave', (e) => {
-      e.preventDefault();
-      dragCounter--;
-      if (dragCounter <= 0) {
+    window.addEventListener('dragleave', (e) => {
+      if (!isFileDrag(e)) return;
+      if (--dragCounter <= 0) {
         dragCounter = 0;
         app.classList.remove('drag-over');
       }
     });
-    main.addEventListener('drop', (e) => {
-      e.preventDefault();
+    window.addEventListener('drop', (e) => {
+      if (!isFileDrag(e)) return;
       dragCounter = 0;
       app.classList.remove('drag-over');
-      const file = [...e.dataTransfer.files].find(f =>
-        /\.(md|markdown|txt)$/i.test(f.name)
-      );
-      if (!file) {
-        toast('Only .md, .markdown, and .txt files are supported', 'warning');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        documentStore.setFile(file.name, file.name, reader.result, 'local');
-        toast(`Opened ${file.name}`, 'success');
-      };
-      reader.readAsText(file);
+      if (e.defaultPrevented) return; // editor already took it (e.g. image drop)
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file) fileSaver.openFromFile(file);
     });
 
     // Sidebar resize handle
@@ -201,12 +194,6 @@ export const App = {
     // Restore session before Milkdown init so restored content is the initial value
     if (!isSharedDoc) {
       await sessionStore.restoreSession();
-      // In Tauri, re-read absolute-path files from disk (files opened via OS/CLI)
-      const fileId = documentStore.getFileId();
-      const fileSource = documentStore.getFileSource();
-      if (fileId && fileSource === 'local') {
-        await restoreTauriFile(fileId);
-      }
     }
 
     // Initialize Milkdown (always-on)
@@ -238,7 +225,8 @@ export const App = {
     // Source mode toggling with cursor sync
     eventBus.on('settings:sourceMode', (on) => {
       if (on) {
-        // WYSIWYG → Source: capture cursor position before switching
+        // WYSIWYG → Source: flush pending edits, capture cursor position before switching
+        eventBus.emit('document:will-change');
         const markdown = documentStore.getMarkdown();
         const cursorOffset = milkdown.getCursorAsMarkdownOffset(markdown);
 
@@ -327,8 +315,8 @@ export const App = {
     // Initialize PWA features (install prompt, offline detection, file handler)
     initPWA();
 
-    // Listen for Tauri native menu events and file-open
-    initTauriEvents({ toggleSidebar, fileSaver, documentStore, focusManager, settingsStore });
+    // Tauri: open files passed by the OS / CLI
+    initTauriEvents();
   },
 };
 

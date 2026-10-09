@@ -3,7 +3,7 @@ import { documentStore } from './document-store.js';
 
 /**
  * Tab store — manages open document tabs.
- * Each tab stores: { id, name, content, source, dirty, cursorOffset }
+ * Each tab stores: { id, name, content, source, dirty, mtime }
  */
 
 let tabs = [];
@@ -23,65 +23,51 @@ export const tabStore = {
     return tabs.find(t => t.id === activeTabId) || null;
   },
 
-  /** Open or switch to a tab. If not found, creates one. */
+  /**
+   * Sync the tab for `id` with documentStore (called on file:opened / file:new).
+   * Creates the tab if missing, then makes it active.
+   */
   openTab(id, name, content, source) {
-    // Save current tab state before switching
-    this._saveCurrentTab();
-
     let tab = tabs.find(t => t.id === id);
-    if (tab) {
-      // Already open — just switch
-      activeTabId = tab.id;
-      // Update content if provided fresh
-      if (content !== undefined) {
-        tab.content = content;
-        tab.name = name || tab.name;
-        tab.source = source || tab.source;
-        tab.dirty = false;
-      }
-    } else {
-      tab = { id, name, content: content || '', source: source || null, dirty: false, cursorOffset: 0 };
+    if (!tab) {
+      tab = { id };
       tabs.push(tab);
-      activeTabId = tab.id;
     }
-
+    Object.assign(tab, {
+      name,
+      content: content || '',
+      source: source || null,
+      dirty: documentStore.isDirty(),
+      mtime: documentStore.getLastModifiedOnDisk(),
+    });
+    activeTabId = id;
     eventBus.emit('tabs:changed', { tabs, activeTabId });
     return tab;
   },
 
-  /** Close a tab. Returns the next tab to activate, or null. */
+  /** Close a tab, activating a neighbour if it was active. Never closes the last tab. */
   closeTab(id) {
     const idx = tabs.findIndex(t => t.id === id);
-    if (idx === -1) return null;
+    if (idx === -1 || tabs.length <= 1) return null;
+    if (id === activeTabId) this.switchTab((tabs[idx + 1] || tabs[idx - 1]).id);
 
-    const closed = tabs[idx];
-    closedTabs.push({ ...closed });
+    const [closed] = tabs.splice(tabs.findIndex(t => t.id === id), 1);
+    closedTabs.push(closed);
     if (closedTabs.length > 20) closedTabs.shift();
-
-    tabs.splice(idx, 1);
-
-    if (activeTabId === id) {
-      // Switch to adjacent tab
-      const next = tabs[Math.min(idx, tabs.length - 1)];
-      activeTabId = next?.id || null;
-      if (next) {
-        eventBus.emit('tabs:changed', { tabs, activeTabId });
-        return next;
-      }
-    }
 
     eventBus.emit('tabs:changed', { tabs, activeTabId });
     return this.getActiveTab();
   },
 
-  /** Switch to a tab by id */
+  /** Switch to a tab by id, loading it into the editor. Returns the tab, or null. */
   switchTab(id) {
-    if (id === activeTabId) return;
-    this._saveCurrentTab();
     const tab = tabs.find(t => t.id === id);
-    if (!tab) return;
-    activeTabId = id;
-    eventBus.emit('tabs:changed', { tabs, activeTabId });
+    if (!tab) return null;
+    if (id === activeTabId) return tab;
+    const current = this.getActiveTab();
+    if (current) current.mtime = documentStore.getLastModifiedOnDisk();
+    // Flushes pending edits into the current tab, then file:opened → openTab() activates this one
+    documentStore.setFile(tab.id, tab.name, tab.content, tab.source, tab.mtime ?? null, tab.dirty);
     return tab;
   },
 
@@ -97,6 +83,7 @@ export const tabStore = {
     const tab = tabs.find(t => t.id === (id || activeTabId));
     if (tab) {
       tab.dirty = false;
+      if (tab.id === activeTabId) tab.mtime = documentStore.getLastModifiedOnDisk();
     }
     eventBus.emit('tabs:changed', { tabs, activeTabId });
   },
@@ -110,9 +97,21 @@ export const tabStore = {
 
   /** Reopen the last closed tab. Returns the tab, or null. */
   reopenTab() {
-    if (closedTabs.length === 0) return null;
     const tab = closedTabs.pop();
-    return this.openTab(tab.id, tab.name, tab.content, tab.source);
+    if (!tab) return null;
+    if (!tabs.some(t => t.id === tab.id)) tabs.push(tab);
+    return this.switchTab(tab.id);
+  },
+
+  /** Re-key a tab after Save As / rename so it keeps pointing at the right file. */
+  rekey(oldId, newId, name) {
+    const tab = tabs.find(t => t.id === oldId);
+    if (!tab || oldId === newId) return;
+    tabs = tabs.filter(t => t === tab || t.id !== newId); // drop a stale tab for the target file
+    tab.id = newId;
+    if (name) tab.name = name;
+    if (activeTabId === oldId) activeTabId = newId;
+    eventBus.emit('tabs:changed', { tabs, activeTabId });
   },
 
   /** Switch to the next tab (wraps around) */
@@ -136,14 +135,6 @@ export const tabStore = {
     const [moved] = tabs.splice(fromIdx, 1);
     tabs.splice(toIdx, 0, moved);
     eventBus.emit('tabs:changed', { tabs, activeTabId });
-  },
-
-  /** Persist dirty flag of active tab before switching away. Content/name kept in sync via event listeners. */
-  _saveCurrentTab() {
-    const tab = this.getActiveTab();
-    if (tab) {
-      tab.dirty = documentStore.isDirty();
-    }
   },
 
   persist() {

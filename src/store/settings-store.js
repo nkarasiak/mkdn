@@ -18,7 +18,6 @@ const defaults = {
   sidebarOrder: ['localFolder', 'outline', 'backlinks', 'history'],
   accentColor: null,
   customFont: null,
-  authorByline: '',
   writingDropCap: true,
 };
 

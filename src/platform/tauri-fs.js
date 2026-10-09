@@ -154,6 +154,8 @@ export function patchLocalFs() {
     await fsModule.rename(fullOldPath, newPath);
   };
 
+  localFs.handleForPath = (path) => new PathHandle(path, 'file');
+
   localFs.getFileHandle = async (dirHandle, path) => {
     return new PathHandle(joinPath(dirHandle.path, path), 'file');
   };

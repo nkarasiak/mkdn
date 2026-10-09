@@ -8,7 +8,6 @@ import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { confirm as confirmModal, prompt as promptModal } from '../ui/modal.js';
-import { toast } from '../ui/toast.js';
 import { createHistoryPanel } from '../history/history-panel.js';
 import { createOutlinePanel } from './outline-panel.js';
 import { debounce } from '../utils/debounce.js';
@@ -243,16 +242,7 @@ export function createSidebar() {
           'data-tooltip': 'New File',
           'aria-label': 'New File',
           unsafeHTML: icons.plus,
-          onClick: () => {
-            if (documentStore.isDirty()) {
-              confirmModal('You have unsaved changes. Create a new document anyway?', { title: 'Unsaved Changes', okText: 'New Document', danger: true })
-                .then(ok => { if (ok) { documentStore.newDocument(); toast('New document created', 'info'); } })
-                .catch(() => {});
-            } else {
-              documentStore.newDocument();
-              toast('New document created', 'info');
-            }
-          },
+          onClick: () => documentStore.newDocument(),
         }),
         configBtn,
         closeSidebarBtn,

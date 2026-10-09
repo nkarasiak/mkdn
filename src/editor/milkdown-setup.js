@@ -47,7 +47,22 @@ import '@milkdown/crepe/theme/common/style.css';
 import '@milkdown/crepe/theme/frame.css';
 
 let crepe = null;
-let updating = false;
+// What was last loaded into the editor (raw) and how Milkdown serialized it.
+// Milkdown's markdownUpdated fires on a 200ms timer per transaction, so it can
+// fire after a tab switch or report pure normalization — neither is an edit.
+let loadedRaw = null;
+let loadedSerialized = null;
+
+/** Push the editor's live content into documentStore if the user changed it. */
+function syncFromEditor() {
+  if (!crepe || settingsStore.get('sourceMode')) return;
+  let md;
+  try { md = crepe.getMarkdown(); } catch { return; }
+  const current = documentStore.getMarkdown();
+  if (md === current) return;
+  if (md === loadedSerialized && current === loadedRaw) return; // untouched since load
+  documentStore.setMarkdown(md, 'milkdown');
+}
 
 export const milkdown = {
   async init(container) {
@@ -117,12 +132,7 @@ export const milkdown = {
 
     // Listen for content changes from Milkdown
     crepe.on((api) => {
-      api.markdownUpdated((_ctx, markdown, _prevMarkdown) => {
-        if (updating) return;
-        if (markdown !== documentStore.getMarkdown()) {
-          documentStore.setMarkdown(markdown, 'milkdown');
-        }
-      });
+      api.markdownUpdated(syncFromEditor);
     });
 
     // Register ProseMirror plugins
@@ -142,6 +152,11 @@ export const milkdown = {
     crepe.editor.use($prose(() => createFloatingToolbarPlugin()));
     crepe.editor.use($prose(() => createSlashMenuPlugin()));
     await crepe.create();
+    loadedRaw = content;
+    loadedSerialized = crepe.getMarkdown();
+
+    // Flush pending edits into the outgoing document before a tab switch / new doc
+    eventBus.on('document:will-change', syncFromEditor);
 
     // Listen for focus mode toggle to refresh decorations
     eventBus.on('focus:refresh-plugins', () => {
@@ -172,12 +187,10 @@ export const milkdown = {
   setContent(markdown) {
     if (!crepe) return;
     try {
-      updating = true;
       crepe.editor.action(replaceAll(markdown));
+      loadedRaw = markdown;
+      loadedSerialized = crepe.getMarkdown();
     } catch { /* editor may not be ready */ }
-    finally {
-      updating = false;
-    }
   },
 
   runCommand(cmd, payload) {

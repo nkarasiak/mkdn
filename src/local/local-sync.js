@@ -5,6 +5,7 @@ import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { toast } from '../ui/toast.js';
 import { confirm as confirmModal } from '../ui/modal.js';
+import { tabStore } from '../store/tab-store.js';
 
 const EXTERNAL_CHECK_INTERVAL = 5000;
 
@@ -13,7 +14,30 @@ let fileList = [];
 let autoSaveTimer = null;
 let externalCheckTimer = null;
 let externalCheckInFlight = false;
-let standaloneFileHandle = null; // for files opened via picker (outside linked folder)
+// fileId → handle for files opened/saved outside the linked folder.
+// Ids: linked-folder files use their relative path; standalone files use the
+// absolute path (Tauri) or `picked:<name>` (browser), so they never resolve
+// into the linked folder by accident.
+const handles = new Map();
+
+const isStandaloneId = (id) => id.startsWith('picked:') || /^([A-Za-z]:)?[\\/]/.test(id);
+
+async function handleFor(id) {
+  if (!id) return null;
+  if (handles.has(id)) return handles.get(id);
+  if (isStandaloneId(id)) return localFs.handleForPath(id); // null in the browser after a reload
+  return dirHandle ? localFs.getFileHandle(dirHandle, id) : null;
+}
+
+async function idFor(fileHandle) {
+  if (fileHandle.path) return fileHandle.path;
+  for (const [id, h] of handles) {
+    if (await h.isSameEntry?.(fileHandle)) return id;
+  }
+  let id = `picked:${fileHandle.name}`;
+  for (let n = 2; handles.has(id); n++) id = `picked:${fileHandle.name}#${n}`;
+  return id;
+}
 
 export const localSync = {
   init() {
@@ -37,7 +61,7 @@ export const localSync = {
         // Re-open the file from disk if session had a local file open
         const fileId = documentStore.getFileId();
         const fileSource = documentStore.getFileSource();
-        if (fileId && fileSource === 'local') {
+        if (fileId && fileSource === 'local' && !isStandaloneId(fileId) && !documentStore.isDirty()) {
           try {
             const fileHandle = await localFs.getFileHandle(dirHandle, fileId);
             const { name, content, modifiedTime } = await localFs.readFile(fileHandle);
@@ -97,10 +121,10 @@ export const localSync = {
 
   async open(filePath) {
     if (!dirHandle) return;
+    if (tabStore.switchTab(filePath)) return; // already open — keep its unsaved edits
     try {
       const fileHandle = await localFs.getFileHandle(dirHandle, filePath);
       const { name, content, modifiedTime } = await localFs.readFile(fileHandle);
-      standaloneFileHandle = null;
       documentStore.setFile(filePath, name, content, 'local', modifiedTime);
     } catch (err) {
       toast(`Failed to open: ${err.message}`, 'error');
@@ -108,13 +132,26 @@ export const localSync = {
   },
 
   async openFile() {
+    let fileHandle;
     try {
-      const fileHandle = await localFs.pickFile();
-      const { name, content, modifiedTime } = await localFs.readFile(fileHandle);
-      standaloneFileHandle = fileHandle;
-      documentStore.setFile(name, name, content, 'local', modifiedTime);
+      fileHandle = await localFs.pickFile();
     } catch {
-      // User cancelled picker
+      return; // User cancelled picker
+    }
+    return this.openHandle(fileHandle);
+  },
+
+  /** Open a file handle (picker, OS/CLI launch, PWA launch queue) in its own tab. */
+  async openHandle(fileHandle) {
+    try {
+      const id = await idFor(fileHandle);
+      const known = handles.has(id) || !!fileHandle.path;
+      handles.set(id, fileHandle);
+      if (known && tabStore.switchTab(id)) return; // already open — keep its unsaved edits
+      const { name, content, modifiedTime } = await localFs.readFile(fileHandle);
+      documentStore.setFile(id, name, content, 'local', modifiedTime);
+    } catch (err) {
+      toast(`Failed to open: ${err.message || err}`, 'error');
     }
   },
 
@@ -124,57 +161,27 @@ export const localSync = {
     try {
       const fileHandle = await localFs.pickSaveFile(fileName);
       await localFs.writeFile(fileHandle, content);
-      standaloneFileHandle = fileHandle;
+      const id = await idFor(fileHandle);
+      handles.set(id, fileHandle);
       const file = await fileHandle.getFile();
-      documentStore.setFile(file.name, file.name, content, 'local', file.lastModified);
+      tabStore.rekey(tabStore.getActiveTabId(), id, file.name);
+      documentStore.setFile(id, file.name, content, 'local', file.lastModified);
       documentStore.markSaved();
       eventBus.emit('sync:saved', { fileName: file.name });
       toast(`Saved as "${file.name}"`, 'success');
-    } catch {
-      // User cancelled picker
+    } catch (err) {
+      const cancelled = err?.name === 'AbortError' || err?.message === 'cancelled';
+      if (!cancelled) toast(`Save failed: ${err?.message || err}`, 'error');
     }
-  },
-
-  getStandaloneHandle() {
-    return standaloneFileHandle;
   },
 
   async save() {
-    // If we have a standalone file handle (opened via picker), save directly to it
-    if (standaloneFileHandle && documentStore.getFileSource() === 'local') {
-      try {
-        eventBus.emit('sync:saving', {});
-        await localFs.writeFile(standaloneFileHandle, documentStore.getMarkdown());
-        const savedFile = await standaloneFileHandle.getFile();
-        documentStore.setLastModifiedOnDisk(savedFile.lastModified);
-        documentStore.markSaved();
-        eventBus.emit('sync:saved', { fileName: documentStore.getFileName() });
-        toast('Saved locally', 'success');
-        return;
-      } catch (err) {
-        eventBus.emit('sync:error', { error: err.message });
-        toast(`Save failed: ${err.message}`, 'error');
-        return;
-      }
-    }
-
-    if (!dirHandle) {
-      toast('No local folder linked', 'warning');
-      return;
-    }
-
-    const content = documentStore.getMarkdown();
-    const fileId = documentStore.getFileId();
-
-    if (!fileId) {
-      const name = documentStore.getFileName();
-      return this.saveAs(name);
-    }
+    const fileHandle = await handleFor(documentStore.getFileId()).catch(() => null);
+    if (!fileHandle) return this.saveAsFile(); // no known location (e.g. handle lost on reload)
 
     try {
       eventBus.emit('sync:saving', {});
-      const fileHandle = await localFs.getFileHandle(dirHandle, fileId);
-      await localFs.writeFile(fileHandle, content);
+      await localFs.writeFile(fileHandle, documentStore.getMarkdown());
       const savedFile = await fileHandle.getFile();
       documentStore.setLastModifiedOnDisk(savedFile.lastModified);
       documentStore.markSaved();
@@ -182,7 +189,7 @@ export const localSync = {
       toast('Saved locally', 'success');
     } catch (err) {
       eventBus.emit('sync:error', { error: err.message });
-      toast(`Save failed: ${err.message}`, 'error');
+      toast(`Save failed: ${err.message || err}`, 'error');
     }
   },
 
@@ -198,6 +205,7 @@ export const localSync = {
       eventBus.emit('sync:saving', {});
       const newHandle = await localFs.createFile(dirHandle, name, content);
       const savedFile = await newHandle.getFile();
+      tabStore.rekey(tabStore.getActiveTabId(), name, name);
       documentStore.setFile(name, name, content, 'local', savedFile.lastModified);
       documentStore.markSaved();
       await this.refreshFileList();
@@ -224,12 +232,13 @@ export const localSync = {
     if (!dirHandle) return;
     try {
       await localFs.renameFile(dirHandle, filePath, newName);
+      const parts = filePath.split('/');
+      parts.pop();
+      const newPath = parts.length ? `${parts.join('/')}/${newName}` : newName;
+      tabStore.rekey(filePath, newPath, newName);
       if (documentStore.getFileId() === filePath && documentStore.getFileSource() === 'local') {
         // Update current document to point to new path
-        const parts = filePath.split('/');
-        parts.pop();
-        const newPath = parts.length ? `${parts.join('/')}/${newName}` : newName;
-        documentStore.setFile(newPath, newName, documentStore.getMarkdown(), 'local');
+        documentStore.setFile(newPath, newName, documentStore.getMarkdown(), 'local', null, documentStore.isDirty());
       }
       await this.refreshFileList();
       toast('File renamed', 'success');
@@ -250,21 +259,9 @@ export const localSync = {
     if (!documentStore.getFileId()) return;
 
     try {
-      const content = documentStore.getMarkdown();
-
-      // Standalone file handle (opened via picker)
-      if (standaloneFileHandle) {
-        await localFs.writeFile(standaloneFileHandle, content);
-        const savedFile = await standaloneFileHandle.getFile();
-        documentStore.setLastModifiedOnDisk(savedFile.lastModified);
-        documentStore.markSaved();
-        return;
-      }
-
-      // File inside linked folder
-      if (!dirHandle) return;
-      const fileHandle = await localFs.getFileHandle(dirHandle, documentStore.getFileId());
-      await localFs.writeFile(fileHandle, content);
+      const fileHandle = await handleFor(documentStore.getFileId());
+      if (!fileHandle) return;
+      await localFs.writeFile(fileHandle, documentStore.getMarkdown());
       const savedFile = await fileHandle.getFile();
       documentStore.setLastModifiedOnDisk(savedFile.lastModified);
       documentStore.markSaved();
@@ -310,18 +307,8 @@ export const localSync = {
 
     externalCheckInFlight = true;
     try {
-      let fileHandle;
-      if (standaloneFileHandle) {
-        fileHandle = standaloneFileHandle;
-      } else if (dirHandle) {
-        try {
-          fileHandle = await localFs.getFileHandle(dirHandle, fileId);
-        } catch {
-          return; // file deleted/moved
-        }
-      } else {
-        return;
-      }
+      const fileHandle = await handleFor(fileId).catch(() => null);
+      if (!fileHandle) return; // no handle, or file deleted/moved
 
       let file;
       try {

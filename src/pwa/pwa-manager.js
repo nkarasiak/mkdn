@@ -1,7 +1,6 @@
 import { el, injectStyles } from '../utils/dom.js';
 import { toast } from '../ui/toast.js';
 import { eventBus } from '../store/event-bus.js';
-import { documentStore } from '../store/document-store.js';
 
 let deferredInstallPrompt = null;
 let installBannerEl = null;
@@ -43,15 +42,9 @@ export function initPWA() {
   if ('launchQueue' in window) {
     window.launchQueue.setConsumer(async (launchParams) => {
       if (!launchParams.files?.length) return;
+      const { localSync } = await import('../local/local-sync.js');
       for (const fileHandle of launchParams.files) {
-        try {
-          const file = await fileHandle.getFile();
-          const content = await file.text();
-          documentStore.setFile(file.name, file.name, content, 'launch-handler');
-          toast(`Opened ${file.name}`, 'success');
-        } catch {
-          toast('Failed to open file', 'error');
-        }
+        await localSync.openHandle(fileHandle); // keeps the handle so Save writes back
       }
     });
   }

@@ -81,6 +81,11 @@ export const localFs = {
     await parentDir.removeEntry(oldFileName);
   },
 
+  /** Handle for an absolute path — only possible in Tauri (patched there). */
+  handleForPath() {
+    return null;
+  },
+
   async getFileHandle(dirHandle, path) {
     const parts = path.split('/');
     const fileName = parts.pop();

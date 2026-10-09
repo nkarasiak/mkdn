@@ -29,11 +29,7 @@ function renderTabs() {
       onMousedown: (e) => e.stopPropagation(),
       onClick: (e) => {
         e.stopPropagation();
-        if (tabs.length <= 1) return; // never close the last tab
-        const next = tabStore.closeTab(tab.id);
-        if (next) {
-          documentStore.setFile(next.id, next.name, next.content, next.source);
-        }
+        tabStore.closeTab(tab.id);
       },
     });
 
@@ -42,12 +38,7 @@ function renderTabs() {
       className: `tab-item${isActive ? ' active' : ''}${tab.dirty ? ' dirty' : ''}`,
       draggable: 'true',
       dataset: { idx: String(idx) },
-      onClick: () => {
-        const switched = tabStore.switchTab(tab.id);
-        if (switched) {
-          documentStore.setFile(switched.id, switched.name, switched.content, switched.source);
-        }
-      },
+      onClick: () => tabStore.switchTab(tab.id),
     },
       el('span', { className: 'tab-label' }, label),
       tab.dirty ? el('span', { className: 'tab-dirty-dot' }) : null,
@@ -70,14 +61,18 @@ function renderTabs() {
         if (raw && raw !== label) {
           const newName = raw.endsWith('.md') ? raw : raw + '.md';
           tabStore.updateName(tab.id, newName);
-          documentStore.setFileName(newName);
+          if (tab.id === tabStore.getActiveTabId()) documentStore.setFileName(newName);
         }
         renderTabs();
       };
 
       input.addEventListener('keydown', (ke) => {
         if (ke.key === 'Enter') { ke.preventDefault(); commit(); }
-        if (ke.key === 'Escape') { ke.preventDefault(); renderTabs(); }
+        if (ke.key === 'Escape') {
+          ke.preventDefault();
+          input.removeEventListener('blur', commit); // re-render blurs the input; don't commit
+          renderTabs();
+        }
       });
       input.addEventListener('blur', commit);
 
@@ -109,10 +104,18 @@ function renderTabs() {
 
     barEl.appendChild(tabEl);
   });
+
+  barEl.querySelector('.tab-item.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
 export function createTabBar() {
   barEl = el('div', { className: 'tab-bar' });
+  // Vertical wheel scrolls the (scrollbar-less) tab strip horizontally
+  barEl.addEventListener('wheel', (e) => {
+    if (!e.deltaY || e.deltaX) return;
+    barEl.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
 
   eventBus.on('tabs:changed', renderTabs);
   renderTabs();
@@ -174,9 +177,18 @@ export function initTabs() {
         fileId: activeTab.id,
         fileSource: activeTab.source,
         dirty: activeTab.dirty,
+        lastModifiedOnDisk: activeTab.mtime,
       });
     }
     eventBus.emit('tabs:changed', { tabs: tabStore.getTabs(), activeTabId: tabStore.getActiveTabId() });
+  } else {
+    // First run: the current document becomes tab #1
+    tabStore.openTab(
+      documentStore.getFileId() || 'untitled-' + Date.now(),
+      documentStore.getFileName(),
+      documentStore.getMarkdown(),
+      documentStore.getFileSource(),
+    );
   }
 }
 
@@ -253,7 +265,8 @@ injectStyles(`
   flex-shrink: 0;
 }
 
-.tab-item:hover .tab-close {
+.tab-item:hover .tab-close,
+.tab-item.active .tab-close {
   opacity: 1;
 }
 
@@ -278,26 +291,5 @@ injectStyles(`
   width: 100%;
   min-width: 40px;
   outline: none;
-}
-
-.tab-new-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  flex-shrink: 0;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.tab-new-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.tab-new-btn svg {
-  width: 14px;
-  height: 14px;
 }
 `);
