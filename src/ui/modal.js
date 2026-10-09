@@ -1,6 +1,7 @@
 import { el, injectStyles } from '../utils/dom.js';
 
 let overlay;
+let returnFocusEl = null;
 
 function ensureOverlay() {
   if (!overlay) {
@@ -10,6 +11,8 @@ function ensureOverlay() {
     });
     document.body.appendChild(overlay);
   }
+  // Remember what had focus so closeModal can hand it back (skip when swapping modals)
+  if (!overlay.classList.contains('modal-open')) returnFocusEl = document.activeElement;
   return overlay;
 }
 
@@ -45,6 +48,8 @@ export function closeModal() {
   if (overlay && overlay.classList.contains('modal-open')) {
     const reject = currentReject;
     currentReject = null;
+    if (returnFocusEl?.isConnected) returnFocusEl.focus();
+    returnFocusEl = null;
     animateClose(overlay, () => {
       overlay.replaceChildren();
       if (reject) reject(new Error('cancelled'));

@@ -6,6 +6,7 @@ import { createProseMirrorEngine, createTextareaEngine } from './find-replace-en
 let barEl = null;
 let isOpen = false;
 let showReplace = false;
+let returnFocusEl = null;
 
 let searchInput = null;
 let replaceInput = null;
@@ -207,6 +208,7 @@ function buildBar(container) {
         updateCounter();
       }
       if (e.key === 'Escape') {
+        e.preventDefault();
         closeFindBar();
       }
     },
@@ -215,18 +217,21 @@ function buildBar(container) {
   const prevBtn = el('button', {
     className: 'find-bar-btn',
     'data-tooltip': 'Previous (Shift+Enter)',
+    'aria-label': 'Previous match',
     onClick: () => { currentEngine?.goToPrev(); updateCounter(); },
   }, prevIcon);
 
   const nextBtn = el('button', {
     className: 'find-bar-btn',
     'data-tooltip': 'Next (Enter)',
+    'aria-label': 'Next match',
     onClick: () => { currentEngine?.goToNext(); updateCounter(); },
   }, nextIcon);
 
   caseSensitiveBtn = el('button', {
     className: 'find-bar-btn',
     'data-tooltip': 'Case sensitive',
+    'aria-label': 'Case sensitive',
     onClick: () => {
       caseSensitive = !caseSensitive;
       caseSensitiveBtn.classList.toggle('active', caseSensitive);
@@ -237,6 +242,7 @@ function buildBar(container) {
   const closeBtn = el('button', {
     className: 'find-bar-btn',
     'data-tooltip': 'Close (Escape)',
+    'aria-label': 'Close find bar',
     onClick: closeFindBar,
   }, '\u00d7'); // × symbol
 
@@ -256,6 +262,7 @@ function buildBar(container) {
         updateCounter();
       }
       if (e.key === 'Escape') {
+        e.preventDefault();
         closeFindBar();
       }
     },
@@ -282,6 +289,7 @@ function buildBar(container) {
 export function openFindBar(withReplace = false) {
   if (!barEl) return;
   showReplace = withReplace;
+  if (!isOpen) returnFocusEl = document.activeElement;
   isOpen = true;
   barEl.classList.add('open');
   replaceRow.classList.toggle('visible', showReplace);
@@ -300,6 +308,8 @@ export function closeFindBar() {
   // Clear highlights
   currentEngine?.clearHighlights();
   counterEl.textContent = '';
+  if (returnFocusEl?.isConnected) returnFocusEl.focus();
+  returnFocusEl = null;
   return true;
 }
 

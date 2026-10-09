@@ -382,6 +382,7 @@ export function createSlashMenuPlugin() {
 
         if (event.key === 'Escape') {
           event.preventDefault();
+          event.stopPropagation(); // don't also close the sidebar / exit focus mode
           hideMenu();
           return true;
         }
@@ -390,7 +391,10 @@ export function createSlashMenuPlugin() {
       },
     },
 
-    view() {
+    view(editorView) {
+      // Fixed-position menu would drift when the editor scrolls — hide it instead
+      const onScroll = (e) => { if (active && e.target.contains?.(editorView.dom)) hideMenu(); };
+      document.addEventListener('scroll', onScroll, true);
       return {
         update(view) {
           const { state } = view;
@@ -441,6 +445,7 @@ export function createSlashMenuPlugin() {
         },
 
         destroy() {
+          document.removeEventListener('scroll', onScroll, true);
           hideMenu();
         },
       };

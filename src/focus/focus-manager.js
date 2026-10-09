@@ -84,20 +84,24 @@ function onMouseMove(e) {
   const toolbar = appEl.querySelector('.app-toolbar');
   if (!toolbar) return;
 
+  // Keep the toolbar while it's hovered or one of its menus is open
+  const hideLater = (ms) => {
+    clearTimeout(revealTimer);
+    revealTimer = setTimeout(function tryHide() {
+      if (toolbar.matches(':hover') || toolbar.querySelector('.toolbar-dropdown-menu.open')) {
+        revealTimer = setTimeout(tryHide, 500);
+        return;
+      }
+      toolbar.classList.remove('zen-reveal');
+    }, ms);
+  };
+
   if (e.clientY <= 60) {
     toolbar.classList.add('zen-reveal');
-    clearTimeout(revealTimer);
-    revealTimer = setTimeout(() => {
-      toolbar.classList.remove('zen-reveal');
-    }, 2000);
-  } else {
+    hideLater(2000);
+  } else if (toolbar.classList.contains('zen-reveal')) {
     // If mouse moves away from top, hide after short delay
-    if (toolbar.classList.contains('zen-reveal')) {
-      clearTimeout(revealTimer);
-      revealTimer = setTimeout(() => {
-        toolbar.classList.remove('zen-reveal');
-      }, 500);
-    }
+    hideLater(500);
   }
 }
 

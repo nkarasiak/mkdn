@@ -56,8 +56,12 @@ function createDropdown(label, items) {
   return wrapper;
 }
 
-function closeAllDropdowns() {
-  document.querySelectorAll('.toolbar-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+// Covers Style/More/menubar/hamburger menus (all share .toolbar-dropdown-menu.open).
+// Returns true if any menu was open.
+export function closeAllDropdowns() {
+  const open = document.querySelectorAll('.toolbar-dropdown-menu.open');
+  open.forEach(m => m.classList.remove('open'));
+  return open.length > 0;
 }
 
 // Close dropdowns on outside click
@@ -245,6 +249,12 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     return row;
   }
 
+  hamburgerMenu.appendChild(hamburgerSection('File', [
+    { icon: icons.plus, label: 'New', shortcut: 'Ctrl+N', action: () => documentStore.newDocument() },
+    { icon: icons.folderOpen, label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
+    { icon: icons.save, label: 'Save', shortcut: 'Ctrl+S', action: onSave },
+  ]));
+
   hamburgerMenu.appendChild(hamburgerSection('Edit', [
     { icon: icons.undo, label: 'Undo', shortcut: 'Ctrl+Z', action: () => milkdown.runCommand(milkdown.commands.undo) },
     { icon: icons.redo, label: 'Redo', shortcut: 'Ctrl+Shift+Z', action: () => milkdown.runCommand(milkdown.commands.redo) },
@@ -260,7 +270,7 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     '---',
     { icon: icons.fullWidth, label: 'Full Width', action: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')) },
     { icon: icons.rename, label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
-    { icon: icons.focus, label: 'Focus Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
+    { icon: icons.focus, label: 'Zen Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
   ]));
 
   // Theme row + theme editor
@@ -364,32 +374,30 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
 
   // === HEADER-RIGHT ICON BUTTONS (moved from status bar) ===
 
-  // Theme toggle (cycles: light → dark → auto)
+  // Theme toggle (cycles: light → dark → auto). Icon + label show the next action.
+  const THEME_NAMES = { light: 'Light', dark: 'Dark', auto: 'Auto' };
+  const nextTheme = (t) => (t === 'light' ? 'dark' : t === 'dark' ? 'auto' : 'light');
   function themeIcon(theme) {
-    if (theme === 'dark') return icons.sun;
-    if (theme === 'auto') return icons.monitor;
-    return icons.moon;
+    const next = nextTheme(theme);
+    if (next === 'dark') return icons.moon;
+    if (next === 'auto') return icons.monitor;
+    return icons.sun;
   }
   function themeTooltip(theme) {
-    if (theme === 'dark') return 'Theme: Dark';
-    if (theme === 'auto') return 'Theme: Auto';
-    return 'Theme: Light';
+    return `Theme: ${THEME_NAMES[theme] || 'Light'} — switch to ${THEME_NAMES[nextTheme(theme)]}`;
   }
   const themeBtn = el('button', {
     className: 'toolbar-icon-btn',
     'data-tooltip': themeTooltip(settingsStore.getTheme()),
     'aria-label': themeTooltip(settingsStore.getTheme()),
     unsafeHTML: themeIcon(settingsStore.getTheme()),
-    onClick: () => {
-      const current = settingsStore.getTheme();
-      const next = current === 'light' ? 'dark' : current === 'dark' ? 'auto' : 'light';
-      settingsStore.set('theme', next);
-    },
+    onClick: () => settingsStore.set('theme', nextTheme(settingsStore.getTheme())),
   });
 
   eventBus.on('settings:theme', (theme) => {
     themeBtn.innerHTML = themeIcon(theme);
     themeBtn.setAttribute('data-tooltip', themeTooltip(theme));
+    themeBtn.setAttribute('aria-label', themeTooltip(theme));
   });
 
   // Export button
@@ -814,33 +822,20 @@ export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder })
     formattingRow,
   );
 
-  // Listen for save status
-  const setSaved = () => {
-    statusDot.className = 'toolbar-status-dot saved';
-    statusText.textContent = 'saved';
-    statusBadge.classList.remove('unsaved');
-    statusBadge.style.pointerEvents = 'none';
-  };
-  const setUnsaved = () => {
-    statusDot.className = 'toolbar-status-dot';
-    statusText.textContent = 'Save';
-    statusBadge.classList.add('unsaved');
-    statusBadge.style.pointerEvents = '';
+  // Save status — same source of truth as the status bar dot
+  const updateSaveStatus = () => {
+    const dirty = documentStore.isDirty();
+    statusDot.className = dirty ? 'toolbar-status-dot' : 'toolbar-status-dot saved';
+    statusText.textContent = dirty ? 'Save' : 'saved';
+    statusBadge.classList.toggle('unsaved', dirty);
+    statusBadge.style.pointerEvents = dirty ? '' : 'none';
   };
 
-  eventBus.on('file:saved', setSaved);
-  eventBus.on('sync:saved', setSaved);
-  // Ignore content changes during initial Milkdown sync (first 2s)
-  let initialized = false;
-  setTimeout(() => { initialized = true; }, 2000);
-  eventBus.on('content:changed', () => {
-    if (initialized && documentStore.isDirty()) setUnsaved();
-  });
-  eventBus.on('file:opened', setSaved);
-  eventBus.on('file:new', setSaved);
-
-  // Start as saved
-  setSaved();
+  eventBus.on('content:changed', updateSaveStatus);
+  eventBus.on('file:saved', updateSaveStatus);
+  eventBus.on('file:opened', updateSaveStatus);
+  eventBus.on('file:new', updateSaveStatus);
+  updateSaveStatus();
 
   return toolbar;
 }

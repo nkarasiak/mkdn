@@ -13,6 +13,7 @@ let isOpen = false;
 let selectedIndex = 0;
 let currentResults = [];
 let milkdownRef = null;
+let returnFocusEl = null;
 
 export function setMilkdownRef(m) {
   milkdownRef = m;
@@ -25,6 +26,7 @@ export function openCommandPalette(initialMode) {
 
   isOpen = true;
   selectedIndex = 0;
+  returnFocusEl = document.activeElement;
 
   ensureOverlay();
   overlay.replaceChildren();
@@ -75,10 +77,6 @@ export function openCommandPalette(initialMode) {
     }
   });
 
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeCommandPalette();
-  });
-
   // Initial render
   renderResults(input.value, resultsList);
 
@@ -92,6 +90,8 @@ export function closeCommandPalette() {
     overlay.classList.remove('cmd-palette-open');
     overlay.replaceChildren();
   }
+  if (returnFocusEl?.isConnected) returnFocusEl.focus();
+  returnFocusEl = null;
   return true;
 }
 
@@ -102,6 +102,9 @@ export function isCommandPaletteOpen() {
 function ensureOverlay() {
   if (!overlay) {
     overlay = el('div', { className: 'cmd-palette-overlay' });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeCommandPalette();
+    });
     document.body.appendChild(overlay);
   }
 }

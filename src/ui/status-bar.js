@@ -10,9 +10,9 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
   // --- Save state dot (solid = saved, hollow = dirty) ---
   const saveDot = el('button', {
     className: 'statusbar-save-dot',
-    'aria-label': 'Document save state',
+    'aria-label': 'Save (Ctrl+S)',
     'data-tooltip': 'Saved',
-    onClick: () => togglePopover(),
+    onClick: () => import('../save/file-saver.js').then(m => m.fileSaver.save()),
   });
 
   function updateSaveDot() {
@@ -127,7 +127,7 @@ export function createStatusBar({ onToggleHistory, focusManager } = {}) {
     }
 
     rows.push(action('Writing statistics', '', () => import('../stats/writing-stats.js').then(m => m.openWritingStats())));
-    rows.push(action('Focus mode', 'Ctrl+Shift+F', () => focusManager?.cycleMode()));
+    rows.push(action('Zen mode', 'Ctrl+Shift+F', () => focusManager?.cycleMode()));
     rows.push(action(
       settingsStore.get('fullWidth') ? 'Disable full width' : 'Enable full width',
       '',
@@ -201,6 +201,11 @@ injectStyles(`
   height: 28px !important;
   padding: 0 12px;
   background: transparent;
+  pointer-events: none; /* transparent strip must not swallow editor clicks */
+}
+
+.statusbar-quiet button,
+.statusbar-quiet .statusbar-zoom {
   pointer-events: auto;
 }
 

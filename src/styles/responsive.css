@@ -69,20 +69,19 @@
     height: 46px;
   }
 
-  .toolbar-formatting {
-    padding: 0 8px;
-    height: 40px;
-    justify-content: flex-start;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    position: relative;
-    mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
-    -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+  /* Menubar + export/theme/about live in the hamburger / More / status bar on mobile */
+  .toolbar-header .menubar,
+  .toolbar-header-right > .toolbar-icon-btn {
+    display: none;
   }
 
-  .toolbar-formatting::-webkit-scrollbar {
-    display: none;
+  /* Wrap instead of scrolling so Style/More menus aren't clipped */
+  .toolbar-formatting {
+    padding: 2px 8px;
+    height: auto;
+    min-height: 40px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .toolbar-btn {
@@ -224,9 +223,18 @@
     border-top: 1px solid var(--border-light);
     height: 44px;
     padding: 0 8px;
-    justify-content: center;
-    mask-image: none;
-    -webkit-mask-image: none;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  /* Bottom bar scrolls horizontally: open menus fixed above it so they aren't clipped */
+  .toolbar-formatting .toolbar-dropdown > .toolbar-dropdown-menu {
+    position: fixed;
+    top: auto;
+    bottom: 48px;
+    left: 8px;
   }
 
   .app-statusbar {

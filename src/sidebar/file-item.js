@@ -12,12 +12,14 @@ export function createFileItem(file, { onOpen, onRename, onDelete, isActive, ico
       el('button', {
         className: 'file-item-btn',
         'data-tooltip': 'Rename',
+        'aria-label': `Rename ${file.name}`,
         unsafeHTML: icons.rename,
         onClick: (e) => { e.stopPropagation(); onRename(file); },
       }),
       el('button', {
         className: 'file-item-btn',
         'data-tooltip': 'Delete',
+        'aria-label': `Delete ${file.name}`,
         unsafeHTML: icons.trash,
         onClick: (e) => { e.stopPropagation(); onDelete(file); },
       }),

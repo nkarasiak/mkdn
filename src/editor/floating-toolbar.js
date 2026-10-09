@@ -305,7 +305,10 @@ function hideToolbar() {
 export function createFloatingToolbarPlugin() {
   return new Plugin({
     key: floatingToolbarKey,
-    view() {
+    view(editorView) {
+      // Fixed-position toolbar would drift when the editor scrolls — hide it instead
+      const onScroll = (e) => { if (e.target.contains?.(editorView.dom)) hideToolbar(); };
+      document.addEventListener('scroll', onScroll, true);
       return {
         update(view) {
           const { from, to, empty } = view.state.selection;
@@ -327,6 +330,7 @@ export function createFloatingToolbarPlugin() {
           showToolbar(view);
         },
         destroy() {
+          document.removeEventListener('scroll', onScroll, true);
           hideToolbar();
         },
       };
