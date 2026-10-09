@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-mkdn is a browser-based WYSIWYG markdown editor. It's a vanilla JavaScript SPA (no framework) built with Vite, using Milkdown (Crepe/ProseMirror) for editing. Supports local folder sync via the File System Access API, real-time collaboration via PartyKit/Yjs, version history via IndexedDB, and a plugin system.
+mkdn is a browser-based WYSIWYG markdown editor. It's a vanilla JavaScript SPA (no framework) built with Vite, using Milkdown (Crepe/ProseMirror) for editing. Supports local folder sync via the File System Access API, multiple document tabs, and version history via IndexedDB. Also ships as a Tauri v2 desktop app (`src-tauri/`).
 
 ## Commands
 
@@ -34,7 +34,7 @@ Follow **Conventional Commits** and **Semantic Versioning**.
 
 **Types:** `feat`, `fix`, `refactor`, `style`, `docs`, `chore`, `perf`, `test`, `ci`, `build`.
 
-**Scopes** (optional): `editor`, `sidebar`, `toolbar`, `history`, `save`, `local`, `storage`, `ui`, `styles`, `collab`, `graph`, `backlinks`, `search`, `plugins`, `templates`, `themes`, `export`, `stats`, `focus`, `command-palette`.
+**Scopes** (optional): `editor`, `sidebar`, `toolbar`, `history`, `save`, `local`, `storage`, `ui`, `styles`, `tabs`, `backlinks`, `themes`, `export`, `stats`, `focus`, `command-palette`.
 
 **Examples:**
 - `feat(history): add checkpoint message support`
@@ -71,7 +71,7 @@ The `el()` helper accepts:
 `main.js` imports CSS in order then calls `App.init()`. The init sequence:
 1. Apply theme, create DOM structure (editorPane, sidebar, toolbar, statusbar)
 2. `focusManager.init()` → `sessionStore.restoreSession()` → `milkdown.init()` → `localSync.init()` → `sessionStore.init()` → `historyManager.init()`
-3. Register all commands: builtin, export, collab, search, plugin, graph
+3. `initTabs()` (after milkdown init), then register commands: builtin, export
 4. Initialize backlinks, writing stats, theme editor
 
 ### Event Bus + Stores (Pub/Sub State Management)
@@ -92,12 +92,11 @@ When modifying state, always go through the stores — never mutate DOM directly
 | `file:new` | `{}` | documentStore |
 | `file:saved` | `{ fileName, lastSaved }` | documentStore |
 | `file:renamed` | `{ name }` | documentStore |
+| `document:will-change` | — | documentStore (before `setFile`/`newDocument`; milkdown flushes pending edits) |
+| `tabs:changed` | `{ tabs, activeTabId }` | tabStore |
 | `settings:<key>` | `(value)` | settingsStore |
 | `history:updated` | `{}` | historyManager |
 | `history:restored` | `{ id }` | historyManager |
-| `collab:started` | `{ roomId }` | collabManager |
-| `collab:stopped` | `{}` | collabManager |
-| `collab:peers-changed` | `{ peers }` | collabManager |
 | `local:folder-linked` | `{ name }` | localSync |
 | `local:folder-unlinked` | `{}` | localSync |
 | `local:files-updated` | `{ files }` | localSync |
@@ -149,26 +148,15 @@ commandRegistry.register({
 
 The palette supports prefix modes: empty for all commands, `>` to filter, `#` to jump to headings. Recent commands are tracked in localStorage.
 
-Commands are registered in `app.js` from multiple sources: `registerBuiltinCommands()`, `registerExportCommands()`, `registerCollabCommands()`, `registerSearchCommands()`, `registerPluginCommands()`, `registerGraphCommands()`.
+Commands are registered in `app.js` via `registerBuiltinCommands()` and `registerExportCommands()`.
 
-### Collaboration (PartyKit + Yjs)
+### Tabs & Files
 
-Real-time collaboration uses Yjs CRDT synced through a PartyKit server:
-1. Creates `Y.Doc` + `YPartyKitProvider` connecting to the configured server
-2. Applies `ySyncPlugin`, `yCursorPlugin`, `yUndoPlugin` to ProseMirror
-3. Sessions joinable via URL hash `#s=${roomId}.${password}`
-4. Collab session persists in sessionStorage for auto-reconnect on reload
-5. History snapshots pushed to server on save/checkpoint
-
-### Plugin System
-
-Plugins (`src/plugins/`) load dynamically from URLs or local paths. Each plugin gets a sandboxed API via `createPluginAPI(pluginId)`:
-- Event bus access (subscribe only), document read, plugin-namespaced settings/storage
-- Command and slash command registration (auto-prefixed `plugin:${id}:`)
-- Editor operations (getSelectedText, insertText, replaceSelection)
-- Toast notifications
-
-All plugin resources are namespaced: commands as `plugin:${id}:${cmd}`, settings as `plugin:${id}:${key}`, storage as `mkdn-plugin-${id}-${key}`. The `_cleanup()` method unsubscribes all listeners and removes commands.
+`store/tab-store.js` owns the tab list; `documentStore` holds only the active document. Rules:
+- Switch/close/reopen tabs only through `tabStore.switchTab/closeTab/reopenTab/nextTab/prevTab` — they load the tab via `documentStore.setFile(..., mtime, dirty)`. Never call `setFile` with a tab's content yourself.
+- `file:opened` / `file:new` → `tabStore.openTab()` syncs (or creates) the tab from `documentStore`, so a tab's `dirty`/`mtime` always mirror the document.
+- File ids: linked-folder files use their relative path; standalone files use the absolute path (Tauri) or `picked:<name>` (browser). `local-sync.js` keeps a `fileId → handle` map, so every tab saves to its own file. Files without a handle (drag-drop, plain `<input type=file>`) have `source: null` and Save asks for a location.
+- Tauri: files passed at launch are pulled with `invoke('initial_file')`; later ones arrive via the `file-open` event (single-instance).
 
 ### Settings Auto-Reset
 
@@ -182,11 +170,9 @@ Cycle through modes via Ctrl+Shift+F: Normal → Zen → Zen+ParagraphFocus → 
 
 | Layer | Purpose | Key prefix |
 |-------|---------|-----------|
-| localStorage | Settings, session, templates, theme, recent commands | `mkdn-*` |
-| sessionStorage | Collab session (room/password) | `mkdn-collab-*` |
+| localStorage | Settings, session, tabs (`mkdn-tabs`), theme, recent commands | `mkdn-*` |
 | IndexedDB (`mkdn-history`) | History snapshots (max 50/file, pruned) | fileKey + timestamp |
 | File System Access API | Linked local folder I/O | FileHandle objects |
-| PartyKit server | Collaborative Yjs state | Remote |
 
 ### CSS
 
@@ -196,7 +182,7 @@ Styles in `src/styles/`, imported in order by `main.js`. Theming uses CSS custom
 
 | Directory | Purpose | Pattern |
 |-----------|---------|---------|
-| `store/` | eventBus, documentStore, settingsStore | Singletons |
+| `store/` | eventBus, documentStore, settingsStore, tabStore | Singletons |
 | `editor/` | Milkdown setup + ProseMirror plugins | Singleton + plugin factories |
 | `local/` | File System Access API, folder sync | Singletons |
 | `save/` | File save/open dialogs | Singleton |
@@ -208,13 +194,8 @@ Styles in `src/styles/`, imported in order by `main.js`. Theming uses CSS custom
 | `command-palette/` | Command registry, fuzzy match, heading jump | Singleton + factory |
 | `find-replace/` | Find/replace with decorations (both modes) | Plugin + engines |
 | `focus/` | Zen, paragraph focus, typewriter modes | Singleton + plugins |
-| `collab/` | PartyKit/Yjs real-time collaboration | Singleton |
 | `backlinks/` | Wikilink `[[page]]` parsing, backlink resolution | Engine + UI + plugin |
-| `graph/` | Force-directed knowledge graph (canvas-based) | Modal + physics engine |
-| `search/` | On-device semantic search (Transformer.js embeddings) | Engine + IndexedDB vector store |
-| `plugins/` | Plugin loader, registry, sandboxed API | Loader + factory |
-| `templates/` | Built-in + custom document templates | Chooser UI |
 | `themes/` | Theme editor with presets | Modal UI |
 | `stats/` | Word count, readability, reading time | Modal UI |
-| `export/` | HTML (themed), DOCX, slides, GitHub publish | Command registrations |
+| `export/` | HTML (themed), print/PDF, Markdown download | Command registrations |
 | `utils/` | `el()`, `svgIcon()`, `$`/`$$`, `debounce` | Utility functions |
