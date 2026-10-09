@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-09
+
+### Fixed
+
+- **Save wrote to the wrong file** — a single global file handle meant Ctrl+S / auto-save could overwrite one file with another tab's content (e.g. after opening two files, or after drag-dropping a file). Each file now keeps its own handle; dropped files ask where to save.
+- **Opening `.md` files on desktop** — the launcher now forwards file arguments, the launch file is pulled once the UI is ready instead of being emitted on a 500 ms timer, single-instance paths resolve against the caller's directory, and the fs capability scope now actually covers `readTextFile`/`writeTextFile` under `$HOME`.
+- **Tabs** — the first document is now a real tab (Ctrl+N no longer drops it); dirty markers survive tab switches; text typed just before switching tabs is no longer lost or leaked into the next tab; freshly opened files are no longer marked unsaved; re-opening an already-open file switches to its tab instead of discarding edits; Save As / rename re-key the tab instead of duplicating it; Escape cancels a tab rename.
+- **Escape** closes the topmost thing first (modal, menus, find bar, palette) and no longer collapses the sidebar at the same time.
+- **Open in Firefox/Safari** falls back to a plain file picker; drops outside the editor no longer navigate away; PWA-launched files keep their handle so Save writes back.
+- **UI** — mobile header fits the screen and its dropdowns are no longer clipped; status bar no longer swallows clicks along the bottom; save indicators agree; focus returns to the editor after closing modals/find/palette; floating toolbar and slash menu hide on scroll; zen-mode toolbar stays while in use; footnote styling restored; muted text contrast raised to WCAG AA; Mermaid allowed by CSP.
+
+### Removed
+
+- Dead leftovers from the 3.0.0 trim: native-menu handlers, "Set Author Byline", unused storage constants, stale CSP hosts.
+
+### Added
+
+- **Copy Share Link** command (the `#d=` receiver was still there, the sender had been removed with collab).
+
 ## [3.0.0] - 2026-05-27
 
 ### Removed
