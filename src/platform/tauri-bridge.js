@@ -40,14 +40,20 @@ export async function restoreTauriFile(fileId) {
 export async function initTauriEvents() {
   if (!isTauri()) return;
   const { listen } = await import('@tauri-apps/api/event');
-  await listen('file-open', async ({ payload: path }) => {
+  const { invoke } = await import('@tauri-apps/api/core');
+  const open = async (path) => {
     try {
       const { fileSaver } = await import('../save/file-saver.js');
       await fileSaver.openHandle(path);
     } catch (err) {
-      console.error('[tauri] Failed to open file:', err);
+      const { toast } = await import('../ui/toast.js');
+      toast(`Failed to open ${path}: ${err.message || err}`, 'error');
     }
-  });
+  };
+  await listen('file-open', ({ payload }) => open(payload));
+  // Launch file is pulled once we listen; a pushed event at startup could arrive before us.
+  const startup = await invoke('startup_file').catch(() => null);
+  if (startup) await open(startup);
 }
 
 // --- Auto-updater ---
