@@ -1,203 +1,45 @@
 .app {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  grid-template-columns: auto 0 1fr;
-  grid-template-areas:
-    "toolbar toolbar toolbar"
-    "sidebar resize main";
+  display: flex;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
 }
 
-.app-toolbar {
-  grid-area: toolbar;
-}
-
-.app-sidebar {
-  grid-area: sidebar;
-  width: var(--sidebar-width);
-  transition: width var(--transition-spring), opacity var(--transition-normal);
-  overflow: hidden;
-}
-
-.app-sidebar.collapsed {
-  width: 0;
-  opacity: 0;
-  pointer-events: none;
-  border-right: none;
-}
-
-.sidebar-resize-handle {
-  grid-area: resize;
-  width: 3px;
-  cursor: col-resize;
-  background: transparent;
-  transition: width 0.15s ease, background 0.15s ease;
-  z-index: 2;
-  position: relative;
-}
-
-.sidebar-resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -2px;
-  width: 7px;
-}
-
-.sidebar-resize-handle:hover,
-.sidebar-resize-handle.active {
-  width: 3px;
-  background: var(--accent);
-}
-
-body.resizing {
-  cursor: col-resize !important;
-  user-select: none !important;
-}
-
-body.resizing * {
-  cursor: col-resize !important;
-}
-
 .app-main {
-  grid-area: main;
+  flex: 1;
   display: flex;
-  overflow: hidden;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   position: relative;
 }
 
-.content-width-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(50% + var(--content-max-width) / 2);
-  width: 12px;
-  margin-left: -6px;
-  cursor: col-resize;
-  z-index: 5;
+/* Editor pane */
+.editor-pane {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--editor-bg);
+  position: relative;
 }
 
-.content-width-handle::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 1px;
-  margin-left: -0.5px;
-  background: var(--accent);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.content-width-handle:hover::before,
-.content-width-handle.active::before {
-  opacity: 1;
-}
-
-body.full-width .content-width-handle {
-  display: none;
-}
-
-.app-statusbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.app-statusbar > * {
-  pointer-events: auto;
-}
-
-/* ================================================================
-   Status bar — bottom bar with icon buttons + settings
-   ================================================================ */
-
+/* Status bar — "Ln 4, Col 12   123 words" */
 .statusbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: var(--statusbar-height);
-  padding: 0 12px;
-  font-family: var(--font-sans);
-}
-
-.statusbar-left {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.statusbar-right {
-  display: flex;
-  align-items: center;
-}
-
-.statusbar-stats {
+  justify-content: flex-end;
+  gap: 24px;
+  height: 26px;
+  padding: 0 14px;
+  flex-shrink: 0;
   font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted);
-  font-weight: 400;
+  background: var(--toolbar-bg);
+  border-top: 1px solid var(--toolbar-border);
 }
-
-.statusbar-left .statusbar-stats + .statusbar-stats::before {
-  content: '·';
-  margin: 0 6px;
-}
-
-.statusbar-stats-clickable {
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  padding: 2px 6px;
-  transition: background var(--transition-fast);
-}
-
-.statusbar-stats-clickable:hover {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-}
-
-.statusbar-focus-label {
-  font-weight: 500;
-  color: var(--accent);
-}
-
-/* Small icon buttons */
-.statusbar-icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  color: var(--text-muted);
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.statusbar-icon-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-}
-
-.statusbar-icon-btn.active {
-  color: var(--accent);
-}
-
-.statusbar-icon-btn svg {
-  width: var(--icon-md);
-  height: var(--icon-md);
-}
-
-/* Legacy statusbar styles (for sync status, etc) */
-.sync-ok { color: var(--success); }
-.sync-progress { color: var(--accent); }
-.sync-error { color: var(--error); }
 
 /* Drag & drop overlay */
 .app.drag-over .app-main::after {
@@ -216,15 +58,4 @@ body.full-width .content-width-handle {
   font-family: var(--font-sans);
   z-index: 100;
   pointer-events: none;
-}
-
-/* Editor pane */
-.editor-pane {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden auto;
-  display: flex;
-  flex-direction: column;
-  background: var(--editor-bg);
-  position: relative;
 }

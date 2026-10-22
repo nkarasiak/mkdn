@@ -1,846 +1,179 @@
 import { el } from '../utils/dom.js';
 import { icons } from './toolbar-icons.js';
-import { milkdown } from '../editor/milkdown-setup.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
-import { openLinkPopover } from '../ui/link-popover.js';
-import { downloadMarkdown, copyHtml, printDocument } from '../utils/export.js';
-import { createTablePicker } from './table-picker.js';
 import { settingsStore } from '../store/settings-store.js';
-import { localSync } from '../local/local-sync.js';
-import { saveImageToAssets, saveImageToAssetsTauri, isTauri } from '../editor/image-paste-plugin.js';
-import { isTauri as isTauriBridge } from '../platform/tauri-bridge.js';
+import { fileSaver } from '../save/file-saver.js';
+import { editorZoom } from '../editor/editor-zoom.js';
+import { downloadMarkdown, printDocument } from '../utils/export.js';
+import { isTauri } from '../platform/tauri-bridge.js';
 
-function btn(icon, tooltip, onClick, extraClass = '') {
-  return el('button', {
-    className: `toolbar-btn ${extraClass}`.trim(),
-    'data-tooltip': tooltip,
-    'aria-label': tooltip,
+/**
+ * gedit-style header bar: [Open] [+] ··· title ··· [Save] [☰] [window controls]
+ */
+export function createToolbar() {
+  const iconBtn = (icon, label, onClick) => el('button', {
+    className: 'header-btn header-icon-btn',
+    title: label,
+    'aria-label': label,
     unsafeHTML: icons[icon],
-    onMousedown: (e) => e.preventDefault(), // keep editor focus
     onClick,
   });
-}
 
-function divider() {
-  return el('div', { className: 'toolbar-divider' });
-}
+  // --- Title: "*name" when dirty, directory as subtitle when known (Tauri paths) ---
+  const titleEl = el('div', { className: 'header-title' });
+  const subtitleEl = el('div', { className: 'header-subtitle' });
 
-function group(...children) {
-  return el('div', { className: 'toolbar-group' }, ...children);
-}
+  function updateTitle() {
+    const dirty = documentStore.isDirty() ? '*' : '';
+    titleEl.textContent = dirty + documentStore.getFileName();
+    const id = documentStore.getFileId() || '';
+    const dir = /[\\/]/.test(id) ? id.replace(/[\\/][^\\/]*$/, '') : '';
+    subtitleEl.textContent = dir;
+    subtitleEl.hidden = !dir;
+  }
+  for (const evt of ['content:changed', 'file:saved', 'file:opened', 'file:new', 'file:renamed']) {
+    eventBus.on(evt, updateTitle);
+  }
+  updateTitle();
 
-function createDropdown(label, items) {
-  const menu = el('div', { className: 'toolbar-dropdown-menu' });
-  items.forEach(({ label: itemLabel, onClick }) => {
-    menu.appendChild(el('button', {
-      className: 'toolbar-dropdown-item',
-      onClick: () => { onClick(); closeAllDropdowns(); },
-    }, itemLabel));
-  });
+  // --- Main menu (native popover: light dismiss + Esc for free) ---
+  const menu = el('div', { className: 'app-menu', popover: 'auto' });
+  const item = (label, shortcut, action) => el('button', {
+    className: 'app-menu-item',
+    onClick: () => { menu.hidePopover(); action(); },
+  }, el('span', {}, label), shortcut ? el('kbd', {}, shortcut) : null);
+  const sep = () => el('div', { className: 'app-menu-sep' });
 
-  const trigger = el('button', {
-    className: 'toolbar-dropdown-btn',
-    onClick: (e) => {
-      e.stopPropagation();
-      const wasOpen = menu.classList.contains('open');
-      closeAllDropdowns();
-      if (!wasOpen) menu.classList.add('open');
-    },
-  },
-    el('span', {}, label),
-    el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronDown }),
+  const themeRow = el('div', { className: 'app-menu-theme' });
+  for (const [theme, icon] of [['light', 'sun'], ['dark', 'moon'], ['auto', 'monitor']]) {
+    themeRow.appendChild(el('button', {
+      title: `${theme[0].toUpperCase()}${theme.slice(1)} theme`,
+      'aria-label': `${theme} theme`,
+      dataset: { theme },
+      unsafeHTML: icons[icon],
+      onClick: () => settingsStore.set('theme', theme),
+    }));
+  }
+  const syncTheme = () => themeRow.querySelectorAll('button').forEach(b =>
+    b.classList.toggle('active', b.dataset.theme === settingsStore.getTheme()));
+  eventBus.on('settings:theme', syncTheme);
+  syncTheme();
+
+  // Zoom row: [−] 100% [+], click the percentage to reset
+  const zoomLabel = el('button', { title: 'Reset zoom (Ctrl+0)', onClick: () => editorZoom.reset() });
+  const zoomRow = el('div', { className: 'app-menu-zoom' },
+    el('button', { title: 'Zoom out (Ctrl+-)', 'aria-label': 'Zoom out', onClick: () => editorZoom.zoomOut() }, '−'),
+    zoomLabel,
+    el('button', { title: 'Zoom in (Ctrl++)', 'aria-label': 'Zoom in', onClick: () => editorZoom.zoomIn() }, '+'),
   );
+  const syncZoom = () => { zoomLabel.textContent = `${Math.round(editorZoom.getZoom() * 100)}%`; };
+  eventBus.on('settings:editorZoom', syncZoom);
+  syncZoom();
 
-  const wrapper = el('div', { className: 'toolbar-dropdown' }, trigger, menu);
-  return wrapper;
-}
+  menu.append(
+    themeRow,
+    zoomRow,
+    sep(),
+    item('New Tab', 'Ctrl+T', () => documentStore.newDocument()),
+    item('Save As…', 'Shift+Ctrl+S', () => fileSaver.saveAs()),
+    sep(),
+    item('Find…', 'Ctrl+F', () => import('../find-replace/find-bar.js').then(m => m.openFindBar(false))),
+    item('Find and Replace…', 'Ctrl+H', () => import('../find-replace/find-bar.js').then(m => m.openFindBar(true))),
+    item('Source View', 'Ctrl+U', () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode'))),
+    item('History', 'Shift+Ctrl+H', () => import('../history/history-panel.js').then(m => m.openHistory())),
+    sep(),
+    item('Download .md', '', () => downloadMarkdown()),
+    item('Export HTML…', '', () => import('../export/html-export.js').then(m => m.exportStyledHtml())),
+    item('Print…', 'Ctrl+P', () => printDocument()),
+    sep(),
+    item('Keyboard Shortcuts', '', async () => {
+      const [{ showInfo }, { buildAboutContent }] = await Promise.all([
+        import('../ui/modal.js'), import('../ui/about-content.js'),
+      ]);
+      showInfo('mkdn', buildAboutContent());
+    }),
+  );
+  document.body.appendChild(menu);
 
-function closeAllDropdowns() {
-  document.querySelectorAll('.toolbar-dropdown-menu.open').forEach(m => m.classList.remove('open'));
-}
-
-// Close dropdowns on outside click
-document.addEventListener('click', closeAllDropdowns);
-
-export function createToolbar({ onToggleSidebar, onSave, onOpen, onOpenFolder }) {
-  // === HEADER ROW ===
-
-  // Back / sidebar button
-  const backBtn = el('button', {
-    className: 'toolbar-nav-btn',
-    'data-tooltip': 'Files (Ctrl+Shift+B)',
-    'aria-label': 'Files (Ctrl+Shift+B)',
-    unsafeHTML: settingsStore.get('sidebarOpen') ? icons.arrowLeft : icons.arrowRight,
-    onClick: onToggleSidebar,
+  const menuBtn = iconBtn('menu', 'Main menu', () => menu.togglePopover());
+  // Anchor below the button (CSS anchor positioning isn't everywhere yet).
+  menu.addEventListener('toggle', (e) => {
+    if (e.newState !== 'open') return;
+    const r = menuBtn.getBoundingClientRect();
+    menu.style.top = `${r.bottom + 4}px`;
+    menu.style.right = `${window.innerWidth - r.right}px`;
   });
 
-  // Flip arrow when sidebar state changes
-  eventBus.on('settings:sidebarOpen', (open) => {
-    backBtn.innerHTML = open ? icons.arrowLeft : icons.arrowRight;
-  });
-
-  // Save status badge (clickable — triggers save when unsaved)
-  const statusDot = el('span', { className: 'toolbar-status-dot' });
-  const statusText = el('span', { className: 'toolbar-status-text' }, 'saved');
-  const statusBadge = el('button', {
-    className: 'toolbar-status-badge',
-    'data-tooltip': 'Save (Ctrl+S)',
-    onClick: onSave,
-  }, statusDot, statusText);
-
-  // === MENU BAR (File, Edit, View, Help) ===
-  function createMenu(label, items) {
-    const menu = el('div', { className: 'toolbar-dropdown-menu menubar-menu' });
-    items.forEach(item => {
-      if (item === '---') {
-        menu.appendChild(el('div', { className: 'menubar-separator' }));
-        return;
-      }
-      const shortcutEl = item.shortcut
-        ? el('span', { className: 'menubar-shortcut' }, item.shortcut)
-        : null;
-      menu.appendChild(el('button', {
-        className: 'toolbar-dropdown-item menubar-item',
-        onClick: () => { item.action(); closeAllDropdowns(); },
-      },
-        el('span', {}, item.label),
-        shortcutEl,
-      ));
-    });
-
-    const trigger = el('button', {
-      className: 'menubar-trigger',
-      onClick: (e) => {
-        e.stopPropagation();
-        const wasOpen = menu.classList.contains('open');
-        closeAllDropdowns();
-        if (!wasOpen) menu.classList.add('open');
-      },
-      onMouseenter: () => {
-        // If any sibling menu is open, switch to this one on hover
-        const anyOpen = menuBar.querySelector('.toolbar-dropdown-menu.open');
-        if (anyOpen && anyOpen !== menu) {
-          closeAllDropdowns();
-          menu.classList.add('open');
-        }
-      },
-    }, label);
-
-    return el('div', { className: 'toolbar-dropdown menubar-dropdown' }, trigger, menu);
-  }
-
-  const fileMenu = createMenu('File', [
-    { label: 'New', shortcut: 'Ctrl+N', action: () => documentStore.newDocument() },
-    { label: 'Open File', shortcut: 'Ctrl+O', action: onOpen },
-    { label: 'Open Folder', action: onOpenFolder },
-    '---',
-    { label: 'Save', shortcut: 'Ctrl+S', action: onSave },
-    { label: 'Save As', shortcut: 'Ctrl+Shift+S', action: () => import('../save/file-saver.js').then(m => m.fileSaver.saveAs()) },
-    '---',
-    { label: 'Download .md', action: () => downloadMarkdown() },
-    { label: 'Export HTML', action: () => import('../export/html-export.js').then(m => m.exportStyledHtml()) },
-    { label: 'Print / PDF', shortcut: 'Ctrl+P', action: () => printDocument() },
-  ]);
-
-  const editMenu = createMenu('Edit', [
-    { label: 'Undo', shortcut: 'Ctrl+Z', action: () => milkdown.runCommand(milkdown.commands.undo) },
-    { label: 'Redo', shortcut: 'Ctrl+Shift+Z', action: () => milkdown.runCommand(milkdown.commands.redo) },
-    '---',
-    { label: 'Find', shortcut: 'Ctrl+F', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(false)) },
-    { label: 'Find & Replace', shortcut: 'Ctrl+H', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(true)) },
-  ]);
-
-  const viewMenu = createMenu('View', [
-    { label: 'Toggle Sidebar', shortcut: 'Ctrl+Shift+B', action: onToggleSidebar },
-    { label: 'Toggle Outline', action: () => import('../sidebar/sidebar.js').then(m => m.toggleOutlineSection()) },
-    { label: 'Toggle History', shortcut: 'Ctrl+Shift+H', action: () => import('../sidebar/sidebar.js').then(m => m.toggleHistorySection()) },
-    '---',
-    { label: 'Source View', shortcut: 'Ctrl+U', action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
-    '---',
-    { label: 'Full Width', action: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')) },
-    { label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
-    { label: 'Zen Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
-    '---',
-    { label: 'Theme: Light', action: () => settingsStore.set('theme', 'light') },
-    { label: 'Theme: Dark', action: () => settingsStore.set('theme', 'dark') },
-    { label: 'Theme: Auto', action: () => settingsStore.set('theme', 'auto') },
-    { label: 'Theme Editor', action: () => import('../themes/theme-editor.js').then(m => m.openThemeEditor()) },
-  ]);
-
-  const helpMenu = createMenu('Help', [
-    { label: 'Command Palette', shortcut: 'Ctrl+K', action: () => import('../command-palette/command-palette.js').then(m => m.openCommandPalette()) },
-    { label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
-  ]);
-
-  const menuBar = el('div', { className: 'menubar' }, fileMenu, editMenu, viewMenu, helpMenu);
-
-  // === GNOME-style condensed controls ===
-
-  // Info / About button
-  const infoBtn = el('button', {
-    className: 'toolbar-icon-btn',
-    'data-tooltip': 'About & Shortcuts',
-    'aria-label': 'About & Shortcuts',
-    unsafeHTML: icons.infoCircle,
-    onClick: async () => {
-      const { showInfo } = await import('../ui/modal.js');
-      const { buildAboutContent } = await import('../ui/about-content.js');
-      showInfo('About mkdn', buildAboutContent());
-    },
-  });
-
-  // Hamburger menu — consolidates Edit / View / More items with icons + polish
-  const hamburgerMenu = el('div', { className: 'toolbar-dropdown-menu hamburger-menu' });
-
-  function hamburgerItem({ icon, label, shortcut, action }) {
-    const children = [];
-    children.push(el('span', { className: 'hb-item-icon', unsafeHTML: icon || '' }));
-    children.push(el('span', { className: 'hb-item-label' }, label));
-    if (shortcut) children.push(el('span', { className: 'hb-item-shortcut' }, shortcut));
-    return el('button', {
-      className: 'hb-item',
-      onClick: () => { action(); closeAllDropdowns(); },
-    }, ...children);
-  }
-
-  function hamburgerSection(label, items) {
-    const section = el('div', { className: 'hb-section' });
-    section.appendChild(el('div', { className: 'hb-section-header' }, label));
-    items.forEach(it => {
-      if (it === '---') {
-        section.appendChild(el('div', { className: 'hb-divider' }));
-      } else {
-        section.appendChild(hamburgerItem(it));
-      }
-    });
-    return section;
-  }
-
-  function themeRow() {
-    const row = el('div', { className: 'hb-theme-row' });
-    const opts = [
-      { theme: 'light', icon: icons.sun, label: 'Light' },
-      { theme: 'dark', icon: icons.moon, label: 'Dark' },
-      { theme: 'auto', icon: icons.monitor, label: 'Auto' },
-    ];
-    function refresh() {
-      const current = settingsStore.getTheme();
-      row.querySelectorAll('.hb-theme-pill').forEach((btn) => {
-        btn.classList.toggle('active', btn.dataset.theme === current);
-      });
-    }
-    opts.forEach(({ theme, icon, label }) => {
-      const pill = el('button', {
-        className: 'hb-theme-pill',
-        'aria-label': `Theme: ${label}`,
-        'data-tooltip': `Theme: ${label}`,
-        dataset: { theme },
-        onClick: () => { settingsStore.set('theme', theme); refresh(); },
-      }, el('span', { unsafeHTML: icon }), el('span', { className: 'hb-theme-pill-label' }, label));
-      row.appendChild(pill);
-    });
-    refresh();
-    eventBus.on('settings:theme', refresh);
-    return row;
-  }
-
-  hamburgerMenu.appendChild(hamburgerSection('Edit', [
-    { icon: icons.undo, label: 'Undo', shortcut: 'Ctrl+Z', action: () => milkdown.runCommand(milkdown.commands.undo) },
-    { icon: icons.redo, label: 'Redo', shortcut: 'Ctrl+Shift+Z', action: () => milkdown.runCommand(milkdown.commands.redo) },
-    { icon: icons.search, label: 'Find', shortcut: 'Ctrl+F', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(false)) },
-    { icon: icons.rename, label: 'Find & Replace', shortcut: 'Ctrl+H', action: () => import('../find-replace/find-bar.js').then(m => m.openFindBar(true)) },
-  ]));
-
-  hamburgerMenu.appendChild(hamburgerSection('View', [
-    { icon: icons.sidebar, label: 'Toggle Sidebar', shortcut: 'Ctrl+Shift+B', action: onToggleSidebar },
-    { icon: icons.file, label: 'Toggle Outline', action: () => import('../sidebar/sidebar.js').then(m => m.toggleOutlineSection()) },
-    { icon: icons.clock, label: 'History', shortcut: 'Ctrl+Shift+H', action: () => import('../sidebar/sidebar.js').then(m => m.toggleHistorySection()) },
-    { icon: icons.code, label: 'Source View', shortcut: 'Ctrl+U', action: () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')) },
-    '---',
-    { icon: icons.fullWidth, label: 'Full Width', action: () => settingsStore.set('fullWidth', !settingsStore.get('fullWidth')) },
-    { icon: icons.rename, label: 'Writing Mode', action: () => settingsStore.set('writingMode', !settingsStore.get('writingMode')) },
-    { icon: icons.focus, label: 'Focus Mode', shortcut: 'Ctrl+Shift+F', action: () => import('../focus/focus-manager.js').then(m => m.focusManager.cycleMode()) },
-  ]));
-
-  // Theme row + theme editor
-  const viewExtra = el('div', { className: 'hb-section' });
-  viewExtra.appendChild(el('div', { className: 'hb-section-header' }, 'Theme'));
-  viewExtra.appendChild(themeRow());
-  viewExtra.appendChild(hamburgerItem({
-    icon: icons.gear,
-    label: 'Theme Editor',
-    action: () => import('../themes/theme-editor.js').then(m => m.openThemeEditor()),
-  }));
-  hamburgerMenu.appendChild(viewExtra);
-
-  hamburgerMenu.appendChild(hamburgerSection('Tools', [
-    { icon: icons.command, label: 'Command Palette', shortcut: 'Ctrl+K', action: () => import('../command-palette/command-palette.js').then(m => m.openCommandPalette()) },
-    { icon: icons.infoCircle, label: 'Writing Stats', action: () => import('../stats/writing-stats.js').then(m => m.openWritingStats()) },
-  ]));
-
-  const hamburgerTrigger = el('button', {
-    className: 'toolbar-icon-btn hamburger-trigger',
-    'data-tooltip': 'Main menu',
-    'aria-label': 'Main menu',
-    unsafeHTML: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
-    onClick: (e) => {
-      e.stopPropagation();
-      const wasOpen = hamburgerMenu.classList.contains('open');
-      closeAllDropdowns();
-      if (!wasOpen) hamburgerMenu.classList.add('open');
-    },
-  });
-
-  const hamburgerWrapper = el('div', { className: 'toolbar-dropdown hamburger-dropdown' }, hamburgerTrigger, hamburgerMenu);
-
-  // === BREADCRUMB ===
-  const breadcrumbEl = el('div', { className: 'toolbar-breadcrumb' });
-
-  function updateBreadcrumb() {
-    breadcrumbEl.replaceChildren();
-    const folderName = localSync.isLinked() ? localSync.getFolderName() : null;
-    const fileId = documentStore.getFileId();
-    const fileName = documentStore.getFileName();
-
-    if (folderName) {
-      const folderSpan = el('span', {
-        className: 'breadcrumb-segment breadcrumb-folder',
-        onClick: onToggleSidebar,
-      }, folderName);
-      breadcrumbEl.appendChild(folderSpan);
-
-      // If fileId has path segments, show subdirectories
-      if (fileId && fileId.includes('/')) {
-        const parts = fileId.split('/');
-        // Show intermediate path segments (skip last = filename)
-        for (let i = 0; i < parts.length - 1; i++) {
-          breadcrumbEl.appendChild(el('span', { className: 'breadcrumb-sep' }));
-          breadcrumbEl.appendChild(
-            el('span', { className: 'breadcrumb-segment' }, parts[i]),
-          );
-        }
-      }
-
-      breadcrumbEl.appendChild(el('span', { className: 'breadcrumb-sep' }));
-    }
-
-    const nameSpan = el('span', {
-      className: 'breadcrumb-segment breadcrumb-file',
-      onClick: () => {
-        // Inline rename
-        const input = el('input', {
-          type: 'text',
-          className: 'breadcrumb-rename-input',
-          value: fileName.replace(/\.md$/i, ''),
-        });
-        nameSpan.replaceWith(input);
-        input.focus();
-        input.select();
-        const finish = () => {
-          const newName = input.value.trim();
-          if (newName && newName !== fileName.replace(/\.md$/i, '')) {
-            const fullName = newName.endsWith('.md') ? newName : newName + '.md';
-            documentStore.setFileName(fullName);
-          }
-          input.replaceWith(nameSpan);
-        };
-        input.addEventListener('blur', finish);
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-          if (e.key === 'Escape') { input.value = fileName.replace(/\.md$/i, ''); input.blur(); }
-        });
-      },
-    }, fileName.replace(/\.md$/i, ''));
-    breadcrumbEl.appendChild(nameSpan);
-  }
-
-  updateBreadcrumb();
-  eventBus.on('file:opened', updateBreadcrumb);
-  eventBus.on('file:new', updateBreadcrumb);
-  eventBus.on('file:renamed', updateBreadcrumb);
-  eventBus.on('local:folder-linked', updateBreadcrumb);
-  eventBus.on('local:folder-unlinked', updateBreadcrumb);
-
-  // === HEADER-RIGHT ICON BUTTONS (moved from status bar) ===
-
-  // Theme toggle (cycles: light → dark → auto)
-  function themeIcon(theme) {
-    if (theme === 'dark') return icons.sun;
-    if (theme === 'auto') return icons.monitor;
-    return icons.moon;
-  }
-  function themeTooltip(theme) {
-    if (theme === 'dark') return 'Theme: Dark';
-    if (theme === 'auto') return 'Theme: Auto';
-    return 'Theme: Light';
-  }
-  const themeBtn = el('button', {
-    className: 'toolbar-icon-btn',
-    'data-tooltip': themeTooltip(settingsStore.getTheme()),
-    'aria-label': themeTooltip(settingsStore.getTheme()),
-    unsafeHTML: themeIcon(settingsStore.getTheme()),
-    onClick: () => {
-      const current = settingsStore.getTheme();
-      const next = current === 'light' ? 'dark' : current === 'dark' ? 'auto' : 'light';
-      settingsStore.set('theme', next);
-    },
-  });
-
-  eventBus.on('settings:theme', (theme) => {
-    themeBtn.innerHTML = themeIcon(theme);
-    themeBtn.setAttribute('data-tooltip', themeTooltip(theme));
-  });
-
-  // Export button
-  const exportBtn = el('button', {
-    className: 'toolbar-icon-btn',
-    'data-tooltip': 'Export',
-    'aria-label': 'Export',
-    unsafeHTML: icons.download,
-    onClick: () => import('../export/export-menu.js').then(m => m.showExportMenu(exportBtn)),
-  });
-
-  // Tauri runs frameless (decorations: false). The toolbar header doubles as
-  // the custom title bar: drag region + min/max/close controls.
-  let windowControls = null;
-  if (isTauriBridge()) {
-    const lazyWin = async () => (await import('@tauri-apps/api/window')).getCurrentWindow();
-    const winBtn = (cls, label, svg, onClick) => el('button', {
-      className: `window-control-btn ${cls}`,
-      'aria-label': label,
-      'data-tooltip': label,
-      unsafeHTML: svg,
-      onClick,
-    });
-    windowControls = el('div', { className: 'window-controls' },
-      winBtn('minimize', 'Minimize',
-        '<svg viewBox="0 0 12 12"><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.2"/></svg>',
-        async () => (await lazyWin()).minimize()),
-      winBtn('maximize', 'Maximize',
-        '<svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
-        async () => (await lazyWin()).toggleMaximize()),
-      winBtn('close', 'Close',
-        '<svg viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>',
-        async () => (await lazyWin()).close()),
-    );
-  }
-
-  // In Tauri: split titlebar (menubar + window controls only) from the toolbar row.
-  // In browser: keep everything in one header row.
-  const titleBar = isTauriBridge()
-    ? el('div', { className: 'toolbar-titlebar' },
-        el('div', { className: 'titlebar-left' }, menuBar),
-        el('div', { className: 'titlebar-drag' }),
-        el('div', { className: 'titlebar-right' }, ...(windowControls ? [windowControls] : [])),
-      )
-    : null;
-
-  const headerRow = el('div', { className: 'toolbar-header toolbar-header-gnome' },
-    el('div', { className: 'toolbar-header-left' },
-      backBtn,
-      ...(isTauriBridge() ? [] : [menuBar]),
+  const header = el('header', { className: 'header-bar' },
+    el('div', { className: 'header-start' },
+      el('button', { className: 'header-btn', title: 'Open a file (Ctrl+O)', onClick: () => fileSaver.openFile() }, 'Open'),
+      iconBtn('plus', 'New tab (Ctrl+T)', () => documentStore.newDocument()),
     ),
-    el('div', { className: 'toolbar-header-center' }, breadcrumbEl),
-    el('div', { className: 'toolbar-header-right' },
-      statusBadge, exportBtn, themeBtn, infoBtn, hamburgerWrapper,
-      ...(isTauriBridge() ? [] : (windowControls ? [windowControls] : [])),
+    el('div', { className: 'header-center' }, titleEl, subtitleEl),
+    el('div', { className: 'header-end' },
+      el('button', { className: 'header-btn', title: 'Save (Ctrl+S)', onClick: () => fileSaver.save() }, 'Save'),
+      menuBtn,
+      ...(isTauri() ? [createWindowControls()] : []),
     ),
   );
 
-  if (isTauriBridge()) {
-    const dragHost = titleBar || headerRow;
-    dragHost.setAttribute('data-tauri-drag-region', '');
+  if (isTauri()) initTauriChrome(header);
+  return header;
+}
 
-    // Programmatic drag — WebKitGTK can drop Tauri's auto data-tauri-drag-region
-    // handling, so call startDragging directly on mousedown over non-interactive areas.
-    dragHost.addEventListener('mousedown', async (e) => {
-      if (e.button !== 0) return;
-      if (e.target.closest('button, input, select, textarea, .toolbar-dropdown-menu, [contenteditable]')) return;
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().startDragging();
-    });
-
-    dragHost.addEventListener('dblclick', async (e) => {
-      const t = e.target;
-      if (t.closest('button, input, select, textarea, .toolbar-dropdown-menu, [contenteditable]')) return;
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      getCurrentWindow().toggleMaximize();
-    });
-
-    // Frameless WebKitGTK windows do NOT get invisible resize edges from the WM.
-    // Overlay 8 thin edge handles that trigger startResizeDragging.
-    const mkResize = (cls, cursor, dir) => el('div', {
-      className: `tauri-resize-edge ${cls}`,
-      style: { cursor },
-      onMousedown: async (ev) => {
-        if (ev.button !== 0) return;
-        ev.preventDefault();
-        const win = await import('@tauri-apps/api/window');
-        await win.getCurrentWindow().startResizeDragging(dir);
-      },
-    });
-    document.body.append(
-      mkResize('edge-n', 'ns-resize', 'North'),
-      mkResize('edge-s', 'ns-resize', 'South'),
-      mkResize('edge-e', 'ew-resize', 'East'),
-      mkResize('edge-w', 'ew-resize', 'West'),
-      mkResize('edge-ne', 'nesw-resize', 'NorthEast'),
-      mkResize('edge-nw', 'nwse-resize', 'NorthWest'),
-      mkResize('edge-se', 'nwse-resize', 'SouthEast'),
-      mkResize('edge-sw', 'nwse-resize', 'SouthWest'),
-    );
-  }
-
-  // === FORMATTING TOOLBAR ROW ===
-
-  // Undo / Redo
-  const undoBtn = btn('undo', 'Undo (Ctrl+Z)', () =>
-    milkdown.runCommand(milkdown.commands.undo));
-  const redoBtn = btn('redo', 'Redo (Ctrl+Shift+Z)', () =>
-    milkdown.runCommand(milkdown.commands.redo));
-
-  // Style dropdown
-  const styleDropdown = createDropdown('Style', [
-    { label: 'Normal', onClick: () => milkdown.runCommand(milkdown.commands.wrapHeading, 0) },
-    { label: 'Heading 1', onClick: () => milkdown.runCommand(milkdown.commands.wrapHeading, 1) },
-    { label: 'Heading 2', onClick: () => milkdown.runCommand(milkdown.commands.wrapHeading, 2) },
-    { label: 'Heading 3', onClick: () => milkdown.runCommand(milkdown.commands.wrapHeading, 3) },
-  ]);
-
-  // Format buttons
-  const boldBtn = btn('bold', 'Bold (Ctrl+B)', () =>
-    milkdown.runCommand(milkdown.commands.toggleBold));
-  const italicBtn = btn('italic', 'Italic (Ctrl+I)', () =>
-    milkdown.runCommand(milkdown.commands.toggleItalic));
-  const strikeBtn = btn('strikethrough', 'Strikethrough', () =>
-    milkdown.runCommand(milkdown.commands.toggleStrikethrough));
-  const codeBtn = btn('code', 'Code (Ctrl+E)', () =>
-    milkdown.runCommand(milkdown.commands.toggleCode));
-
-  // Insert buttons
-  const linkBtn = btn('link', 'Link (Ctrl+L)', () => openLinkPopover(linkBtn));
-  const imageInput = el('input', {
-    type: 'file',
-    accept: 'image/*',
-    style: 'display:none',
+// Tauri runs frameless (decorations: false): the header doubles as the title bar.
+function createWindowControls() {
+  const win = async () => (await import('@tauri-apps/api/window')).getCurrentWindow();
+  const winBtn = (cls, label, svg, onClick) => el('button', {
+    className: `window-control-btn ${cls}`,
+    'aria-label': label,
+    title: label,
+    unsafeHTML: svg,
+    onClick,
   });
-  imageInput.addEventListener('change', async () => {
-    const file = imageInput.files[0];
-    if (!file) return;
-
-    // Try saving to local assets/ folder when linked
-    if (localSync.isLinked()) {
-      const dirHandle = localSync.getDirHandle();
-      let relativePath = null;
-
-      if (isTauri()) {
-        relativePath = await saveImageToAssetsTauri(file, dirHandle);
-      } else {
-        relativePath = await saveImageToAssets(file);
-      }
-
-      if (relativePath) {
-        milkdown.runCommand(milkdown.commands.insertImage, {
-          src: relativePath,
-          alt: file.name,
-        });
-        imageInput.value = '';
-        return;
-      }
-    }
-
-    // Fallback: embed as base64 data URI
-    const reader = new FileReader();
-    reader.onload = () => {
-      milkdown.runCommand(milkdown.commands.insertImage, {
-        src: reader.result,
-        alt: file.name,
-      });
-    };
-    reader.readAsDataURL(file);
-    imageInput.value = '';
-  });
-  const imageBtn = btn('image', 'Image', () => imageInput.click());
-  // Video popover (reuses link-popover CSS classes)
-  let videoPopover = null;
-  function closeVideoPopover() {
-    if (videoPopover) {
-      videoPopover.classList.remove('link-popover-open');
-      setTimeout(() => videoPopover?.remove(), 150);
-      videoPopover = null;
-      document.removeEventListener('click', onVideoOutsideClick);
-    }
-  }
-  function onVideoOutsideClick(e) {
-    if (videoPopover && !videoPopover.contains(e.target)) closeVideoPopover();
-  }
-  const videoBtn = btn('video', 'Video embed', () => {
-    if (videoPopover) { closeVideoPopover(); return; }
-    const input = el('input', {
-      className: 'link-popover-input',
-      type: 'text',
-      placeholder: 'https://youtube.com/watch?v=...',
-    });
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const url = input.value.trim();
-        if (url) milkdown.insertEmbedUrl(url);
-        closeVideoPopover();
-      }
-      if (e.key === 'Escape') closeVideoPopover();
-    });
-    videoPopover = el('div', { className: 'link-popover' },
-      el('div', { className: 'link-popover-header' }, 'Video URL'),
-      input,
-      el('div', { className: 'link-popover-footer' },
-        el('button', { className: 'link-popover-btn', onClick: closeVideoPopover }, 'Cancel'),
-        el('button', { className: 'link-popover-btn link-popover-btn-primary', onClick: () => {
-          const url = input.value.trim();
-          if (url) milkdown.insertEmbedUrl(url);
-          closeVideoPopover();
-        }}, 'Insert'),
-      ),
-    );
-    // Position below the video button
-    const rect = videoBtn.getBoundingClientRect();
-    videoPopover.style.position = 'fixed';
-    videoPopover.style.top = `${rect.bottom + 6}px`;
-    videoPopover.style.left = `${rect.left + rect.width / 2}px`;
-    document.body.appendChild(videoPopover);
-    requestAnimationFrame(() => {
-      videoPopover.classList.add('link-popover-open');
-      input.focus();
-    });
-    setTimeout(() => document.addEventListener('click', onVideoOutsideClick), 0);
-  });
-  const commentBtn = btn('comment', 'Blockquote', () => milkdown.toggleBlockquote());
-
-  // List buttons (toggle: click again to unwrap back to paragraph)
-  const ulBtn = btn('ul', 'Bullet List', () =>
-    milkdown.toggleList('bullet_list', milkdown.commands.wrapBulletList));
-  const olBtn = btn('ol', 'Numbered List', () =>
-    milkdown.toggleList('ordered_list', milkdown.commands.wrapOrderedList));
-
-  // More dropdown with grouped sections
-  const moreMenu = el('div', { className: 'toolbar-dropdown-menu toolbar-dropdown-grouped' });
-
-  function menuGroupHeader(label) {
-    return el('div', { className: 'toolbar-menu-group-header' }, label);
-  }
-
-  function menuItem(icon, label, onClick) {
-    return el('button', {
-      className: 'toolbar-dropdown-item toolbar-dropdown-item-icon',
-      onClick: () => { onClick(); closeAllDropdowns(); },
-    },
-      el('span', { className: 'toolbar-menu-icon', textContent: icon }),
-      el('span', {}, label),
-    );
-  }
-
-  // --- Insert group ---
-  moreMenu.appendChild(menuGroupHeader('Insert'));
-
-  // Table item with picker flyout
-  const tablePicker = createTablePicker((rows, cols) => {
-    milkdown.insertTable(rows, cols);
-    closeAllDropdowns();
-  });
-  const tableItem = el('div', { className: 'toolbar-dropdown-item toolbar-dropdown-item-icon table-picker-item' });
-  tableItem.appendChild(el('span', { className: 'toolbar-menu-icon', textContent: '\u{1F4CA}' }));
-  tableItem.appendChild(el('span', {}, 'Table'));
-  tableItem.appendChild(el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronRight }));
-  const tableFlyout = el('div', { className: 'table-picker-flyout' }, tablePicker);
-  tableItem.appendChild(tableFlyout);
-  moreMenu.appendChild(tableItem);
-
-  // Callout submenu
-  const calloutTypes = ['NOTE', 'TIP', 'WARNING', 'CAUTION', 'IMPORTANT'];
-  const calloutIcons = { NOTE: '\u2139\uFE0F', TIP: '\u{1F4A1}', WARNING: '\u26A0\uFE0F', CAUTION: '\u{1F6D1}', IMPORTANT: '\u2757' };
-  const calloutItem = el('div', { className: 'toolbar-dropdown-item toolbar-dropdown-item-icon table-picker-item' });
-  calloutItem.appendChild(el('span', { className: 'toolbar-menu-icon', textContent: '\u{1F4A1}' }));
-  calloutItem.appendChild(el('span', {}, 'Callout'));
-  calloutItem.appendChild(el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronRight }));
-  const calloutFlyout = el('div', { className: 'table-picker-flyout callout-flyout' });
-  calloutTypes.forEach(type => {
-    calloutFlyout.appendChild(el('button', {
-      className: 'toolbar-dropdown-item toolbar-dropdown-item-icon',
-      onClick: () => {
-        if (settingsStore.get('sourceMode')) {
-          import('../editor/source-formatter.js').then(m => m.sourceFormat.callout(type));
-        } else {
-          milkdown.toggleBlockquote();
-          // Insert the callout marker text
-          const view = milkdown.getView();
-          if (view) {
-            const { state, dispatch } = view;
-            const { from } = state.selection;
-            dispatch(state.tr.insertText(`[!${type}]\n`, from, from).scrollIntoView());
-          }
-        }
-        closeAllDropdowns();
-      },
-    },
-      el('span', { className: 'toolbar-menu-icon', textContent: calloutIcons[type] }),
-      el('span', {}, type.charAt(0) + type.slice(1).toLowerCase()),
-    ));
-  });
-  calloutItem.appendChild(calloutFlyout);
-  moreMenu.appendChild(calloutItem);
-
-  moreMenu.appendChild(menuItem('\u25B6', 'Toggle Block', () => {
-    if (settingsStore.get('sourceMode')) {
-      import('../editor/source-formatter.js').then(m => m.sourceFormat.toggleBlock());
-    } else {
-      const view = milkdown.getView();
-      if (view) {
-        const { state, dispatch } = view;
-        const text = '<details>\n<summary>Click to expand</summary>\n\nContent here\n\n</details>';
-        dispatch(state.tr.insertText(text).scrollIntoView());
-      }
-    }
-  }));
-  moreMenu.appendChild(menuItem('\u2500', 'Horizontal Rule', () =>
-    milkdown.runCommand(milkdown.commands.insertHr)));
-  moreMenu.appendChild(menuItem('\u2328\uFE0F', 'Code Block', () => {
-    milkdown.runCommand(milkdown.commands.wrapHeading, 0);
-    milkdown.runCommand(milkdown.commands.createCodeBlock);
-  }));
-
-  // --- Export group ---
-  moreMenu.appendChild(menuGroupHeader('Export'));
-
-  moreMenu.appendChild(menuItem('\u2B07\uFE0F', 'Download .md', () => downloadMarkdown()));
-  moreMenu.appendChild(menuItem('\u{1F4CB}', 'Copy as HTML', () => copyHtml()));
-  moreMenu.appendChild(menuItem('\u{1F5A8}\uFE0F', 'Print / PDF', () => printDocument()));
-  moreMenu.appendChild(menuItem('\u{1F310}', 'Export as HTML', () =>
-    import('../export/html-export.js').then(m => m.exportStyledHtml())));
-
-  const moreTrigger = el('button', {
-    className: 'toolbar-dropdown-btn',
-    onClick: (e) => {
-      e.stopPropagation();
-      const wasOpen = moreMenu.classList.contains('open');
-      closeAllDropdowns();
-      if (!wasOpen) moreMenu.classList.add('open');
-    },
-  },
-    el('span', {}, 'More'),
-    el('span', { className: 'toolbar-chevron', unsafeHTML: icons.chevronDown }),
+  return el('div', { className: 'window-controls' },
+    winBtn('minimize', 'Minimize',
+      '<svg viewBox="0 0 12 12"><line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.2"/></svg>',
+      async () => (await win()).minimize()),
+    winBtn('maximize', 'Maximize',
+      '<svg viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>',
+      async () => (await win()).toggleMaximize()),
+    winBtn('close', 'Close',
+      '<svg viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>',
+      async () => (await win()).close()),
   );
+}
 
-  const moreDropdown = el('div', { className: 'toolbar-dropdown' }, moreTrigger, moreMenu);
+function initTauriChrome(header) {
+  const win = async () => (await import('@tauri-apps/api/window')).getCurrentWindow();
+  const interactive = 'button, input, select, textarea, [popover], [contenteditable]';
 
-  const formattingRow = el('div', { className: 'toolbar-formatting' },
-    group(undoBtn, redoBtn),
-    divider(),
-    styleDropdown,
-    divider(),
-    group(boldBtn, italicBtn, strikeBtn, codeBtn),
-    divider(),
-    group(linkBtn, imageBtn, videoBtn, commentBtn),
-    divider(),
-    group(ulBtn, olBtn),
-    divider(),
-    moreDropdown,
-  );
-
-  // Prevent toolbar buttons from stealing focus from the editor
-  formattingRow.addEventListener('mousedown', (e) => {
-    e.preventDefault();
+  header.setAttribute('data-tauri-drag-region', '');
+  // Programmatic drag — WebKitGTK can drop Tauri's automatic drag-region handling.
+  header.addEventListener('mousedown', async (e) => {
+    if (e.button !== 0 || e.target.closest(interactive)) return;
+    (await win()).startDragging();
+  });
+  header.addEventListener('dblclick', async (e) => {
+    if (e.target.closest(interactive)) return;
+    (await win()).toggleMaximize();
   });
 
-  // === ACTIVE FORMATTING STATE ===
-  const styleLabel = styleDropdown.querySelector('.toolbar-dropdown-btn > span:first-child');
-
-  function updateActiveFormatting() {
-    if (settingsStore.get('sourceMode')) return;
-    const view = milkdown.getView?.();
-    if (!view) return;
-    const { state } = view;
-    const { $from } = state.selection;
-    const marks = state.storedMarks || $from.marks();
-
-    // Marks
-    const hasBold = marks.some(m => m.type.name === 'strong');
-    const hasItalic = marks.some(m => m.type.name === 'emphasis');
-    const hasStrike = marks.some(m => m.type.name === 'strikethrough');
-    const hasCode = marks.some(m => m.type.name === 'inlineCode');
-
-    boldBtn.classList.toggle('toolbar-btn-active-format', hasBold);
-    italicBtn.classList.toggle('toolbar-btn-active-format', hasItalic);
-    strikeBtn.classList.toggle('toolbar-btn-active-format', hasStrike);
-    codeBtn.classList.toggle('toolbar-btn-active-format', hasCode);
-
-    // Node type (heading / list / blockquote)
-    const parent = $from.parent;
-    const grandparent = $from.node($from.depth - 1);
-
-    let styleText = 'Style';
-    if (parent.type.name === 'heading') {
-      styleText = `Heading ${parent.attrs.level}`;
-    } else if (parent.type.name === 'paragraph') {
-      styleText = 'Normal';
-    }
-    if (styleLabel) styleLabel.textContent = styleText;
-
-    const isBullet = grandparent?.type.name === 'list_item' &&
-      $from.node($from.depth - 2)?.type.name === 'bullet_list';
-    const isOrdered = grandparent?.type.name === 'list_item' &&
-      $from.node($from.depth - 2)?.type.name === 'ordered_list';
-    const isBlockquote = state.selection.$from.path?.some?.((v, i) =>
-      typeof v === 'object' && v?.type?.name === 'blockquote'
-    ) || false;
-
-    ulBtn.classList.toggle('toolbar-btn-active-format', !!isBullet);
-    olBtn.classList.toggle('toolbar-btn-active-format', !!isOrdered);
-    commentBtn.classList.toggle('toolbar-btn-active-format', !!isBlockquote);
-  }
-
-  // Poll on selection changes via ProseMirror transaction
-  eventBus.on('content:changed', updateActiveFormatting);
-  // Also update on click/arrow keys
-  document.addEventListener('selectionchange', () => {
-    requestAnimationFrame(updateActiveFormatting);
-  });
-  // Update after milkdown init with a small delay
-  setTimeout(updateActiveFormatting, 2500);
-
-  // === COMBINED TOOLBAR ===
-  const toolbar = el('div', { className: 'toolbar' },
-    ...(titleBar ? [titleBar] : []),
-    headerRow,
-    formattingRow,
-  );
-
-  // Listen for save status
-  const setSaved = () => {
-    statusDot.className = 'toolbar-status-dot saved';
-    statusText.textContent = 'saved';
-    statusBadge.classList.remove('unsaved');
-    statusBadge.style.pointerEvents = 'none';
-  };
-  const setUnsaved = () => {
-    statusDot.className = 'toolbar-status-dot';
-    statusText.textContent = 'Save';
-    statusBadge.classList.add('unsaved');
-    statusBadge.style.pointerEvents = '';
-  };
-
-  eventBus.on('file:saved', setSaved);
-  eventBus.on('sync:saved', setSaved);
-  // Ignore content changes during initial Milkdown sync (first 2s)
-  let initialized = false;
-  setTimeout(() => { initialized = true; }, 2000);
-  eventBus.on('content:changed', () => {
-    if (initialized && documentStore.isDirty()) setUnsaved();
-  });
-  eventBus.on('file:opened', setSaved);
-  eventBus.on('file:new', setSaved);
-
-  // Start as saved
-  setSaved();
-
-  return toolbar;
+  // Frameless WebKitGTK windows get no resize edges from the WM: overlay thin handles.
+  const edges = [
+    ['n', 'ns-resize', 'North'], ['s', 'ns-resize', 'South'],
+    ['e', 'ew-resize', 'East'], ['w', 'ew-resize', 'West'],
+    ['ne', 'nesw-resize', 'NorthEast'], ['nw', 'nwse-resize', 'NorthWest'],
+    ['se', 'nwse-resize', 'SouthEast'], ['sw', 'nesw-resize', 'SouthWest'],
+  ];
+  document.body.append(...edges.map(([cls, cursor, dir]) => el('div', {
+    className: `tauri-resize-edge edge-${cls}`,
+    style: { cursor },
+    onMousedown: async (ev) => {
+      if (ev.button !== 0) return;
+      ev.preventDefault();
+      (await win()).startResizeDragging(dir);
+    },
+  })));
 }

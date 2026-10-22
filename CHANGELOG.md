@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-22
+
+### Changed
+
+- **gedit-style minimal UI** — the header is now a single gedit/libadwaita-style bar: `Open`, `+` (new tab), the file name (`*` when unsaved), `Save`, and a ☰ menu. The formatting toolbar, menubar, breadcrumb, export/theme/info buttons, and the status-bar popover are gone; the status bar shows word count (plus `Ln, Col` in source view).
+- **Editor is keyboard-driven** — Crepe's block handle / slash menu and selection toolbar are disabled; format with markdown syntax or Ctrl+B / Ctrl+I / Ctrl+L.
+- **History** opens as a dialog (☰ → History, `Ctrl+Shift+H`) instead of a sidebar section.
+- **Ctrl+N** opens a new tab (same as Ctrl+T) instead of replacing the document after a confirm.
+- **Pasted images** are always embedded inline (no `assets/` folder without a linked folder).
+
+### Removed
+
+- Sidebar (linked folder file tree, outline, backlinks), command palette, focus / zen / typewriter / writing modes, full-width and content-width handle, theme editor, writing statistics, share links (`#…` URL documents), slash menu, floating toolbar, drag handles, emoji picker, callout / details / footnote / mermaid / embed renderers, Crepe LaTeX, the PWA install / update / offline banners, and the dead Tauri native-menu handler.
+
+### Fixed
+
+- **Save could write to the wrong file** — with several disk files open in tabs, Save wrote the active tab into whichever file was opened last. Each document now keeps its own file handle.
+- **First Ctrl+T replaced the document** — on first run the open document had no tab, so a new tab overwrote it.
+- **Save As left a stale tab** — the tab the document was saved from now closes in favour of the saved file's tab.
+- **Files opened from the OS (Tauri) or the PWA file handler** can now be saved back in place instead of failing with "No local folder linked".
+- **Zoom applied twice** — after any Ctrl+wheel / Ctrl+± the editor was scaled by both the `--editor-zoom` variable and the CSS `zoom` property (50% rendered at ~25%). Zoom is now applied once, via `zoom`, and shown as a `− 100% +` row in the ☰ menu.
+- **Desktop text too small** — removed the invalid `--window-scale` rule (`clamp()` mixing a length and numbers) that made WYSIWYG text 15px instead of 17px in Tauri.
+- **Open on Firefox / Safari** — falls back to a file input when the File System Access API is missing (Save then downloads the `.md`).
+
 ## [3.0.0] - 2026-05-27
 
 ### Removed

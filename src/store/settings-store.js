@@ -3,23 +3,8 @@ import { STORAGE_SETTINGS } from '../constants.js';
 
 const defaults = {
   theme: 'auto',
-  fontSize: 15,
   editorZoom: 1,
-  contentMaxWidth: null,
-  sidebarOpen: false,
-  autoSaveInterval: 30000,
-  zenMode: false,
-  writingMode: false,
-  paragraphFocus: false,
-  typewriterMode: false,
   sourceMode: false,
-  fullWidth: false,
-  sidebarSections: { localFolder: true, outline: true, history: true, backlinks: true },
-  sidebarOrder: ['localFolder', 'outline', 'backlinks', 'history'],
-  accentColor: null,
-  customFont: null,
-  authorByline: '',
-  writingDropCap: true,
 };
 
 function load() {
@@ -34,15 +19,8 @@ function load() {
         }
       }
     }
-    // Sidebar always starts collapsed
-    parsed.sidebarOpen = false;
-    // Focus modes never persist across reload
-    parsed.zenMode = false;
-    parsed.writingMode = false;
-    parsed.paragraphFocus = false;
-    parsed.typewriterMode = false;
+    // Always start in WYSIWYG mode
     parsed.sourceMode = false;
-    parsed.fullWidth = false;
     return parsed;
   } catch {
     return { ...defaults };

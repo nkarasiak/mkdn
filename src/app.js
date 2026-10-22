@@ -3,33 +3,18 @@ import { settingsStore } from './store/settings-store.js';
 import { eventBus } from './store/event-bus.js';
 import { milkdown } from './editor/milkdown-setup.js';
 import { createToolbar } from './toolbar/toolbar.js';
-import { createSidebar, toggleHistorySection, toggleOutlineSection } from './sidebar/sidebar.js';
 import { createStatusBar } from './ui/status-bar.js';
 import { initKeyboardShortcuts } from './ui/keyboard-shortcuts.js';
-import { localSync } from './local/local-sync.js';
 import { fileSaver } from './save/file-saver.js';
 import { sessionStore } from './storage/session-store.js';
 import { historyManager } from './history/history-manager.js';
-import { focusManager } from './focus/focus-manager.js';
 import { documentStore } from './store/document-store.js';
 import { toast } from './ui/toast.js';
-import { registerBuiltinCommands } from './command-palette/command-registry.js';
-import { setMilkdownRef } from './command-palette/command-palette.js';
-import { extractHeadings } from './command-palette/heading-utils.js';
-import { setSourceTextarea } from './editor/source-formatter.js';
 import { editorZoom } from './editor/editor-zoom.js';
-import { initContentWidthHandle } from './editor/content-width.js';
 import { initFindBar } from './find-replace/find-bar.js';
-import { registerExportCommands } from './export/export-commands.js';
-import { initBacklinks } from './backlinks/backlinks-ui.js';
-import { initWritingStats } from './stats/writing-stats.js';
-import { initThemeEditor } from './themes/theme-editor.js';
 import { isTauri, initTauri, initTauriEvents, restoreTauriFile } from './platform/tauri-bridge.js';
-import { loadFromShareLink } from './share/share-link.js';
 import { createTabBar, initTabs } from './toolbar/tab-bar.js';
 import { initPWA } from './pwa/pwa-manager.js';
-
-let sidebarWrapper, sidebarOverlay;
 
 function applyTheme() {
   const theme = settingsStore.getResolvedTheme();
@@ -57,26 +42,6 @@ function updateDocTitle() {
   }
 }
 
-function applySidebarState(open) {
-  sidebarWrapper?.classList.toggle('collapsed', !open);
-  sidebarWrapper?.classList.toggle('open', open);
-  // Show overlay on tablet/mobile where sidebar is a fixed overlay
-  const isOverlayMode = window.innerWidth < 1024;
-  sidebarOverlay?.classList.toggle('visible', open && isOverlayMode);
-}
-
-// Re-evaluate overlay when window is resized
-window.addEventListener('resize', () => {
-  const open = settingsStore.get('sidebarOpen');
-  const isOverlayMode = window.innerWidth < 1024;
-  sidebarOverlay?.classList.toggle('visible', open && isOverlayMode);
-});
-
-function toggleSidebar() {
-  const current = settingsStore.get('sidebarOpen');
-  settingsStore.set('sidebarOpen', !current);
-}
-
 export const App = {
   async init() {
     const appEl = document.getElementById('app');
@@ -91,40 +56,18 @@ export const App = {
     const sourceEditor = el('textarea', { className: 'source-editor', spellcheck: false });
     const sourceWrapper = el('div', { className: 'source-editor-wrapper' }, sourceEditor);
 
-    // Create sidebar
-    const sidebar = createSidebar();
-    sidebarWrapper = el('div', { className: 'app-sidebar' }, sidebar);
-    sidebarOverlay = el('div', { className: 'sidebar-overlay' });
-    sidebarOverlay.addEventListener('click', () => settingsStore.set('sidebarOpen', false));
-
-    // Create toolbar
-    const toolbar = createToolbar({
-      onToggleSidebar: toggleSidebar,
-      onSave: () => fileSaver.save(),
-      onOpen: () => fileSaver.openFile(),
-      onOpenFolder: async () => {
-        await localSync.linkFolder();
-        settingsStore.set('sidebarOpen', true);
-      },
-    });
+    const toolbar = createToolbar();
 
     // Create tab bar
     const tabBar = createTabBar();
 
-    // Create status bar
-    const statusbar = createStatusBar({
-      onToggleHistory: () => toggleHistorySection(),
-      focusManager,
-    });
+    const statusbar = createStatusBar(sourceEditor);
 
     // Main content area
     const main = el('div', { className: 'app-main' }, editorPane, sourceWrapper);
 
     // Ctrl/Cmd + wheel zoom (browser-like)
     editorZoom.init(main);
-
-    // Drag handle on right edge to resize content column width
-    initContentWidthHandle(main);
 
     // Drag & drop file open
     let dragCounter = 0;
@@ -157,56 +100,23 @@ export const App = {
         return;
       }
       const reader = new FileReader();
-      reader.onload = () => {
-        documentStore.setFile(file.name, file.name, reader.result, 'local');
-        toast(`Opened ${file.name}`, 'success');
-      };
+      reader.onload = () => documentStore.setFile(file.name, file.name, reader.result, 'local');
       reader.readAsText(file);
     });
 
-    // Sidebar resize handle
-    const resizeHandle = el('div', { className: 'sidebar-resize-handle' });
-    initResizeHandle(resizeHandle);
-
-    // Restore persisted sidebar width
-    const savedWidth = settingsStore.get('sidebarWidth');
-    if (savedWidth) {
-      document.documentElement.style.setProperty('--sidebar-width', savedWidth + 'px');
-    }
-
     // App shell
-    const app = el('div', { className: 'app' },
-      el('div', { className: 'app-toolbar' }, toolbar, tabBar),
-      sidebarWrapper,
-      resizeHandle,
-      main,
-      sidebarOverlay,
-      el('div', { className: 'app-statusbar' }, statusbar),
-    );
+    const app = el('div', { className: 'app' }, toolbar, tabBar, main, statusbar);
 
     appEl.appendChild(app);
 
-    // Initialize Tauri desktop integration (window controls, native file I/O)
+    // Initialize Tauri desktop integration (native file I/O, updater)
     await initTauri();
 
-    // Swipe gestures for sidebar on touch devices
-    initSwipeGestures(app);
-
-    // Initialize focus manager
-    focusManager.init(app);
-
-    // Load shared document from URL hash (takes priority over saved session)
-    const isSharedDoc = await loadFromShareLink();
-
     // Restore session before Milkdown init so restored content is the initial value
-    if (!isSharedDoc) {
-      await sessionStore.restoreSession();
-      // In Tauri, re-read absolute-path files from disk (files opened via OS/CLI)
-      const fileId = documentStore.getFileId();
-      const fileSource = documentStore.getFileSource();
-      if (fileId && fileSource === 'local') {
-        await restoreTauriFile(fileId);
-      }
+    await sessionStore.restoreSession();
+    // In Tauri, re-read absolute-path files from disk (files opened via OS/CLI)
+    if (documentStore.getFileSource() === 'local') {
+      await restoreTauriFile(documentStore.getFileId());
     }
 
     // Initialize Milkdown (always-on)
@@ -215,22 +125,14 @@ export const App = {
     // Initialize tab system
     initTabs();
 
-    // Initialize local folder support
-    localSync.init();
+    // Autosave + "changed on disk" detection for files opened from disk
+    fileSaver.init();
 
     // Initialize session persistence and history
     sessionStore.init();
     historyManager.init();
 
-    // Apply initial states
-    applySidebarState(settingsStore.get('sidebarOpen'));
-
-    // Listen for settings changes
-    eventBus.on('settings:sidebarOpen', applySidebarState);
     eventBus.on('settings:theme', applyTheme);
-
-    // Register textarea for source-formatter
-    setSourceTextarea(sourceEditor);
 
     // Initialize Find & Replace
     initFindBar({ editorContainer: main, milkdown });
@@ -288,114 +190,16 @@ export const App = {
       }
     });
 
-    // Full-width toggle
-    eventBus.on('settings:fullWidth', (on) => {
-      document.body.classList.toggle('full-width', on);
-    });
-
-    // Document title sync — derive from first H1
-    eventBus.on('content:changed', updateDocTitle);
+    // Window title follows the file name
     eventBus.on('file:opened', updateDocTitle);
     eventBus.on('file:new', updateDocTitle);
     eventBus.on('file:renamed', updateDocTitle);
     updateDocTitle();
 
-    // Init keyboard shortcuts
-    initKeyboardShortcuts({ toggleSidebar, toggleHistory: () => toggleHistorySection(), focusManager });
+    initKeyboardShortcuts();
 
-    // Register command palette commands and set milkdown reference
-    setMilkdownRef(milkdown);
-    registerBuiltinCommands({
-      toggleSidebar,
-      toggleHistory: () => toggleHistorySection(),
-      toggleOutline: () => toggleOutlineSection(),
-      milkdown,
-      fileSaver,
-      localSync,
-      documentStore,
-      focusManager,
-    });
-
-    // Register feature commands
-    registerExportCommands();
-
-    // Initialize backlinks, writing stats, and custom theme
-    initBacklinks();
-    initWritingStats();
-    initThemeEditor();
-
-    // Initialize PWA features (install prompt, offline detection, file handler)
+    // Files opened via the PWA file handler / Tauri (OS double-click, CLI)
     initPWA();
-
-    // Listen for Tauri native menu events and file-open
-    initTauriEvents({ toggleSidebar, fileSaver, documentStore, focusManager, settingsStore });
+    initTauriEvents();
   },
 };
-
-function initResizeHandle(handle) {
-  let startX = 0;
-  let startWidth = 0;
-
-  function onMouseMove(e) {
-    const newWidth = Math.min(
-      Math.max(180, startWidth + (e.clientX - startX)),
-      window.innerWidth * 0.5
-    );
-    document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
-  }
-
-  function onMouseUp() {
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-    document.body.classList.remove('resizing');
-    handle.classList.remove('active');
-
-    const width = parseInt(
-      getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')
-    );
-    if (width) settingsStore.set('sidebarWidth', width);
-  }
-
-  handle.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    startX = e.clientX;
-    startWidth = parseInt(
-      getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')
-    );
-    document.body.classList.add('resizing');
-    handle.classList.add('active');
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  });
-}
-
-function initSwipeGestures(appEl) {
-  let startX = 0;
-  let startY = 0;
-  let tracking = false;
-
-  appEl.addEventListener('touchstart', (e) => {
-    const touch = e.touches[0];
-    startX = touch.clientX;
-    startY = touch.clientY;
-    tracking = true;
-  }, { passive: true });
-
-  appEl.addEventListener('touchend', (e) => {
-    if (!tracking) return;
-    tracking = false;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - startX;
-    const dy = touch.clientY - startY;
-    // Only trigger if horizontal swipe is dominant and long enough
-    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
-    if (window.innerWidth >= 1024) return; // Desktop doesn't need swipe
-    if (dx > 0 && startX < 40) {
-      // Swipe right from left edge → open sidebar
-      settingsStore.set('sidebarOpen', true);
-    } else if (dx < 0 && settingsStore.get('sidebarOpen')) {
-      // Swipe left while sidebar open → close sidebar
-      settingsStore.set('sidebarOpen', false);
-    }
-  }, { passive: true });
-}

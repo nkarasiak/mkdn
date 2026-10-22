@@ -1,224 +1,146 @@
-import { el, injectStyles } from '../utils/dom.js';
-import { icons } from '../toolbar/toolbar-icons.js';
+import { el } from '../utils/dom.js';
 import { documentStore } from '../store/document-store.js';
-import { localSync } from '../local/local-sync.js';
+import { tabStore } from '../store/tab-store.js';
 import { localFs } from '../local/local-fs.js';
-import { prompt as promptModal } from '../ui/modal.js';
+import { confirm as confirmModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
-import { extractHeadings } from '../command-palette/heading-utils.js';
+import { downloadMarkdown } from '../utils/export.js';
 
-function showSaveLocationPicker() {
-  return new Promise((resolve) => {
-    const overlay = el('div', { className: 'modal-overlay' });
+const AUTOSAVE_INTERVAL = 30000;
+const EXTERNAL_CHECK_INTERVAL = 5000;
 
-    let resolved = false;
-    function pick(choice) {
-      if (resolved) return;
-      resolved = true;
-      overlay.classList.remove('modal-open');
-      if (overlay.parentNode) overlay.remove();
-      resolve(choice);
-    }
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) pick(null);
-    });
-
-    // Resolve as cancelled when closed externally (e.g. global Escape → closeModal)
-    overlay.addEventListener('modal:close', () => pick(null));
-
-    const options = [];
-
-    // Local file option (File System Access API)
-    if (localFs.isSupported()) {
-      options.push(
-        el('button', {
-          className: 'save-picker-option',
-          onClick: () => pick('local-file'),
-        },
-          el('span', { className: 'save-picker-icon', unsafeHTML: icons.download }),
-          el('span', { className: 'save-picker-label' }, 'Save to local file'),
-          el('span', { className: 'save-picker-desc' }, 'Pick a location on your computer'),
-        ),
-      );
-    }
-
-    // Linked folder option
-    if (localSync.isLinked()) {
-      const folderName = localSync.getFolderName();
-      options.push(
-        el('button', {
-          className: 'save-picker-option',
-          onClick: () => pick('local-folder'),
-        },
-          el('span', { className: 'save-picker-icon', unsafeHTML: icons.folder }),
-          el('span', { className: 'save-picker-label' }, `Save to ${folderName}`),
-          el('span', { className: 'save-picker-desc' }, 'Save in your linked local folder'),
-        ),
-      );
-    }
-
-    // Browser-only option
-    options.push(
-      el('button', {
-        className: 'save-picker-option',
-        onClick: () => pick('browser'),
-      },
-        el('span', { className: 'save-picker-icon', unsafeHTML: icons.clock }),
-        el('span', { className: 'save-picker-label' }, 'Browser only'),
-        el('span', { className: 'save-picker-desc' }, 'Keep in this browser session (no file created)'),
-      ),
-    );
-
-    const modal = el('div', { className: 'modal save-picker-modal' },
-      el('div', { className: 'modal-header' }, 'Save to...'),
-      el('div', { className: 'modal-body save-picker-body' }, ...options),
-    );
-
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add('modal-open'));
-  });
-}
+// fileId → FileSystemFileHandle (browser) or path (Tauri). One per open document,
+// so saving tab A can never write into tab B's file.
+// ponytail: browser handles are not persisted, so after a reload Save falls back to Save As.
+const handles = new Map();
+let externalCheckInFlight = false;
 
 function suggestFileName() {
   const current = documentStore.getFileName();
   if (current && current !== 'Untitled.md') return current;
-  const headings = extractHeadings(documentStore.getMarkdown());
-  const h1 = headings.find(h => h.level === 1);
-  if (h1) {
-    const sanitized = h1.text.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim();
-    if (sanitized) return `${sanitized}.md`;
-  }
-  return 'Untitled.md';
+  const h1 = documentStore.getMarkdown().match(/^#\s+(.+)$/m)?.[1];
+  const sanitized = h1?.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim();
+  return sanitized ? `${sanitized}.md` : 'Untitled.md';
 }
 
-async function askFileName() {
+async function write(handle) {
+  await localFs.writeFile(handle, documentStore.getMarkdown());
+  const { modifiedTime } = await localFs.readFile(handle);
+  documentStore.setLastModifiedOnDisk(modifiedTime);
+  documentStore.markSaved();
+}
+
+async function autoSave() {
+  const handle = handles.get(documentStore.getFileId());
+  if (!handle || !documentStore.isDirty()) return;
   try {
-    return await promptModal('File name:', {
-      title: 'Save As',
-      defaultValue: suggestFileName(),
-    });
-  } catch {
-    return null; // cancelled
+    await write(handle);
+  } catch (err) {
+    console.warn('Auto-save failed:', err.message);
   }
 }
 
-async function handleSaveChoice(choice) {
-  if (choice === 'local-file') {
-    return localSync.saveAsFile();
+async function checkForExternalChanges() {
+  const fileId = documentStore.getFileId();
+  const handle = handles.get(fileId);
+  const baseline = documentStore.getLastModifiedOnDisk();
+  if (externalCheckInFlight || !handle || baseline == null) return;
+
+  externalCheckInFlight = true;
+  try {
+    const { content, modifiedTime } = await localFs.readFile(handle);
+    if (modifiedTime <= baseline) return;
+    const name = documentStore.getFileName();
+
+    let reload = !documentStore.isDirty();
+    if (!reload) {
+      reload = await confirmModal(
+        `"${name}" changed on disk. Load from disk and discard your unsaved edits?`,
+        { title: 'File changed on disk', okText: 'Load from disk', cancelText: 'Keep mine' },
+      ).catch(() => false);
+    }
+    if (reload) {
+      documentStore.setFile(fileId, name, content, 'local', modifiedTime);
+    } else {
+      documentStore.setLastModifiedOnDisk(modifiedTime);
+    }
+  } catch {
+    // File deleted/moved or permission revoked — keep the in-memory copy
+  } finally {
+    externalCheckInFlight = false;
   }
-  if (choice === 'local-folder') {
-    const name = await askFileName();
-    if (name) return localSync.saveAs(name);
-  }
-  if (choice === 'browser') {
-    documentStore.markSaved();
-    toast('Saved in browser', 'success');
-  }
-  // null = cancelled
 }
 
 export const fileSaver = {
-  openFile() {
-    if (localFs.isSupported()) {
-      return localSync.openFile();
-    }
-    return Promise.resolve();
+  init() {
+    setInterval(autoSave, AUTOSAVE_INTERVAL);
+    setInterval(() => { if (!document.hidden) checkForExternalChanges(); }, EXTERNAL_CHECK_INTERVAL);
+    window.addEventListener('focus', checkForExternalChanges);
   },
 
-  saveAsFile() {
-    if (localFs.isSupported()) {
-      return localSync.saveAsFile();
+  /** Open a file handle (browser) or absolute path (Tauri) into a tab. */
+  async openHandle(handle) {
+    const { name, content, modifiedTime } = await localFs.readFile(handle);
+    const id = typeof handle === 'string' ? handle : handle.path || name;
+    handles.set(id, handle);
+    documentStore.setFile(id, name, content, 'local', modifiedTime);
+  },
+
+  async openFile() {
+    if (!localFs.isSupported()) {
+      // No File System Access API (Firefox, Safari): read-only open, Save downloads.
+      const input = el('input', { type: 'file', accept: '.md,.markdown,.txt' });
+      input.addEventListener('change', async () => {
+        const file = input.files[0];
+        if (file) documentStore.setFile(file.name, file.name, await file.text(), 'local');
+      });
+      input.click();
+      return;
     }
-    return Promise.resolve();
+    let handle;
+    try {
+      handle = await localFs.pickFile();
+    } catch {
+      return; // cancelled
+    }
+    try {
+      await this.openHandle(handle);
+    } catch (err) {
+      toast(`Failed to open: ${err.message}`, 'error');
+    }
   },
 
   async save() {
-    const source = documentStore.getFileSource();
-
-    // File already has a source — save directly
-    if (source === 'local') {
-      return localSync.save();
+    const handle = handles.get(documentStore.getFileId());
+    if (!handle) return this.saveAs();
+    try {
+      await write(handle);
+    } catch (err) {
+      toast(`Save failed: ${err.message}`, 'error');
     }
-
-    // New unsaved document — ask where to save
-    const choice = await showSaveLocationPicker();
-    return handleSaveChoice(choice);
   },
 
   async saveAs() {
-    const source = documentStore.getFileSource();
-
-    // File already has a source — prompt for name and save to same source
-    if (source === 'local') {
-      const name = await askFileName();
-      if (name) return localSync.saveAs(name);
+    if (!localFs.isSupported()) {
+      downloadMarkdown();
+      documentStore.markSaved();
       return;
     }
-
-    // No source — show location picker, then prompt for name if needed
-    const choice = await showSaveLocationPicker();
-    return handleSaveChoice(choice);
+    let handle;
+    try {
+      handle = await localFs.pickSaveFile(suggestFileName());
+    } catch {
+      return; // cancelled
+    }
+    const previousTabId = tabStore.getActiveTabId();
+    try {
+      await localFs.writeFile(handle, documentStore.getMarkdown());
+      await this.openHandle(handle);
+      documentStore.markSaved();
+      // The saved file opened in its own tab; drop the tab it was saved from.
+      if (previousTabId !== tabStore.getActiveTabId()) tabStore.closeTab(previousTabId);
+    } catch (err) {
+      toast(`Save failed: ${err.message}`, 'error');
+    }
   },
 };
-
-// Inject save picker styles
-injectStyles(`
-.save-picker-modal {
-  max-width: 400px;
-}
-.save-picker-body {
-  padding: 8px 12px 12px !important;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.save-picker-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  text-align: left;
-  transition: background var(--transition-fast);
-  cursor: pointer;
-  width: 100%;
-}
-.save-picker-option:hover {
-  background: var(--bg-hover);
-}
-.save-picker-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-.save-picker-icon svg {
-  width: 16px;
-  height: 16px;
-}
-.save-picker-label {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--text-primary);
-  flex: 1;
-}
-.save-picker-desc {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-@media (max-width: 480px) {
-  .save-picker-desc {
-    display: none;
-  }
-}
-`);

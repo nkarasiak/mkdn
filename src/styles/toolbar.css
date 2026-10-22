@@ -1,438 +1,194 @@
 /* ================================================================
-   Toolbar — Two-row header matching newsletter editor template
+   Header bar — gedit / libadwaita style
+   [Open] [+] ········ title ········ [Save] [☰] [– □ ×]
    ================================================================ */
 
-.toolbar {
-  display: flex;
-  flex-direction: column;
-  background: var(--toolbar-bg);
-}
-
-/* --- Header row: nav + status + action buttons --- */
-
-.toolbar-header {
+.header-bar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 36px;
-  padding: 0 8px;
-  position: relative;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.toolbar-header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.toolbar-header-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto;
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  padding: 0 12px;
-}
-
-.toolbar-header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Back / nav button */
-.toolbar-nav-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.toolbar-nav-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.toolbar-nav-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* Save status badge */
-.toolbar-status-badge {
-  display: flex;
-  align-items: center;
   gap: 6px;
-  padding: 4px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  font-family: var(--font-sans);
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  background: none;
-  cursor: default;
+  height: 46px;
+  padding: 0 6px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--toolbar-border);
   user-select: none;
-  transition: border-color var(--transition-fast), color var(--transition-fast);
-}
-
-.toolbar-status-badge.unsaved {
-  color: var(--text-secondary);
-  border-color: var(--accent);
-  cursor: pointer;
-}
-
-.toolbar-status-badge.unsaved:hover {
-  background: var(--accent-bg, color-mix(in srgb, var(--accent) 10%, transparent));
-}
-
-.toolbar-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-muted);
   flex-shrink: 0;
-  transition: background var(--transition-fast);
 }
 
-.toolbar-status-dot.saved {
-  background: var(--success);
-}
-
-/* Secondary action button (Open) */
-.toolbar-secondary-btn {
+.header-start,
+.header-end {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: var(--bg-hover);
-  border-radius: var(--radius-md);
-  transition: background var(--transition-fast), color var(--transition-fast);
+  z-index: 1;
 }
 
-.toolbar-secondary-btn:hover {
-  background: var(--bg-active);
-  color: var(--text-primary);
+/* Title is centred on the window, not between the button groups */
+.header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 50%;
+  text-align: center;
+  line-height: 1.25;
+  pointer-events: none;
 }
 
-.toolbar-btn-active {
-  background: var(--collab-color);
-  color: #000;
-}
-.toolbar-btn-active:hover {
-  background: color-mix(in srgb, var(--collab-color) 88%, black);
-  color: #000;
-}
-
-.toolbar-btn-icon {
-  display: flex;
-  width: var(--icon-sm);
-  height: var(--icon-sm);
-}
-
-.toolbar-btn-icon svg {
-  width: var(--icon-sm);
-  height: var(--icon-sm);
-}
-
-/* Primary action button (Save) */
-.toolbar-primary-btn {
-  padding: 8px 24px;
-  font-family: var(--font-sans);
+.header-title {
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--accent-text);
-  background: var(--accent);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl; /* ellipsize the start of long paths */
+}
+
+.header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 12px;
   border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
   transition: background var(--transition-fast);
 }
 
-.toolbar-primary-btn:hover {
-  background: var(--accent-hover);
-}
-
-/* --- Formatting toolbar row --- */
-
-.toolbar-formatting {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 48px;
-  padding: 0 16px;
-  gap: 2px;
-  overflow: visible;
-}
-
-.toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.toolbar-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--border-color);
-  margin: 0 10px;
-  flex-shrink: 0;
-  opacity: 0.5;
-}
-
-/* Toolbar icon buttons */
-.toolbar-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  transition: background var(--transition-fast), color var(--transition-fast), transform 0.1s ease;
-  position: relative;
-  flex-shrink: 0;
-}
-
-.toolbar-btn:hover {
+.header-btn:hover {
   background: var(--bg-hover);
-  color: var(--text-primary);
 }
 
-.toolbar-btn:active {
-  transform: scale(0.93);
-  transition-duration: 0.05s;
+.header-btn:active {
+  background: var(--bg-active);
 }
 
-@keyframes btnPulse {
-  0% { background: var(--bg-hover); }
-  100% { background: transparent; }
-}
-.toolbar-btn-pulse {
-  animation: btnPulse 0.4s ease-out;
+.header-icon-btn {
+  padding: 0;
 }
 
-.toolbar-btn svg {
-  width: var(--icon-lg);
-  height: var(--icon-lg);
+.header-icon-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
-/* Tooltip */
-.toolbar-btn[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%) translateY(2px);
-  padding: 5px 12px;
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  font-size: var(--font-size-xs);
-  font-family: var(--font-sans);
-  font-weight: 500;
-  white-space: nowrap;
-  max-width: min(200px, 80vw);
-  word-wrap: break-word;
-  border-radius: var(--radius-md);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
-  z-index: 100;
-  letter-spacing: 0.01em;
-}
+/* ================================================================
+   Main menu (native popover)
+   ================================================================ */
 
-.toolbar-btn:hover[data-tooltip]::after {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* --- Dropdown buttons (Style, More) --- */
-
-.toolbar-dropdown {
-  position: relative;
-}
-
-.toolbar-dropdown-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--text-primary);
-  border-radius: var(--radius-md);
-  transition: background var(--transition-fast), color var(--transition-fast);
-  white-space: nowrap;
-}
-
-.toolbar-dropdown-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.toolbar-chevron {
-  display: flex;
-  align-items: center;
-  opacity: 0.6;
-}
-
-.toolbar-chevron svg {
-  width: 12px;
-  height: 12px;
-}
-
-/* Dropdown menu */
-.toolbar-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  min-width: 140px;
-  background: var(--bg-primary);
+.app-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  min-width: 240px;
+  padding: 6px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  z-index: 200;
-  padding: 4px;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition: opacity 0.15s ease, transform var(--transition-spring), visibility 0.15s ease;
-  pointer-events: none;
-}
-
-.toolbar-dropdown-menu.open {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.toolbar-dropdown-menu.open .toolbar-dropdown-item {
-  animation: dropdownItemIn 0.2s ease both;
-}
-.toolbar-dropdown-menu.open .toolbar-dropdown-item:nth-child(1) { animation-delay: 0ms; }
-.toolbar-dropdown-menu.open .toolbar-dropdown-item:nth-child(2) { animation-delay: 20ms; }
-.toolbar-dropdown-menu.open .toolbar-dropdown-item:nth-child(3) { animation-delay: 40ms; }
-.toolbar-dropdown-menu.open .toolbar-dropdown-item:nth-child(4) { animation-delay: 60ms; }
-.toolbar-dropdown-menu.open .toolbar-dropdown-item:nth-child(5) { animation-delay: 80ms; }
-
-@keyframes dropdownItemIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.toolbar-dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 7px 12px;
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
   color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-sm);
+}
+
+.app-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  padding: 7px 10px;
   border-radius: var(--radius-sm);
   text-align: left;
-  transition: background var(--transition-fast);
+  color: var(--text-primary);
 }
 
-.toolbar-dropdown-item:hover {
+.app-menu-item:hover {
   background: var(--bg-hover);
 }
 
-/* Grouped dropdown menu */
-.toolbar-dropdown-grouped {
-  min-width: 200px;
-  padding: 4px;
-}
-
-.toolbar-menu-group-header {
-  padding: 6px 12px 4px;
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.app-menu-item kbd {
+  font-family: inherit;
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
-  user-select: none;
 }
 
-.toolbar-menu-group-header:not(:first-child) {
-  margin-top: 4px;
-  border-top: 1px solid var(--border-light);
-  padding-top: 8px;
+.app-menu-sep {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--border-light);
 }
 
-.toolbar-dropdown-item-icon {
+.app-menu-theme {
   display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.toolbar-menu-icon {
-  width: 18px;
-  text-align: center;
-  font-size: 14px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-/* Table picker flyout */
-.table-picker-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: default;
-}
-
-.table-picker-item .toolbar-chevron svg {
-  width: 10px;
-  height: 10px;
-}
-
-.table-picker-flyout {
-  display: none;
-  position: absolute;
-  left: 100%;
-  top: -4px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  z-index: 210;
-}
-
-.table-picker-item:hover .table-picker-flyout {
-  display: block;
-}
-
-.callout-flyout {
-  padding: 4px;
-  min-width: 160px;
-}
-
-/* Legacy sync status (hidden, use badge instead) */
-.toolbar-sync {
-  display: none;
-}
-
-/* Legacy text button style */
-.toolbar-btn-text {
-  width: auto;
-  padding: 0 10px;
-  font-size: var(--font-size-sm);
-  font-weight: 500;
   gap: 6px;
+  padding: 4px;
 }
 
-/* --- Link popover --- */
+.app-menu-theme button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+}
+
+.app-menu-theme button:hover {
+  background: var(--bg-hover);
+}
+
+.app-menu-theme button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.app-menu-zoom {
+  display: flex;
+  gap: 6px;
+  padding: 0 4px 4px;
+}
+
+.app-menu-zoom button {
+  flex: 1;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  font-variant-numeric: tabular-nums;
+}
+
+.app-menu-zoom button:nth-child(2) {
+  font-size: var(--font-size-sm);
+}
+
+.app-menu-zoom button:hover {
+  background: var(--bg-hover);
+}
+
+.app-menu-theme svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ================================================================
+   Link popover (Ctrl+L)
+   ================================================================ */
 
 .link-popover {
   display: none;
@@ -511,460 +267,15 @@
   background: var(--accent-hover);
 }
 
-/* === Breadcrumb navigation === */
+/* ================================================================
+   Tauri: frameless window controls + resize edges
+   ================================================================ */
 
-.toolbar-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.breadcrumb-segment {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: var(--radius-sm);
-  transition: color var(--transition-fast), background var(--transition-fast);
-  max-width: 140px;
-}
-
-.breadcrumb-segment:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
-}
-
-.breadcrumb-file {
-  color: var(--text-primary);
-  font-weight: 500;
-  max-width: 200px;
-}
-
-.breadcrumb-sep {
-  flex-shrink: 0;
-  width: 4px;
-  height: 4px;
-  margin: 0 2px;
-}
-
-.breadcrumb-sep::after {
-  content: '/';
-  color: var(--text-muted);
-  font-size: var(--font-size-xs);
-  opacity: 0.5;
-}
-
-.breadcrumb-rename-input {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--text-primary);
-  background: var(--bg-hover);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  padding: 1px 6px;
-  outline: none;
-  max-width: 200px;
-}
-
-/* === Active formatting state === */
-
-.toolbar-btn-active-format {
-  background: var(--accent-light);
-  color: var(--accent);
-}
-
-.toolbar-btn-active-format:hover {
-  background: var(--accent-light);
-  color: var(--accent);
-}
-
-/* === Menu bar (File, Edit, View, Help) === */
-
-.menubar {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-
-.menubar.menubar-hidden {
-  display: none;
-}
-
-/* === GNOME-style header (notepad-like) === */
-
-.toolbar-header-gnome {
-  height: 46px;
-  padding: 0 10px;
-  background: var(--toolbar-bg);
-}
-
-.toolbar-header-gnome .toolbar-header-left {
-  gap: 6px;
-}
-
-.toolbar-header-gnome .toolbar-header-right {
-  gap: 4px;
-}
-
-.toolbar-header-gnome .toolbar-nav-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 17px;
-}
-
-.toolbar-header-gnome .toolbar-icon-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 17px;
-  color: var(--text-secondary);
-}
-
-.toolbar-header-gnome .toolbar-icon-btn svg {
-  width: 17px;
-  height: 17px;
-}
-
-.toolbar-header-gnome .toolbar-icon-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-/* Open ▾ button */
-.open-menu .menubar-trigger,
-.toolbar-header-gnome .open-menu .menubar-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 14px;
-  height: 32px;
-  border-radius: 16px;
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.open-menu .menubar-trigger::after {
-  content: "";
-  display: inline-block;
-  width: 0;
-  height: 0;
-  margin-left: 4px;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 5px solid currentColor;
-  opacity: 0.55;
-}
-
-.open-menu .menubar-trigger:hover {
-  background: var(--bg-active);
-}
-
-/* Hamburger dropdown menu placement */
-.hamburger-dropdown {
-  position: relative;
-}
-
-.hamburger-menu {
-  right: 0;
-  left: auto;
-  min-width: 280px;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 6px;
-  border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
-}
-
-.hamburger-menu .hb-section + .hb-section {
-  margin-top: 4px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border-light);
-}
-
-.hb-section-header {
-  padding: 6px 12px 4px;
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  user-select: none;
-}
-
-.hb-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: none;
-  border: none;
-  font-family: var(--font-sans);
-  font-size: 13.5px;
-  color: var(--text-primary);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.12s ease;
-}
-
-.hb-item:hover {
-  background: var(--bg-hover);
-}
-
-.hb-item-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.hb-item-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-.hb-item-label {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hb-item-shortcut {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--text-muted);
-  background: var(--bg-tertiary);
-  padding: 2px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.hb-divider {
-  height: 1px;
-  background: var(--border-light);
-  margin: 4px 8px;
-}
-
-/* Theme pill row */
-.hb-theme-row {
-  display: flex;
-  gap: 4px;
-  padding: 4px 6px 8px;
-}
-
-.hb-theme-pill {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px 6px;
-  border-radius: 8px;
-  background: var(--bg-tertiary);
-  border: 1px solid transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
-}
-
-.hb-theme-pill:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.hb-theme-pill.active {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.hb-theme-pill svg {
-  width: 16px;
-  height: 16px;
-}
-
-.hb-theme-pill-label {
-  font-family: var(--font-sans);
-  font-size: 10.5px;
-  font-weight: 500;
-}
-
-/* Tighter status badge inside GNOME header */
-.toolbar-header-gnome .toolbar-status-badge {
-  padding: 3px 10px;
-  font-size: 11px;
-  border-radius: 12px;
-}
-
-.toolbar-header-gnome .toolbar-breadcrumb {
-  font-weight: 500;
-}
-
-.menubar-dropdown {
-  position: relative;
-}
-
-.menubar-trigger {
-  display: flex;
-  align-items: center;
-  padding: 4px 10px;
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  border-radius: var(--radius-sm);
-  transition: background var(--transition-fast), color var(--transition-fast);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.menubar-trigger:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.menubar-menu {
-  min-width: 200px;
-  left: 0;
-}
-
-.menubar-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.menubar-shortcut {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-left: auto;
-  white-space: nowrap;
-}
-
-.menubar-separator {
-  height: 1px;
-  background: var(--border-light);
-  margin: 4px 8px;
-}
-
-/* === Header-right icon buttons === */
-
-.toolbar-icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.toolbar-icon-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.toolbar-icon-btn svg {
-  width: 15px;
-  height: 15px;
-}
-
-.toolbar-icon-btn[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%) translateY(2px);
-  padding: 4px 10px;
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  font-size: var(--font-size-xs);
-  font-family: var(--font-sans);
-  font-weight: 500;
-  white-space: nowrap;
-  border-radius: var(--radius-sm);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-  z-index: 100;
-}
-
-.toolbar-icon-btn:hover[data-tooltip]::after {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* === Tauri dedicated title bar (above the toolbar) === */
-
-.toolbar-titlebar {
-  display: flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 8px;
-  background: var(--toolbar-bg, var(--bg-secondary));
-  border-bottom: 1px solid var(--border-light);
-}
-
-.toolbar-titlebar .titlebar-left {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.toolbar-titlebar .titlebar-drag {
-  flex: 1 1 auto;
-  align-self: stretch;
-}
-
-.toolbar-titlebar .titlebar-right {
+.window-controls {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.toolbar-titlebar .menubar { gap: 0; }
-.toolbar-titlebar .menubar-trigger {
-  padding: 3px 10px;
-  font-size: 12px;
-}
-
-/* Rounded window corners (gedit / libadwaita look) — only visible if window is transparent */
-.is-tauri body, .is-tauri #app { border-radius: 12px; overflow: hidden; }
-.is-tauri .toolbar-titlebar { border-top-left-radius: 12px; border-top-right-radius: 12px; }
-
-/* === Window controls (min/max/close) === */
-
-.toolbar-titlebar .window-controls,
-.toolbar-header-gnome .window-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: 10px;
-  padding-left: 10px;
-  border-left: 1px solid var(--border-light);
-}
-
-.toolbar-titlebar .window-controls {
-  border-left: none;
-  padding-left: 0;
-  margin-left: 0;
+  margin-left: 6px;
 }
 
 .window-control-btn {
@@ -994,17 +305,6 @@
 .window-control-btn svg {
   width: 10px;
   height: 10px;
-}
-
-
-/* Tauri drag region: children must opt out so clicks reach them */
-.toolbar-header[data-tauri-drag-region] button,
-.toolbar-header[data-tauri-drag-region] .toolbar-dropdown,
-.toolbar-header[data-tauri-drag-region] .menubar,
-.toolbar-header[data-tauri-drag-region] .menubar-trigger,
-.toolbar-header[data-tauri-drag-region] .toolbar-status-badge,
-.toolbar-header[data-tauri-drag-region] input {
-  -webkit-app-region: no-drag;
 }
 
 /* Frameless Tauri: invisible resize handles glued to each window edge */

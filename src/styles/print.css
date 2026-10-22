@@ -34,13 +34,11 @@
   }
 
   /* Hide all chrome */
-  .app-toolbar,
-  .app-sidebar,
-  .app-statusbar,
-  .sidebar-overlay,
+  .header-bar,
+  .tab-bar,
+  .statusbar,
   .source-editor-wrapper,
-  .find-bar,
-  .command-palette-overlay {
+  .find-bar {
     display: none !important;
   }
 
@@ -50,7 +48,7 @@
     overflow: visible !important;
   }
 
-  /* Reset grid layout for print */
+  /* Reset flex layout for print */
   .app {
     display: block !important;
     height: auto !important;
@@ -199,10 +197,7 @@
   }
 
   /* Hide interactive elements */
-  .ProseMirror .milkdown-toolbar,
   .ProseMirror [data-milkdown-tooltip],
-  .crepe-toolbar,
-  .milkdown-slash-menu,
   .milkdown-link-tooltip {
     display: none !important;
   }

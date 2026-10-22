@@ -7,9 +7,10 @@ A minimal, browser-based markdown editor. No accounts, no cloud — just write.
 ## Features
 
 - **WYSIWYG editing** powered by [Milkdown](https://milkdown.dev/) (ProseMirror-based)
-- **Local folder sync** via the File System Access API — open, edit, and save files directly on disk
-- **Version history** with periodic snapshots, manual checkpoints, and restore
-- **Keyboard shortcuts** — Ctrl+S save, Ctrl+N new, Ctrl+O open, and more
+- **gedit-style UI** — header bar, tabs, status bar; no formatting toolbars
+- **Real files** via the File System Access API — open, edit, and save files directly on disk, with autosave and "changed on disk" detection
+- **Version history** with periodic snapshots and restore
+- **Keyboard shortcuts** — Ctrl+O open, Ctrl+S save, Ctrl+T new tab, Ctrl+U raw markdown
 - **Offline-first** — everything runs in the browser, no server needed
 
 ## Getting Started
