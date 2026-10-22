@@ -101,9 +101,7 @@ export const App = {
         toast(`Only ${TEXT_EXTENSIONS.map(e => `.${e}`).join(', ')} files are supported`, 'warning');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => documentStore.setFile(file.name, file.name, reader.result, 'local');
-      reader.readAsText(file);
+      fileSaver.openBlob(file);
     });
 
     // App shell
