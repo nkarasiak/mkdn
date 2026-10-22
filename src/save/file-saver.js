@@ -1,7 +1,7 @@
 import { el } from '../utils/dom.js';
 import { documentStore } from '../store/document-store.js';
 import { tabStore } from '../store/tab-store.js';
-import { localFs } from '../local/local-fs.js';
+import { localFs, TEXT_EXTENSIONS } from '../local/local-fs.js';
 import { confirm as confirmModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { downloadMarkdown } from '../utils/export.js';
@@ -89,7 +89,7 @@ export const fileSaver = {
   async openFile() {
     if (!localFs.isSupported()) {
       // No File System Access API (Firefox, Safari): read-only open, Save downloads.
-      const input = el('input', { type: 'file', accept: '.md,.markdown,.txt' });
+      const input = el('input', { type: 'file', accept: TEXT_EXTENSIONS.map(e => `.${e}`).join(',') });
       input.addEventListener('change', async () => {
         const file = input.files[0];
         if (file) documentStore.setFile(file.name, file.name, await file.text(), 'local');

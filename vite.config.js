@@ -81,7 +81,7 @@ export default defineConfig(() => ({
             action: './',
             accept: {
               'text/markdown': ['.md', '.markdown'],
-              'text/plain': ['.txt'],
+              'text/plain': ['.txt', '.text'],
             },
           },
         ],
