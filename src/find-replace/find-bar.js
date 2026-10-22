@@ -1,7 +1,6 @@
 import { el, injectStyles } from '../utils/dom.js';
 import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
-import { createProseMirrorEngine, createTextareaEngine } from './find-replace-engine.js';
 
 let barEl = null;
 let isOpen = false;
@@ -307,8 +306,9 @@ export function isFindBarOpen() {
   return isOpen;
 }
 
-export function initFindBar({ editorContainer, milkdown }) {
-  // Create engines
+export async function initFindBar({ editorContainer, milkdown }) {
+  // Lazy: the engines pull in ProseMirror, which must stay out of the first-paint bundle
+  const { createProseMirrorEngine, createTextareaEngine } = await import('./find-replace-engine.js');
   pmEngine = createProseMirrorEngine(() => milkdown.getView());
   taEngine = createTextareaEngine(() => {
     return document.querySelector('.source-editor');

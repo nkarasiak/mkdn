@@ -2,7 +2,6 @@ import { documentStore } from '../store/document-store.js';
 import { fileSaver } from '../save/file-saver.js';
 import { settingsStore } from '../store/settings-store.js';
 import { closeModal } from '../ui/modal.js';
-import { openLinkPopover } from '../ui/link-popover.js';
 import { openFindBar, closeFindBar } from '../find-replace/find-bar.js';
 import { editorZoom } from '../editor/editor-zoom.js';
 import { tabStore } from '../store/tab-store.js';
@@ -26,7 +25,7 @@ const bindings = {
   },
   'tab': () => activate(tabStore.nextTab()),
   'shift+tab': () => activate(tabStore.prevTab()),
-  'l': () => openLinkPopover(),
+  'l': () => import('../ui/link-popover.js').then(m => m.openLinkPopover()),
   'f': () => openFindBar(false),
   'h': () => openFindBar(true),
   'shift+h': () => import('../history/history-panel.js').then(m => m.openHistory()),

@@ -1,4 +1,15 @@
-import { Crepe, CrepeFeature } from '@milkdown/crepe';
+// CrepeBuilder + only the features we use: the `Crepe` class statically pulls in
+// every feature (KaTeX, slash menu, block handle, toolbar) even when disabled.
+import { CrepeBuilder } from '@milkdown/crepe/builder';
+import { codeMirror } from '@milkdown/crepe/feature/code-mirror';
+import { cursor } from '@milkdown/crepe/feature/cursor';
+import { imageBlock } from '@milkdown/crepe/feature/image-block';
+import { linkTooltip } from '@milkdown/crepe/feature/link-tooltip';
+import { listItem } from '@milkdown/crepe/feature/list-item';
+import { placeholder } from '@milkdown/crepe/feature/placeholder';
+import { table } from '@milkdown/crepe/feature/table';
+import { languages } from '@codemirror/language-data';
+import { oneDark } from '@codemirror/theme-one-dark';
 import { editorViewCtx, commandsCtx } from '@milkdown/core';
 import { replaceAll, $prose } from '@milkdown/utils';
 import { TextSelection } from '@milkdown/prose/state';
@@ -10,8 +21,16 @@ import { createFindReplacePlugin } from '../find-replace/find-replace-plugin.js'
 import { createImagePastePlugin } from './image-paste-plugin.js';
 import { createSmartPastePlugin } from './smart-paste-plugin.js';
 
-// Crepe CSS themes
-import '@milkdown/crepe/theme/common/style.css';
+// Crepe CSS: common/style.css minus block-edit, toolbar and latex (KaTeX fonts)
+import '@milkdown/crepe/theme/common/prosemirror.css';
+import '@milkdown/crepe/theme/common/reset.css';
+import '@milkdown/crepe/theme/common/code-mirror.css';
+import '@milkdown/crepe/theme/common/cursor.css';
+import '@milkdown/crepe/theme/common/image-block.css';
+import '@milkdown/crepe/theme/common/link-tooltip.css';
+import '@milkdown/crepe/theme/common/list-item.css';
+import '@milkdown/crepe/theme/common/placeholder.css';
+import '@milkdown/crepe/theme/common/table.css';
 import '@milkdown/crepe/theme/frame.css';
 
 let crepe = null;
@@ -21,19 +40,15 @@ const sourceTextarea = () => document.querySelector('.source-editor');
 
 export const milkdown = {
   async init(container) {
-    crepe = new Crepe({
-      root: container,
-      defaultValue: documentStore.getMarkdown(),
-      // No block handle / slash menu / selection toolbar: plain page, keyboard-driven.
-      features: {
-        [CrepeFeature.BlockEdit]: false,
-        [CrepeFeature.Toolbar]: false,
-        [CrepeFeature.Latex]: false,
-      },
-      featureConfigs: {
-        [CrepeFeature.Placeholder]: { text: 'Start writing...', mode: 'doc' },
-      },
-    });
+    // No block handle / slash menu / selection toolbar: plain page, keyboard-driven.
+    crepe = new CrepeBuilder({ root: container, defaultValue: documentStore.getMarkdown() })
+      .addFeature(cursor)
+      .addFeature(listItem)
+      .addFeature(linkTooltip)
+      .addFeature(imageBlock)
+      .addFeature(placeholder, { text: 'Start writing...', mode: 'doc' })
+      .addFeature(codeMirror, { theme: oneDark, languages })
+      .addFeature(table);
 
     // Listen for content changes from Milkdown
     crepe.on((api) => {

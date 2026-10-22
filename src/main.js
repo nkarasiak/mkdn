@@ -1,4 +1,3 @@
-import './styles/fonts.css';
 import './styles/variables.css';
 import './styles/base.css';
 import './styles/layout.css';

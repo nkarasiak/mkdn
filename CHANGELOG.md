@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.1.2] - 2026-10-22
+
+### Changed
+
+- **Faster first display** — the header, tabs and status bar paint before the editor finishes loading (≈2× faster first paint on a throttled connection); the editor bundle downloads in parallel and is ~35% smaller (no KaTeX, slash menu, block handle or toolbar code), CSS is down from 90 kB to 22 kB + 33 kB.
+- **No light flash in dark mode** — the theme is applied before first paint.
+- **Fonts** — only Inter and JetBrains Mono are loaded (was 8 families), without blocking first paint or the offline desktop app. The source view uses JetBrains Mono where Fira Code was used before.
+
+### Removed
+
+- Unused bundled SF Pro Display fonts (~1 MB) and stale CSP hosts (PartyKit, Hugging Face, YouTube, Twitter, GitHub API).
+
 ## [3.1.1] - 2026-10-22
 
 ### Fixed
