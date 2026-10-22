@@ -1,9 +1,10 @@
 // Native file system operations via Tauri v2 plugins.
 // Patches localFs when running in the Tauri desktop app; handles are plain absolute paths.
 
-import { localFs } from '../local/local-fs.js';
+import { localFs, TEXT_EXTENSIONS } from '../local/local-fs.js';
 
-const FILTERS = [{ name: 'Markdown', extensions: ['md', 'markdown'] }];
+const FILTERS = [{ name: 'Markdown & text', extensions: TEXT_EXTENSIONS }];
+const OPEN_FILTERS = [...FILTERS, { name: 'All files', extensions: ['*'] }];
 
 export function patchLocalFs() {
   const fs = () => import('@tauri-apps/plugin-fs');
@@ -12,7 +13,7 @@ export function patchLocalFs() {
   localFs.isSupported = () => true;
 
   localFs.pickFile = async () => {
-    const path = await (await dialog()).open({ filters: FILTERS, title: 'Open Markdown File' });
+    const path = await (await dialog()).open({ filters: OPEN_FILTERS, title: 'Open File' });
     if (!path) throw new Error('cancelled');
     return path;
   };

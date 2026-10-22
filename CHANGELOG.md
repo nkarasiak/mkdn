@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.1.3] - 2026-10-22
+
+### Added
+
+- **More text formats** — Open, drag-drop and the fallback file input accept `.txt`, `.text`, `.mdx` and `.mkdn` besides `.md` / `.markdown`; the desktop Open dialog also has an *All files* option.
+
+### Fixed
+
+- **Desktop: opening a file showed the previous document** — a file opened by double-click / *Open with* / the command line was often lost at startup, and files outside the home folder (USB drives, `/tmp`) failed to open silently. Both now open, and failures show an error.
+- **Same-named files** — opening a second `README.md` from another folder no longer replaces the first one's tab (or its unsaved edits); each gets its own tab.
+
 ## [3.1.2] - 2026-10-22
 
 ### Changed

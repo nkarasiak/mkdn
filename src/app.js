@@ -5,6 +5,7 @@ import { createToolbar } from './toolbar/toolbar.js';
 import { createStatusBar } from './ui/status-bar.js';
 import { initKeyboardShortcuts } from './ui/keyboard-shortcuts.js';
 import { fileSaver } from './save/file-saver.js';
+import { TEXT_EXTENSIONS } from './local/local-fs.js';
 import { sessionStore } from './storage/session-store.js';
 import { historyManager } from './history/history-manager.js';
 import { documentStore } from './store/document-store.js';
@@ -94,15 +95,13 @@ export const App = {
       dragCounter = 0;
       app.classList.remove('drag-over');
       const file = [...e.dataTransfer.files].find(f =>
-        /\.(md|markdown|txt)$/i.test(f.name)
+        TEXT_EXTENSIONS.includes(f.name.split('.').pop().toLowerCase())
       );
       if (!file) {
-        toast('Only .md, .markdown, and .txt files are supported', 'warning');
+        toast(`Only ${TEXT_EXTENSIONS.map(e => `.${e}`).join(', ')} files are supported`, 'warning');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => documentStore.setFile(file.name, file.name, reader.result, 'local');
-      reader.readAsText(file);
+      fileSaver.openBlob(file);
     });
 
     // App shell

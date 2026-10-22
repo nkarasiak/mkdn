@@ -1,6 +1,9 @@
+// Text formats mkdn opens (pickers, drag-drop, fallback input).
+export const TEXT_EXTENSIONS = ['md', 'markdown', 'mdx', 'mkdn', 'txt', 'text'];
+
 const MARKDOWN_TYPES = [{
-  description: 'Markdown files',
-  accept: { 'text/markdown': ['.md', '.markdown'] },
+  description: 'Markdown & text files',
+  accept: { 'text/plain': TEXT_EXTENSIONS.map(e => `.${e}`) },
 }];
 
 export const localFs = {

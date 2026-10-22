@@ -1,7 +1,7 @@
 import { el } from '../utils/dom.js';
 import { documentStore } from '../store/document-store.js';
 import { tabStore } from '../store/tab-store.js';
-import { localFs } from '../local/local-fs.js';
+import { localFs, TEXT_EXTENSIONS } from '../local/local-fs.js';
 import { confirm as confirmModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { downloadMarkdown } from '../utils/export.js';
@@ -14,6 +14,18 @@ const EXTERNAL_CHECK_INTERVAL = 5000;
 // ponytail: browser handles are not persisted, so after a reload Save falls back to Save As.
 const handles = new Map();
 let externalCheckInFlight = false;
+
+// Tab id for a file opened from outside. Reuses the tab already showing this file; a
+// same-named file from another folder (or over unsaved edits) gets its own tab instead
+// of replacing that one. Tauri ids are absolute paths, so they never collide.
+async function tabIdFor(name, handle) {
+  if (typeof handle === 'string') return handle;
+  for (const [id, h] of handles) {
+    if (handle && typeof h !== 'string' && await h.isSameEntry(handle)) return id;
+  }
+  const tab = tabStore.getTabs().find(t => t.id === name);
+  return !tab || (!handles.has(name) && !tab.dirty) ? name : `${name}#${Date.now()}`;
+}
 
 function suggestFileName() {
   const current = documentStore.getFileName();
@@ -81,18 +93,22 @@ export const fileSaver = {
   /** Open a file handle (browser) or absolute path (Tauri) into a tab. */
   async openHandle(handle) {
     const { name, content, modifiedTime } = await localFs.readFile(handle);
-    const id = typeof handle === 'string' ? handle : handle.path || name;
+    const id = await tabIdFor(name, handle);
     handles.set(id, handle);
     documentStore.setFile(id, name, content, 'local', modifiedTime);
+  },
+
+  /** Open a File without a handle (drag-drop, <input type=file>); Save goes to Save As. */
+  async openBlob(file) {
+    documentStore.setFile(await tabIdFor(file.name), file.name, await file.text(), 'local');
   },
 
   async openFile() {
     if (!localFs.isSupported()) {
       // No File System Access API (Firefox, Safari): read-only open, Save downloads.
-      const input = el('input', { type: 'file', accept: '.md,.markdown,.txt' });
+      const input = el('input', { type: 'file', accept: TEXT_EXTENSIONS.map(e => `.${e}`).join(',') });
       input.addEventListener('change', async () => {
-        const file = input.files[0];
-        if (file) documentStore.setFile(file.name, file.name, await file.text(), 'local');
+        if (input.files[0]) this.openBlob(input.files[0]);
       });
       input.click();
       return;
