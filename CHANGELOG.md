@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-10-22
+
+### Fixed
+
+- **PWA install** — the web app can be installed again from ☰ → Install App… (shown only when the browser reports it installable).
+
 ## [3.1.0] - 2026-10-22
 
 ### Changed

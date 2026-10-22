@@ -71,6 +71,20 @@ export function createToolbar() {
   eventBus.on('settings:editorZoom', syncZoom);
   syncZoom();
 
+  // Install App: only offered once the browser says the PWA is installable
+  let installPrompt = null;
+  const installItem = item('Install App…', '', async () => {
+    installPrompt.prompt();
+    if ((await installPrompt.userChoice).outcome === 'accepted') installItem.hidden = true;
+  });
+  installItem.hidden = true;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    installItem.hidden = false;
+  });
+  window.addEventListener('appinstalled', () => { installItem.hidden = true; });
+
   menu.append(
     themeRow,
     zoomRow,
@@ -87,6 +101,7 @@ export function createToolbar() {
     item('Export HTML…', '', () => import('../export/html-export.js').then(m => m.exportStyledHtml())),
     item('Print…', 'Ctrl+P', () => printDocument()),
     sep(),
+    installItem,
     item('Keyboard Shortcuts', '', async () => {
       const [{ showInfo }, { buildAboutContent }] = await Promise.all([
         import('../ui/modal.js'), import('../ui/about-content.js'),
