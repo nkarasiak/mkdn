@@ -2,30 +2,9 @@ import { eventBus } from './event-bus.js';
 
 const DEFAULT_CONTENT = `# Welcome to mkdn
 
-A beautiful markdown editor.
+A minimal markdown editor. Type markdown and it renders as you write.
 
-## Getting Started
-
-Start typing here — your text is rendered as you write. Use the **slash menu** (type \`/\`) to insert headings, lists, code blocks, images, and more.
-
-Select any text to see the **floating toolbar** for quick formatting.
-
-## Features
-
-- **WYSIWYG editing** — what you see is what you get
-- **Dark mode** — easy on the eyes
-- **Local folder sync** — link a folder and work with your files directly
-- **Version history** — automatic snapshots you can browse and restore
-- **Focus & zen modes** — distraction-free writing
-- **Keyboard shortcuts** — fast and efficient
-
-\`\`\`javascript
-console.log('Hello, mkdn!');
-\`\`\`
-
-> Markdown is a lightweight markup language that you can use to add formatting elements to plaintext text documents.
-
-- [x] Write markdown
+**Ctrl+O** to open a file, **Ctrl+S** to save, **Ctrl+U** to see the raw markdown. Everything else is in the ☰ menu.
 `;
 
 let state = {

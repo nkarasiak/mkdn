@@ -1,238 +1,57 @@
 import { documentStore } from '../store/document-store.js';
 import { fileSaver } from '../save/file-saver.js';
-import { localFs } from '../local/local-fs.js';
 import { settingsStore } from '../store/settings-store.js';
-import { closeModal, confirm as confirmModal } from '../ui/modal.js';
+import { closeModal } from '../ui/modal.js';
 import { openLinkPopover } from '../ui/link-popover.js';
-import { openCommandPalette, closeCommandPalette, isCommandPaletteOpen } from '../command-palette/command-palette.js';
-import { openFindBar, closeFindBar, isFindBarOpen } from '../find-replace/find-bar.js';
-import { sourceFormat } from '../editor/source-formatter.js';
+import { openFindBar, closeFindBar } from '../find-replace/find-bar.js';
 import { editorZoom } from '../editor/editor-zoom.js';
 import { tabStore } from '../store/tab-store.js';
+import { printDocument } from '../utils/export.js';
+import { isTauri } from '../platform/tauri-bridge.js';
 
-let focusManagerRef = null;
+function activate(tab) {
+  if (tab) documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
+}
 
-export function initKeyboardShortcuts({ toggleSidebar, toggleHistory, focusManager }) {
-  focusManagerRef = focusManager;
+// key → action, keyed as "[shift+]key" (Ctrl/Cmd is implied)
+const bindings = {
+  's': () => fileSaver.save(),
+  'shift+s': () => fileSaver.saveAs(),
+  'o': () => fileSaver.openFile(),
+  'n': () => documentStore.newDocument(),
+  't': () => documentStore.newDocument(),
+  'shift+t': () => activate(tabStore.reopenTab()),
+  'w': () => {
+    if (tabStore.getTabs().length > 1) activate(tabStore.closeTab(tabStore.getActiveTabId()));
+  },
+  'tab': () => activate(tabStore.nextTab()),
+  'shift+tab': () => activate(tabStore.prevTab()),
+  'l': () => openLinkPopover(),
+  'f': () => openFindBar(false),
+  'h': () => openFindBar(true),
+  'shift+h': () => import('../history/history-panel.js').then(m => m.openHistory()),
+  'p': () => printDocument(),
+  'u': () => settingsStore.set('sourceMode', !settingsStore.get('sourceMode')),
+  '=': () => editorZoom.zoomIn(),
+  '+': () => editorZoom.zoomIn(),
+  'shift++': () => editorZoom.zoomIn(),
+  '-': () => editorZoom.zoomOut(),
+  '0': () => editorZoom.reset(),
+  'q': () => {
+    if (isTauri()) import('@tauri-apps/api/window').then(({ getCurrentWindow }) => getCurrentWindow().close());
+  },
+};
 
+export function initKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
-    const ctrl = e.ctrlKey || e.metaKey;
-    const shift = e.shiftKey;
-    const key = e.key.toLowerCase();
-
-    // Escape: close find bar → close palette → close sidebar → exit focus modes → close modal (priority chain)
-    if (key === 'escape') {
-      if (closeFindBar()) return;
-      if (closeCommandPalette()) return;
-      if (settingsStore.get('sidebarOpen')) {
-        settingsStore.set('sidebarOpen', false);
-        return;
-      }
-      if (focusManagerRef?.exitAllModes()) return;
-      closeModal();
+    if (e.key === 'Escape') {
+      if (!closeFindBar()) closeModal();
       return;
     }
-
-    // Ctrl+Tab / Ctrl+Shift+Tab — Next/Previous tab
-    if (ctrl && key === 'tab') {
-      e.preventDefault();
-      const tab = shift ? tabStore.prevTab() : tabStore.nextTab();
-      if (tab) {
-        documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
-      }
-      return;
-    }
-
-    if (!ctrl) return;
-
-    // Ctrl+Q — Quit (Tauri only)
-    if (key === 'q' && !shift) {
-      e.preventDefault();
-      import('../platform/tauri-bridge.js').then(({ isTauri }) => {
-        if (isTauri()) {
-          import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-            getCurrentWindow().close();
-          });
-        }
-      });
-      return;
-    }
-
-    // Source mode formatting shortcuts (Ctrl+B/I/E)
-    // ProseMirror doesn't see keys when textarea has focus, so we handle them here.
-    if (settingsStore.get('sourceMode')) {
-      if (key === 'b' && !shift) {
-        e.preventDefault();
-        sourceFormat.bold();
-        return;
-      }
-      if (key === 'i' && !shift) {
-        e.preventDefault();
-        sourceFormat.italic();
-        return;
-      }
-      if (key === 'e' && !shift) {
-        e.preventDefault();
-        sourceFormat.inlineCode();
-        return;
-      }
-    }
-
-    // Ctrl+S — Save
-    if (key === 's' && !shift) {
-      e.preventDefault();
-      fileSaver.save();
-      return;
-    }
-
-    // Ctrl+Shift+S — Save As
-    if (key === 's' && shift) {
-      e.preventDefault();
-      fileSaver.saveAs();
-      return;
-    }
-
-    // Ctrl+N — New document (with dirty check)
-    if (key === 'n' && !shift) {
-      e.preventDefault();
-      if (documentStore.isDirty()) {
-        confirmModal('You have unsaved changes. Create a new document anyway?', { title: 'Unsaved Changes', okText: 'New Document', danger: true })
-          .then(ok => { if (ok) documentStore.newDocument(); })
-          .catch(() => {});
-      } else {
-        documentStore.newDocument();
-      }
-      return;
-    }
-
-    // Ctrl+T — New tab
-    if (key === 't' && !shift) {
-      e.preventDefault();
-      documentStore.newDocument();
-      return;
-    }
-
-    // Ctrl+Shift+T — Reopen last closed tab
-    if (key === 't' && shift) {
-      e.preventDefault();
-      const tab = tabStore.reopenTab();
-      if (tab) {
-        documentStore.setFile(tab.id, tab.name, tab.content, tab.source);
-      }
-      return;
-    }
-
-    // Ctrl+W / Ctrl+Shift+W — Close current tab (no-op on last tab)
-    if (key === 'w') {
-      e.preventDefault();
-      const tabs = tabStore.getTabs();
-      if (tabs.length <= 1) return;
-      const next = tabStore.closeTab(tabStore.getActiveTabId());
-      if (next) {
-        documentStore.setFile(next.id, next.name, next.content, next.source);
-      }
-      return;
-    }
-
-    // Ctrl+Shift+B — Toggle sidebar
-    if (key === 'b' && shift) {
-      e.preventDefault();
-      toggleSidebar();
-      return;
-    }
-
-    // Ctrl+Shift+H — Toggle history drawer
-    if (key === 'h' && shift) {
-      e.preventDefault();
-      toggleHistory();
-      return;
-    }
-
-    // Ctrl+O — Open file from disk (or toggle sidebar if unsupported)
-    if (key === 'o' && !shift) {
-      e.preventDefault();
-      if (localFs.isSupported()) {
-        fileSaver.openFile();
-      } else {
-        toggleSidebar();
-      }
-      return;
-    }
-
-    // Ctrl+L — Create link via popover
-    if (key === 'l' && !shift) {
-      e.preventDefault();
-      openLinkPopover();
-      return;
-    }
-
-    // Ctrl+F — Find
-    if (key === 'f' && !shift) {
-      e.preventDefault();
-      openFindBar(false);
-      return;
-    }
-
-    // Ctrl+H — Find & Replace
-    if (key === 'h' && !shift) {
-      e.preventDefault();
-      openFindBar(true);
-      return;
-    }
-
-    // Ctrl+Shift+F — Cycle focus/zen modes
-    if (key === 'f' && shift) {
-      e.preventDefault();
-      focusManagerRef?.cycleMode();
-      return;
-    }
-
-    // Ctrl+K — Open command palette
-    if (key === 'k' && !shift) {
-      e.preventDefault();
-      openCommandPalette();
-      return;
-    }
-
-    // Ctrl+P — Print / Export PDF
-    if (key === 'p' && !shift) {
-      e.preventDefault();
-      import('../utils/export.js').then(m => m.printDocument());
-      return;
-    }
-
-    // Ctrl+U — Toggle source view
-    if (key === 'u' && !shift) {
-      e.preventDefault();
-      settingsStore.set('sourceMode', !settingsStore.get('sourceMode'));
-      return;
-    }
-
-    // Ctrl+= / Ctrl++ — Zoom in
-    if ((key === '=' || key === '+') && !shift) {
-      e.preventDefault();
-      editorZoom.zoomIn();
-      return;
-    }
-    if (key === '+' && shift) {
-      e.preventDefault();
-      editorZoom.zoomIn();
-      return;
-    }
-
-    // Ctrl+- — Zoom out
-    if (key === '-' && !shift) {
-      e.preventDefault();
-      editorZoom.zoomOut();
-      return;
-    }
-
-    // Ctrl+0 — Reset zoom
-    if (key === '0' && !shift) {
-      e.preventDefault();
-      editorZoom.reset();
-      return;
-    }
-
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const action = bindings[(e.shiftKey ? 'shift+' : '') + e.key.toLowerCase()];
+    if (!action) return;
+    e.preventDefault();
+    action();
   });
 }

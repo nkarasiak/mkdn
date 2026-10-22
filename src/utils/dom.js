@@ -35,16 +35,3 @@ export function injectStyles(css) {
   return style;
 }
 
-export function svgIcon(svgString) {
-  const t = document.createElement('template');
-  t.innerHTML = svgString;
-  return t.content.firstChild;
-}
-
-export function $(selector, parent = document) {
-  return parent.querySelector(selector);
-}
-
-export function $$(selector, parent = document) {
-  return [...parent.querySelectorAll(selector)];
-}

@@ -1,5 +1,5 @@
 // Tauri v2 desktop integration
-// Runtime detection, custom window chrome, and native file I/O patching
+// Runtime detection, native file I/O patching, and updates
 
 let _isTauri = null;
 
@@ -23,143 +23,30 @@ export async function initTauri() {
   setTimeout(() => checkForUpdates(true), 3000);
 }
 
-// Re-read a file from disk in Tauri mode (for session restore of absolute-path files)
+// Re-open an absolute-path file from disk (session restore of files opened via OS/CLI)
 export async function restoreTauriFile(fileId) {
   if (!isTauri()) return false;
-  // Only handle absolute paths (Tauri file-open uses absolute paths)
   if (!fileId || (!fileId.startsWith('/') && !fileId.includes('\\'))) return false;
   try {
-    const { readTextFile } = await import('@tauri-apps/plugin-fs');
-    const content = await readTextFile(fileId);
-    const name = fileId.split('/').pop().split('\\').pop();
-    const { documentStore } = await import('../store/document-store.js');
-    documentStore.setFile(fileId, name, content, 'local');
+    const { fileSaver } = await import('../save/file-saver.js');
+    await fileSaver.openHandle(fileId);
     return true;
   } catch {
     return false;
   }
 }
 
-// Listen for native menu events and file-open from CLI/OS
-export async function initTauriEvents({ toggleSidebar, fileSaver, documentStore, focusManager, settingsStore }) {
+// Open file from CLI args or OS double-click
+export async function initTauriEvents() {
   if (!isTauri()) return;
-
   const { listen } = await import('@tauri-apps/api/event');
-
-  // Native menu → JS actions
-  await listen('menu-event', ({ payload: id }) => {
-    switch (id) {
-      case 'file:new': documentStore.newDocument(); break;
-      case 'file:open': fileSaver.openFile(); break;
-      case 'file:save': fileSaver.save(); break;
-      case 'file:save-as': fileSaver.saveAs(); break;
-      case 'view:toggle-sidebar': toggleSidebar(); break;
-      case 'view:toggle-source': settingsStore.set('sourceMode', !settingsStore.get('sourceMode')); break;
-      case 'view:zen-mode': focusManager.cycleMode(); break;
-      case 'tools:command-palette':
-        import('../command-palette/command-palette.js').then(m => m.openCommandPalette());
-        break;
-      case 'tools:writing-stats':
-        import('../stats/writing-stats.js').then(m => m.openWritingStats());
-        break;
-      case 'tools:theme-editor':
-        import('../themes/theme-editor.js').then(m => m.openThemeEditor());
-        break;
-      case 'help:shortcuts': showShortcutsDialog(); break;
-      case 'help:about': showAboutDialog(); break;
-      case 'help:check-updates': checkForUpdates(); break;
-    }
-  });
-
-  // Open file from CLI args or OS double-click
   await listen('file-open', async ({ payload: path }) => {
     try {
-      const { readTextFile } = await import('@tauri-apps/plugin-fs');
-      const content = await readTextFile(path);
-      const name = path.split('/').pop().split('\\').pop();
-      documentStore.setFile(path, name, content, 'local');
+      const { fileSaver } = await import('../save/file-saver.js');
+      await fileSaver.openHandle(path);
     } catch (err) {
       console.error('[tauri] Failed to open file:', err);
     }
-  });
-}
-
-// --- Help dialogs ---
-
-const SHORTCUTS = [
-  ['File', [
-    ['Ctrl+N', 'New Document'],
-    ['Ctrl+O', 'Open File'],
-    ['Ctrl+S', 'Save'],
-    ['Ctrl+Shift+S', 'Save As'],
-  ]],
-  ['Edit', [
-    ['Ctrl+Z', 'Undo'],
-    ['Ctrl+Shift+Z', 'Redo'],
-    ['Ctrl+F', 'Find'],
-    ['Ctrl+H', 'Find & Replace'],
-  ]],
-  ['Format', [
-    ['Ctrl+B', 'Bold'],
-    ['Ctrl+I', 'Italic'],
-    ['Ctrl+E', 'Inline Code'],
-    ['Ctrl+L', 'Insert Link'],
-  ]],
-  ['View', [
-    ['Ctrl+Shift+B', 'Toggle Sidebar'],
-    ['Ctrl+Shift+H', 'Toggle History'],
-    ['Ctrl+U', 'Source Mode'],
-    ['Ctrl+Shift+F', 'Cycle Focus Modes'],
-    ['Ctrl+Shift+G', 'Knowledge Graph'],
-  ]],
-  ['Tools', [
-    ['Ctrl+K', 'Command Palette'],
-    ['Ctrl+P', 'Print / Export PDF'],
-    ['Escape', 'Close Panel / Exit Mode'],
-  ]],
-];
-
-function showShortcutsDialog() {
-  import('../utils/dom.js').then(({ el }) => {
-    import('../ui/modal.js').then(({ showInfo }) => {
-      const container = el('div', { className: 'about-content' });
-      for (const [section, keys] of SHORTCUTS) {
-        container.appendChild(el('div', { className: 'about-section-title' }, section));
-        const table = el('table', { className: 'about-shortcuts' });
-        for (const [shortcut, desc] of keys) {
-          const kbd = shortcut.split('+').map(k => `<kbd>${k}</kbd>`).join('');
-          const row = el('tr', {},
-            el('td', { className: 'about-shortcut-keys', unsafeHTML: kbd }),
-            el('td', {}, desc),
-          );
-          table.appendChild(row);
-        }
-        container.appendChild(table);
-      }
-      showInfo('Keyboard Shortcuts', container);
-    });
-  });
-}
-
-function showAboutDialog() {
-  import('../utils/dom.js').then(({ el }) => {
-    import('../ui/modal.js').then(({ showInfo }) => {
-      const version = __APP_VERSION__ || '?';
-      const container = el('div', { className: 'about-content' },
-        el('div', { className: 'about-description' },
-          'A minimal, beautiful markdown editor with local folder sync and version history.'
-        ),
-        el('div', { className: 'about-section-title' }, 'Links'),
-        el('div', {},
-          el('a', { className: 'about-link', href: 'https://github.com/nkarasiak/mkdn', target: '_blank' }, 'GitHub Repository'),
-        ),
-        el('div', {},
-          el('a', { className: 'about-link', href: 'https://github.com/nkarasiak/mkdn/releases', target: '_blank' }, 'Releases & Changelog'),
-        ),
-        el('div', { className: 'about-version' }, `MKDN v${version}`),
-      );
-      showInfo('About MKDN', container);
-    });
   });
 }
 

@@ -32,20 +32,3 @@ export function downloadMarkdown() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-export async function copyHtml() {
-  const pm = document.querySelector('.ProseMirror');
-  if (!pm) return;
-  const html = pm.innerHTML;
-  try {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        'text/html': new Blob([html], { type: 'text/html' }),
-        'text/plain': new Blob([pm.innerText], { type: 'text/plain' }),
-      }),
-    ]);
-  } catch {
-    // Fallback: copy as plain text
-    await navigator.clipboard.writeText(pm.innerText);
-  }
-}

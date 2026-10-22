@@ -12,16 +12,12 @@ function clamp(v) {
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(v * 100) / 100));
 }
 
+let surfaces = [];
+
+// One mechanism only: the CSS `zoom` property on the editor surfaces.
+// (WebKitGTK honors it reliably; font-size calc()s must not multiply by zoom again.)
 function apply(zoom) {
-  // Keep CSS var (used by source editor and theme rules) but ALSO set the
-  // legacy `zoom` CSS property directly on the editor surfaces. WebKitGTK
-  // honors `zoom` and forces full layout recalc — bypasses the CSS-variable
-  // invalidation bug that left text unchanged on Tauri.
-  document.documentElement.style.setProperty('--editor-zoom', String(zoom));
-  const pane = document.querySelector('.editor-pane');
-  if (pane) pane.style.zoom = String(zoom);
-  const src = document.querySelector('.source-editor');
-  if (src) src.style.zoom = String(zoom);
+  for (const el of surfaces) el.style.zoom = String(zoom);
 }
 
 function showZoomToast(zoom) {
@@ -37,7 +33,8 @@ function showZoomToast(zoom) {
 
 export const editorZoom = {
   init(targetEl) {
-    apply(clamp(settingsStore.get('editorZoom') ?? 1));
+    surfaces = [...targetEl.querySelectorAll('.editor-pane, .source-editor-wrapper')];
+    apply(this.getZoom());
 
     targetEl.addEventListener('wheel', (e) => {
       if (!(e.ctrlKey || e.metaKey)) return;

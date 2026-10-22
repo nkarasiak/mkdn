@@ -1,11 +1,3 @@
-:root { --window-scale: 1; --editor-zoom: 1; }
-
-/* Tauri desktop: auto-shrink editor typography in narrow windows.
-   Wide window → 1, narrow window → floor of 0.7. Composes with user --editor-zoom. */
-.is-tauri .editor-pane {
-  --window-scale: clamp(0.7, calc((100vw - 200px) / 900), 1);
-}
-
 .editor-pane {
   background: var(--editor-bg);
 }
@@ -83,7 +75,7 @@
   outline: none;
   min-height: 100%;
   font-family: var(--font-sans);
-  font-size: calc(var(--font-size-lg) * var(--editor-zoom, 1) * var(--window-scale, 1));
+  font-size: var(--font-size-lg);
   line-height: 1.6;
   color: var(--text-primary);
   letter-spacing: -0.003em;
@@ -91,19 +83,10 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Full-width mode — like Confluence "extend page width" */
-body.full-width .editor-pane .ProseMirror,
-body.full-width .milkdown .ProseMirror,
-body.full-width .source-editor {
-  max-width: 100%;
-  padding-left: 32px !important;
-  padding-right: 32px !important;
-}
-
 /* Paragraphs — Substack spacing */
 .editor-pane .ProseMirror p,
 .milkdown .ProseMirror p {
-  font-size: calc(var(--font-size-lg) * var(--editor-zoom, 1) * var(--window-scale, 1)) !important;
+  font-size: var(--font-size-lg) !important;
   margin-bottom: 0.86em;
   line-height: 1.6 !important;
 }
@@ -115,7 +98,7 @@ body.full-width .source-editor {
   color: var(--text-primary);
   letter-spacing: normal !important;
   -webkit-font-smoothing: antialiased;
-  font-size: calc(2em * var(--editor-zoom, 1) * var(--window-scale, 1)) !important;
+  font-size: 2em !important;
   margin: 1em 0 0.625em !important;
   line-height: 1.16 !important;
   font-weight: 700 !important;
@@ -135,7 +118,7 @@ body.full-width .source-editor {
 
 .editor-pane .ProseMirror h2,
 .milkdown .ProseMirror h2 {
-  font-size: calc(1.625em * var(--editor-zoom, 1) * var(--window-scale, 1)) !important;
+  font-size: 1.625em !important;
   margin: 1em 0 0.625em !important;
   line-height: 1.16 !important;
   font-weight: 700 !important;
@@ -143,7 +126,7 @@ body.full-width .source-editor {
 
 .editor-pane .ProseMirror h3,
 .milkdown .ProseMirror h3 {
-  font-size: calc(1.375em * var(--editor-zoom, 1) * var(--window-scale, 1)) !important;
+  font-size: 1.375em !important;
   margin: 1em 0 0.625em !important;
   line-height: 1.16 !important;
   font-weight: 700 !important;
@@ -233,7 +216,7 @@ body.full-width .source-editor {
 .editor-pane .ProseMirror code,
 .milkdown .ProseMirror code {
   font-family: 'JetBrains Mono', var(--font-mono) !important;
-  font-size: calc(13px * var(--editor-zoom, 1) * var(--window-scale, 1)) !important;
+  font-size: 13px !important;
   line-height: 20px !important;
   padding: 2px 5px;
   border-radius: 3px;
@@ -255,7 +238,7 @@ body.full-width .source-editor {
 .editor-pane .ProseMirror pre code,
 .milkdown .ProseMirror pre code {
   font-family: monospace !important;
-  font-size: calc(13px * var(--editor-zoom, 1) * var(--window-scale, 1));
+  font-size: 13px;
   line-height: 24px;
   padding: 0;
   background: none;
@@ -275,18 +258,18 @@ body.full-width .source-editor {
 /* Milkdown code block — smaller font, no dark active line gutter */
 .milkdown .milkdown-code-block .cm-editor {
   font-family: monospace !important;
-  font-size: calc(13px * var(--editor-zoom, 1) * var(--window-scale, 1)) !important;
+  font-size: 13px !important;
   background: transparent !important;
 }
 
 .milkdown .milkdown-code-block .cm-content {
   font-family: monospace !important;
-  font-size: calc(13px * var(--editor-zoom, 1) * var(--window-scale, 1)) !important;
+  font-size: 13px !important;
   line-height: 24px !important;
 }
 
 .milkdown .milkdown-code-block .cm-gutters {
-  font-size: calc(13px * var(--editor-zoom, 1) * var(--window-scale, 1)) !important;
+  font-size: 13px !important;
   background: transparent !important;
   border-right: none !important;
 }
@@ -335,47 +318,7 @@ body.full-width .source-editor {
   font-style: italic;
 }
 
-/* ================================================================
-   Milkdown floating toolbar — fix invisible icons & modernize
-   ================================================================ */
-.milkdown .milkdown-toolbar {
-  background: var(--bg-primary) !important;
-  border: 1px solid var(--border-color);
-  border-radius: 10px !important;
-  box-shadow: var(--shadow-lg) !important;
-  padding: 2px 4px;
-}
-
-.milkdown .milkdown-toolbar .toolbar-item svg {
-  color: var(--text-secondary) !important;
-  fill: var(--text-secondary) !important;
-}
-
-.milkdown .milkdown-toolbar .toolbar-item:hover svg {
-  color: var(--text-primary) !important;
-  fill: var(--text-primary) !important;
-}
-
-.milkdown .milkdown-toolbar .toolbar-item.active svg {
-  color: var(--accent) !important;
-  fill: var(--accent) !important;
-}
-
-.milkdown .milkdown-toolbar .toolbar-item {
-  border-radius: 6px !important;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.milkdown .milkdown-toolbar .toolbar-item:hover {
-  background: var(--bg-hover) !important;
-}
-
-.milkdown .milkdown-toolbar .divider {
-  background: var(--border-color) !important;
-  opacity: 0.5;
-}
-
-/* Placeholder decoration on empty doc */
+/* Placeholder */
 .crepe-placeholder[data-placeholder]::before {
   content: attr(data-placeholder);
   color: var(--text-muted);
@@ -396,7 +339,7 @@ body.full-width .source-editor {
   background: var(--editor-bg);
   color: var(--text-primary);
   font-family: 'JetBrains Mono', var(--font-mono);
-  font-size: calc(14px * var(--editor-zoom, 1) * var(--window-scale, 1));
+  font-size: 14px;
   line-height: 1.6;
   border: none;
   outline: none;

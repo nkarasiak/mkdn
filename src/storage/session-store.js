@@ -2,7 +2,6 @@ import { storage } from './local-storage.js';
 import { documentStore } from '../store/document-store.js';
 import { eventBus } from '../store/event-bus.js';
 import { debounce } from '../utils/debounce.js';
-import { toast } from '../ui/toast.js';
 import { STORAGE_SESSION } from '../constants.js';
 
 const IDB_NAME = 'mkdn-session-db';
@@ -98,7 +97,6 @@ export const sessionStore = {
 
     if (saved && saved.markdown != null) {
       documentStore.restoreState(saved);
-      setTimeout(() => toast('Previous session restored', 'info', 2500), 800);
     }
   },
 

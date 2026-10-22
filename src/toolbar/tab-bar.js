@@ -125,7 +125,7 @@ export function createTabBar() {
  * Call this after milkdown init.
  */
 export function initTabs() {
-  // When a file is opened externally (sidebar, file picker), create/switch tab
+  // When a file is opened (picker, drop, OS), create/switch tab
   eventBus.on('file:opened', ({ id, name, source }) => {
     const content = documentStore.getMarkdown();
     tabStore.openTab(id || name, name, content, source);
@@ -147,7 +147,6 @@ export function initTabs() {
 
   // Track saves
   eventBus.on('file:saved', () => tabStore.markSaved());
-  eventBus.on('sync:saved', () => tabStore.markSaved());
 
   // Track renames
   eventBus.on('file:renamed', ({ name }) => {
@@ -177,6 +176,15 @@ export function initTabs() {
       });
     }
     eventBus.emit('tabs:changed', { tabs: tabStore.getTabs(), activeTabId: tabStore.getActiveTabId() });
+  } else {
+    // First run: give the current document a tab, or the first Ctrl+T would replace it.
+    const tab = tabStore.openTab(
+      documentStore.getFileId() || 'untitled-' + Date.now(),
+      documentStore.getFileName(),
+      documentStore.getMarkdown(),
+      documentStore.getFileSource(),
+    );
+    tab.dirty = documentStore.isDirty();
   }
 }
 
@@ -278,26 +286,5 @@ injectStyles(`
   width: 100%;
   min-width: 40px;
   outline: none;
-}
-
-.tab-new-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  flex-shrink: 0;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.tab-new-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.tab-new-btn svg {
-  width: 14px;
-  height: 14px;
 }
 `);

@@ -2,12 +2,8 @@ import { el, injectStyles } from '../utils/dom.js';
 import { icons } from '../toolbar/toolbar-icons.js';
 import { historyManager } from './history-manager.js';
 import { documentStore } from '../store/document-store.js';
-import { eventBus } from '../store/event-bus.js';
-import { confirm as confirmModal } from '../ui/modal.js';
+import { confirm as confirmModal, showInfo } from '../ui/modal.js';
 import { computeDiff, collapseDiff } from './diff.js';
-import { createEmptyState } from '../ui/empty-state.js';
-
-let listEl = null;
 
 const TRIGGER_LABELS = {
   save: 'Manual save',
@@ -42,19 +38,19 @@ function formatTime(ts) {
 function createSnapshotItem(snap) {
   const actions = el('div', { className: 'history-item-actions' },
     el('button', {
-      className: 'toolbar-btn history-action-btn',
+      className: 'header-btn header-icon-btn history-action-btn',
       title: 'Diff',
       unsafeHTML: icons.diff,
       onClick: (e) => { e.stopPropagation(); showDiff(snap); },
     }),
     el('button', {
-      className: 'toolbar-btn history-action-btn',
+      className: 'header-btn header-icon-btn history-action-btn',
       title: 'Preview',
       unsafeHTML: icons.eye,
       onClick: (e) => { e.stopPropagation(); showPreview(snap); },
     }),
     el('button', {
-      className: 'toolbar-btn history-action-btn',
+      className: 'header-btn header-icon-btn history-action-btn',
       title: 'Restore',
       unsafeHTML: icons.restore,
       onClick: (e) => { e.stopPropagation(); restoreSnapshot(snap); },
@@ -156,45 +152,17 @@ async function restoreSnapshot(snap) {
   } catch { /* cancelled */ }
 }
 
-async function renderList() {
-  if (!listEl) return;
-  listEl.replaceChildren();
-
-  const fileKey = historyManager.getFileKey();
-  const snapshots = await historyManager.getHistory(fileKey);
-
-  // Local history section
-  if (snapshots.length > 0) {
-    for (const snap of snapshots) {
-      listEl.appendChild(createSnapshotItem(snap));
-    }
+/** Open the version history of the current document in a dialog. */
+export async function openHistory() {
+  const listEl = el('div', { className: 'history-list' });
+  const snapshots = await historyManager.getHistory(historyManager.getFileKey());
+  if (snapshots.length) {
+    listEl.append(...snapshots.map(createSnapshotItem));
+  } else {
+    listEl.append(el('p', { className: 'history-empty' },
+      'No history yet. Snapshots are created as you edit and save.'));
   }
-
-  // Empty state when no history at all
-  if (snapshots.length === 0) {
-    listEl.appendChild(
-      createEmptyState({
-        icon: icons.clock,
-        title: 'No history yet',
-        description: 'Snapshots are created automatically as you edit and save your document.',
-      }),
-    );
-  }
-}
-
-export function createHistoryPanel() {
-  listEl = el('div', { className: 'history-list' });
-
-  eventBus.on('file:opened', () => renderList());
-  eventBus.on('file:new', () => renderList());
-  eventBus.on('file:saved', () => renderList());
-  eventBus.on('history:restored', () => renderList());
-  eventBus.on('history:updated', () => renderList());
-
-  // Initial render (deferred so the DOM is ready)
-  setTimeout(renderList, 0);
-
-  return listEl;
+  showInfo('History', listEl);
 }
 
 // Inject history panel styles
@@ -202,6 +170,11 @@ injectStyles(`
 .history-list {
   display: flex;
   flex-direction: column;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.history-empty {
+  color: var(--text-secondary);
 }
 .history-item {
   display: flex;
@@ -242,6 +215,7 @@ injectStyles(`
 }
 .history-action-btn {
   width: 24px;
+  min-width: 24px;
   height: 24px;
   padding: 0;
 }
@@ -278,21 +252,6 @@ injectStyles(`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.history-section-header {
-  padding: 6px 12px 4px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-tertiary);
-  border-bottom: 1px solid var(--border-light);
-}
-.history-item.is-collab {
-  border-left: 3px solid var(--collab-color);
-}
-.history-item-trigger.collab-trigger {
-  color: var(--collab-color);
 }
 .diff-modal {
   max-width: 720px;
