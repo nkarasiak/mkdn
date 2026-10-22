@@ -4,9 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-22
+
 ### Changed
 
-- **BREAKING — gedit-style minimal UI** — the header is now a single gedit/libadwaita-style bar: `Open`, `+` (new tab), the file name (`*` when unsaved), `Save`, and a ☰ menu. The formatting toolbar, menubar, breadcrumb, export/theme/info buttons, and the status-bar popover are gone; the status bar shows word count (plus `Ln, Col` in source view).
+- **gedit-style minimal UI** — the header is now a single gedit/libadwaita-style bar: `Open`, `+` (new tab), the file name (`*` when unsaved), `Save`, and a ☰ menu. The formatting toolbar, menubar, breadcrumb, export/theme/info buttons, and the status-bar popover are gone; the status bar shows word count (plus `Ln, Col` in source view).
 - **Editor is keyboard-driven** — Crepe's block handle / slash menu and selection toolbar are disabled; format with markdown syntax or Ctrl+B / Ctrl+I / Ctrl+L.
 - **History** opens as a dialog (☰ → History, `Ctrl+Shift+H`) instead of a sidebar section.
 - **Ctrl+N** opens a new tab (same as Ctrl+T) instead of replacing the document after a confirm.
@@ -14,7 +16,7 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 
-- **BREAKING** — sidebar (linked folder file tree, outline, backlinks), command palette, focus / zen / typewriter / writing modes, full-width and content-width handle, theme editor, writing statistics, share links (`#…` URL documents), slash menu, floating toolbar, drag handles, emoji picker, callout / details / footnote / mermaid / embed renderers, Crepe LaTeX, the PWA install / update / offline banners, and the dead Tauri native-menu handler.
+- Sidebar (linked folder file tree, outline, backlinks), command palette, focus / zen / typewriter / writing modes, full-width and content-width handle, theme editor, writing statistics, share links (`#…` URL documents), slash menu, floating toolbar, drag handles, emoji picker, callout / details / footnote / mermaid / embed renderers, Crepe LaTeX, the PWA install / update / offline banners, and the dead Tauri native-menu handler.
 
 ### Fixed
 
