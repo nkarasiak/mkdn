@@ -70,7 +70,7 @@ The `el()` helper accepts:
 
 `main.js` imports CSS in order then calls `App.init()`. The init sequence:
 1. Apply theme, create DOM: header bar (`toolbar/toolbar.js`), tab bar, editor pane + source textarea, status bar
-2. `initTauri()` → `sessionStore.restoreSession()` → `milkdown.init()` → `initTabs()` → `fileSaver.init()` → `sessionStore.init()` → `historyManager.init()`
+2. `initTauri()` → `sessionStore.restoreSession()` → `milkdown.init()` (`milkdown-setup.js` is a dynamic import, preloaded from the HTML by the `preloadEditor` Vite plugin, so the shell paints first — keep it and ProseMirror out of static imports from the entry) → `initTabs()` → `fileSaver.init()` → `sessionStore.init()` → `historyManager.init()`
 3. Find bar, source-mode toggle, keyboard shortcuts, PWA / Tauri file-open handlers
 
 ### Event Bus + Stores (Pub/Sub State Management)
@@ -113,7 +113,7 @@ Additionally, `milkdown-setup.js` uses an `updating` flag: when `setContent()` i
 
 The editor is a Milkdown Crepe instance (ProseMirror under the hood). Key methods on the `milkdown` singleton:
 
-- `init(container)` — Async; Crepe with BlockEdit, Toolbar and Latex features disabled
+- `init(container)` — Async; `CrepeBuilder` with only the features we use (no BlockEdit, Toolbar, Latex). Don't switch back to the `Crepe` class: it bundles every feature (KaTeX etc.) even when disabled
 - `getMarkdown()` / `setContent(markdown)` — Read/write content
 - `getView()` — Access underlying ProseMirror EditorView
 - `getSelectedText()` / `insertLink(text, url)` — Used by the link popover (both modes)

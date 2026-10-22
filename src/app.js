@@ -1,7 +1,6 @@
 import { el } from './utils/dom.js';
 import { settingsStore } from './store/settings-store.js';
 import { eventBus } from './store/event-bus.js';
-import { milkdown } from './editor/milkdown-setup.js';
 import { createToolbar } from './toolbar/toolbar.js';
 import { createStatusBar } from './ui/status-bar.js';
 import { initKeyboardShortcuts } from './ui/keyboard-shortcuts.js';
@@ -45,6 +44,8 @@ function updateDocTitle() {
 export const App = {
   async init() {
     const appEl = document.getElementById('app');
+    // The editor is the heavy chunk: fetch it while the shell paints and the session restores.
+    const milkdownReady = import('./editor/milkdown-setup.js');
 
     // Apply theme
     applyTheme();
@@ -119,7 +120,7 @@ export const App = {
       await restoreTauriFile(documentStore.getFileId());
     }
 
-    // Initialize Milkdown (always-on)
+    const { milkdown } = await milkdownReady;
     await milkdown.init(editorPane);
 
     // Initialize tab system
@@ -135,7 +136,7 @@ export const App = {
     eventBus.on('settings:theme', applyTheme);
 
     // Initialize Find & Replace
-    initFindBar({ editorContainer: main, milkdown });
+    await initFindBar({ editorContainer: main, milkdown });
 
     // Source mode toggling with cursor sync
     eventBus.on('settings:sourceMode', (on) => {
