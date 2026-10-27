@@ -202,6 +202,87 @@
 }
 
 /* ================================================================
+   Right-click menu (ui/context-menu.js) — builds on .app-menu
+   ================================================================ */
+
+.ctx-menu {
+  min-width: 240px;
+  max-width: 320px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+
+.ctx-menu .app-menu-item > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ctx-menu .app-menu-item:focus-visible,
+.ctx-menu .ctx-has-sub.open {
+  background: var(--bg-hover);
+  outline: none;
+}
+
+.ctx-mono,
+.ctx-menu kbd.ctx-mono {
+  font-family: var(--font-mono);
+}
+
+.ctx-strip {
+  display: flex;
+  gap: 4px;
+  padding: 2px 2px 6px;
+}
+
+.ctx-strip button {
+  flex: 1;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.ctx-strip button:hover,
+.ctx-strip button:focus-visible {
+  background: var(--bg-hover);
+  outline: none;
+}
+
+.ctx-strip button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ctx-strip svg {
+  width: 15px;
+  height: 15px;
+}
+
+.ctx-section {
+  padding: 6px 10px 2px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ctx-info {
+  padding: 4px 10px 6px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ================================================================
    Link popover (Ctrl+L)
    ================================================================ */
 
