@@ -23,6 +23,9 @@ function applyContentWidth() {
 function applyTheme() {
   const theme = settingsStore.getResolvedTheme();
   document.documentElement.setAttribute('data-theme', theme);
+  // Browser / installed-app title bar matches the header
+  document.querySelector('meta[name="theme-color"]').content =
+    getComputedStyle(document.documentElement).getPropertyValue('--toolbar-bg').trim();
 }
 
 // Listen for OS dark/light mode changes when theme is 'auto'
