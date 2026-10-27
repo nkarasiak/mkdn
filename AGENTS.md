@@ -135,6 +135,12 @@ The editor is a Milkdown Crepe instance (ProseMirror under the hood). Key method
 
 **ProseMirror plugins registered**: find-replace, image paste (inline base64), smart paste.
 
+**Image block alt fix**: `init()` overrides Crepe's `imageBlockSchema` so a standalone image keeps its alt text (Crepe stores its resize ratio there and wrote `![1.00](…)`).
+
+### Right-click menu
+
+`milkdown-setup.js` installs a small `contextmenu` listener that decides synchronously whether to replace the native menu (not for Shift+right-click, touch, `.cm-editor` code blocks or inputs), moves the cursor to the click unless it's inside the selection, then dynamic-imports `editor/editor-context-menu.js`. That module detects the context (selection → link → image → table → heading → default) and builds items for `ui/context-menu.js`, a generic popover menu styled like ☰ (`.ctx-*` in `toolbar.css`). Clipboard goes through `editor/clipboard.js` (browser Clipboard API; `@tauri-apps/plugin-clipboard-manager` on desktop, where WebKitGTK can't read the clipboard from a click). Pure helpers (slug, natural sort, TSV) live in `editor/context-menu-utils.js`, checked by `node scripts/check-context-menu-utils.mjs`.
+
 ### Dual Editor Modes
 
 Source mode (Ctrl+U) swaps the ProseMirror editor for a raw markdown textarea. Cursor position is preserved across mode switches via the markdown offset mapping. The status bar shows `Ln, Col` only in source mode (where it is exact).
@@ -169,13 +175,13 @@ Styles in `src/styles/`, imported in order by `main.js`. Theming uses CSS custom
 | Directory | Purpose | Pattern |
 |-----------|---------|---------|
 | `store/` | eventBus, documentStore, settingsStore, tabStore | Singletons |
-| `editor/` | Milkdown setup, zoom, paste plugins | Singleton + plugin factories |
+| `editor/` | Milkdown setup, zoom, paste plugins, right-click menu content, clipboard, table ops | Singleton + plugin factories |
 | `save/` | File open/save/autosave/disk-change detection | Singleton |
 | `local/` | File System Access API wrapper | Object (patched by Tauri) |
 | `history/` | Snapshots, diff, history dialog | Singleton + IndexedDB |
 | `storage/` | Session persistence, history DB, localStorage | Utility modules |
 | `toolbar/` | Header bar, tab bar, icons | Factory functions |
-| `ui/` | Modal, toast, status bar, link popover, keyboard shortcuts, about | Factory functions |
+| `ui/` | Modal, toast, status bar, link popover, context menu, keyboard shortcuts, about | Factory functions |
 | `find-replace/` | Find/replace with decorations (both modes) | Plugin + engines |
 | `export/` | Styled HTML export | Function |
 | `platform/` | Tauri detection, fs patch, file-open events, updater | Functions |
