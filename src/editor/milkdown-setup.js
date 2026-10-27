@@ -11,9 +11,11 @@ import { table } from '@milkdown/crepe/feature/table';
 import { languages } from '@codemirror/language-data';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { editorViewCtx, commandsCtx, serializerCtx } from '@milkdown/core';
-import { replaceAll, $prose } from '@milkdown/utils';
-import { TextSelection, Plugin } from '@milkdown/prose/state';
+import { replaceAll, $prose, callCommand } from '@milkdown/utils';
+import { TextSelection, NodeSelection, Plugin } from '@milkdown/prose/state';
+import { Fragment } from '@milkdown/prose/model';
 import { toggleLinkCommand } from '@milkdown/components/link-tooltip';
+import { imageBlockSchema } from '@milkdown/components/image-block';
 import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
@@ -79,6 +81,35 @@ const syncPlugin = () => new Plugin({
   },
 });
 
+// Right-click menu: whether to replace the native menu is decided here (synchronously);
+// the menu itself is built by a lazily loaded module.
+function installContextMenu(view) {
+  let pointerType = 'mouse';
+  view.dom.addEventListener('pointerdown', (e) => { pointerType = e.pointerType; }, true);
+  view.dom.addEventListener('contextmenu', (e) => {
+    if (e.shiftKey || pointerType === 'touch' || e.target.closest?.('.cm-editor, input, textarea')) return;
+    e.preventDefault();
+    let x = e.clientX, y = e.clientY;
+    const { state } = view;
+    if (e.button !== 2) { // context-menu key / Shift+F10: open at the cursor
+      ({ left: x, bottom: y } = view.coordsAtPos(state.selection.head));
+    } else {
+      // Move the cursor to the click, unless it's inside the current selection.
+      const hit = view.posAtCoords({ left: x, top: y });
+      const { from, to, empty } = state.selection;
+      if (hit && (empty || hit.pos < from || hit.pos > to)) {
+        const node = hit.inside >= 0 ? state.doc.nodeAt(hit.inside) : null;
+        const sel = node?.isAtom && NodeSelection.isSelectable(node)
+          ? NodeSelection.create(state.doc, hit.inside)
+          : TextSelection.near(state.doc.resolve(hit.pos));
+        view.dispatch(state.tr.setSelection(sel));
+      }
+    }
+    view.focus();
+    import('./editor-context-menu.js').then(m => m.openEditorMenu(view, x, y));
+  });
+}
+
 const sourceTextarea = () => document.querySelector('.source-editor');
 
 export const milkdown = {
@@ -92,6 +123,30 @@ export const milkdown = {
       .addFeature(placeholder, { text: 'Start writing...', mode: 'doc' })
       .addFeature(codeMirror, { theme: oneDark, languages })
       .addFeature(table);
+
+    // Crepe's image block reads a standalone image's alt as its resize ratio and writes the
+    // ratio back (`![Sunset](a.png)` → `![1.00](a.png)`). Keep the alt; sizes aren't saved anyway.
+    crepe.editor.config(ctx => ctx.update(imageBlockSchema.key, prev => c => {
+      const base = prev(c);
+      return {
+        ...base,
+        attrs: { ...base.attrs, alt: { default: '', validate: 'string' } },
+        // Pastes go through the DOM, so the alt must survive parseDOM too.
+        parseDOM: base.parseDOM.map(rule => ({ ...rule, getAttrs: dom => ({ ...rule.getAttrs(dom), alt: dom.getAttribute('alt') || '' }) })),
+        parseMarkdown: {
+          match: base.parseMarkdown.match,
+          runner: (state, node, type) => state.addNode(type, { src: node.url, caption: node.title ?? '', alt: node.alt ?? '', ratio: 1 }),
+        },
+        toMarkdown: {
+          match: base.toMarkdown.match,
+          runner: (state, node) => {
+            state.openNode('paragraph');
+            state.addNode('image', undefined, undefined, { url: node.attrs.src, title: node.attrs.caption, alt: node.attrs.alt });
+            state.closeNode();
+          },
+        },
+      };
+    }));
 
     crepe.editor.use($prose(syncPlugin));
     crepe.editor.use($prose(() => createFindReplacePlugin()));
@@ -109,6 +164,8 @@ export const milkdown = {
     for (const [k, v] of [['spellcheck', 'false'], ['autocorrect', 'off'], ['autocapitalize', 'off']]) {
       this.getView().dom.setAttribute(k, v);
     }
+
+    installContextMenu(this.getView());
 
     // Route Milkdown's link command (Mod-K) to our link popover.
     const cmds = crepe.editor.ctx.get(commandsCtx);
@@ -132,7 +189,7 @@ export const milkdown = {
       clearTimeout(syncTimer);
       crepe.editor.action(replaceAll(markdown));
       loaded = markdown;
-    } catch { /* editor may not be ready */ }
+    } catch (err) { console.warn('setContent failed', err); } // e.g. editor not ready
     finally {
       updating = false;
     }
@@ -164,8 +221,31 @@ export const milkdown = {
     if (!view) return;
     view.focus();
     const { state, dispatch } = view;
-    const linkMark = state.schema.marks.link.create({ href: url });
-    dispatch(state.tr.replaceSelectionWith(state.schema.text(text, [linkMark]), false).scrollIntoView());
+    const { from, to, empty } = state.selection;
+    const link = state.schema.marks.link;
+    if (!empty && state.doc.textBetween(from, to) === text) {
+      // Same text (e.g. only the URL was edited): relink it in place, keeping bold/italic/code inside.
+      dispatch(state.tr.removeMark(from, to, link).addMark(from, to, link.create({ href: url })).scrollIntoView());
+      return;
+    }
+    dispatch(state.tr.replaceSelectionWith(state.schema.text(text, [link.create({ href: url })]), false).scrollIntoView());
+  },
+
+  /** Run a Milkdown command (e.g. toggleStrongCommand.key) on the current selection. */
+  runCommand(key, payload) {
+    return crepe.editor.action(callCommand(key, payload));
+  },
+
+  /** The selection serialized to markdown. */
+  selectionToMarkdown() {
+    const { state } = this.getView();
+    let { content } = state.selection.content();
+    if (content.firstChild?.isInline) content = Fragment.from(state.schema.nodes.paragraph.create(null, content));
+    try {
+      return crepe.editor.ctx.get(serializerCtx)(state.schema.topNodeType.create(null, content));
+    } catch {
+      return this.getSelectedText();
+    }
   },
 
   /** Get the ProseMirror editor view. */

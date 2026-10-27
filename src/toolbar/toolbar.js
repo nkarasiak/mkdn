@@ -127,7 +127,7 @@ export function createToolbar() {
 
   const menuBtn = iconBtn('menu', 'Main menu', () => menu.togglePopover());
   // Anchor below the button (CSS anchor positioning isn't everywhere yet).
-  menu.addEventListener('toggle', (e) => {
+  menu.addEventListener('beforetoggle', (e) => {
     if (e.newState !== 'open') return;
     const r = menuBtn.getBoundingClientRect();
     menu.style.top = `${r.bottom + 4}px`;

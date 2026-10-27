@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.0] - 2026-10-27
+
+### Added
+
+- **Right-click menu** — adapts to what you click: format the selection or turn it into a heading/list, copy it as Markdown, find it or search the web; open, edit, copy or remove links (a `#section` link jumps to its heading, a linked `.md` opens in a new tab on desktop); change a heading's level, copy a link to its section or select the section; insert/delete/align/sort table rows and columns or copy the table for a spreadsheet; copy, save or remove images; paste as plain text, insert a table, task list or today's date, copy the whole document as rich text for email or Google Docs. Shift+right-click gives the browser's menu.
+
+### Fixed
+
+- **Image descriptions were lost** — an image on its own line was saved with its description replaced by "1.00".
+- **☰ menu flash** — the first time it opened, the menu flashed in the top-left corner before jumping under the button.
+
 ## [3.2.1] - 2026-10-27
 
 ### Fixed

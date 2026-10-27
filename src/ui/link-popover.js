@@ -11,6 +11,7 @@ const popover = el('div', { className: 'link-popover' },
   ),
 );
 const [textInput, urlInput] = popover.querySelectorAll('input');
+const header = popover.querySelector('.link-popover-header');
 document.body.appendChild(popover);
 
 function close() {
@@ -35,11 +36,12 @@ function submit() {
  * Open the link popover, positioned near an anchor element or the current
  * selection if no anchor is given.
  * @param {HTMLElement} [anchor] - element to position the popover below
+ * @param {{ text?: string, url?: string }} [values] - prefill (editing an existing link)
  */
-export function openLinkPopover(anchor) {
-  const selected = milkdown.getSelectedText();
-  textInput.value = selected;
-  urlInput.value = '';
+export function openLinkPopover(anchor, { text, url } = {}) {
+  textInput.value = text ?? milkdown.getSelectedText();
+  urlInput.value = url ?? '';
+  header.textContent = url ? 'Edit link' : 'Create link';
 
   // Position the popover
   let top, left;

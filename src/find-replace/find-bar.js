@@ -278,8 +278,9 @@ function buildBar(container) {
   container.appendChild(barEl);
 }
 
-export function openFindBar(withReplace = false) {
+export function openFindBar(withReplace = false, query = null) {
   if (!barEl) return;
+  if (query != null) searchInput.value = query;
   showReplace = withReplace;
   isOpen = true;
   barEl.classList.add('open');
