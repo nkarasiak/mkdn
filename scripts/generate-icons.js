@@ -3,7 +3,7 @@
  * Run: node scripts/generate-icons.js
  *
  * Creates icon-192.png, icon-512.png, apple-touch-icon.png
- * matching the favicon.svg design (blue rounded rect with white "M").
+ * matching the favicon.svg design (black rounded rect with white "M").
  */
 
 import { writeFileSync } from 'fs';
@@ -83,9 +83,9 @@ function drawIcon(size) {
     for (let x = 0; x < size; x++) {
       const idx = (y * size + x) * 4;
       if (isInsideRoundedRect(x, y, size, size, r)) {
-        pixels[idx] = 0x25;
-        pixels[idx + 1] = 0x63;
-        pixels[idx + 2] = 0xEB;
+        pixels[idx] = 0x1A;
+        pixels[idx + 1] = 0x1A;
+        pixels[idx + 2] = 0x1A;
         pixels[idx + 3] = 255;
       }
     }
