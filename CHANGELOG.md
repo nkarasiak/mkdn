@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - **Lazy features could fail after an update** — History, Find, Export… could 404 in a window still running the previous version once the new one took over.
 - **Last seconds of typing lost on reload / close** — the session and tabs are now saved when the page is closed.
 - **Edits could land in the wrong tab** — text typed just before switching, closing or opening a tab arrived ~200 ms late and was written into the newly active document (and marked it modified); Ctrl+S right after typing could save the text without the last keystrokes.
+- **Desktop builds were labelled 2.4.0** — since 2.4.0 the desktop app reported the wrong version and its downloads went to a stale draft release instead of a release of their own; the desktop version now follows `package.json`.
 
 ## [3.1.3] - 2026-10-22
 

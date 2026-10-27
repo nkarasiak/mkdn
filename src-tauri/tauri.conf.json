@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "mkdn",
-  "version": "2.4.0",
+  "version": "../package.json",
   "identifier": "io.github.nkarasiak.mkdn",
   "build": {
     "frontendDist": "../dist",
