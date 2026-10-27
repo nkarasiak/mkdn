@@ -4,6 +4,7 @@ import { STORAGE_SETTINGS } from '../constants.js';
 const defaults = {
   theme: 'auto',
   editorZoom: 1,
+  contentWidth: 820,
   sourceMode: false,
 };
 

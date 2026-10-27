@@ -16,6 +16,10 @@ import { isTauri, initTauri, initTauriEvents, restoreTauriFile } from './platfor
 import { createTabBar, initTabs } from './toolbar/tab-bar.js';
 import { initPWA } from './pwa/pwa-manager.js';
 
+function applyContentWidth() {
+  document.documentElement.style.setProperty('--content-max-width', `${settingsStore.get('contentWidth')}px`);
+}
+
 function applyTheme() {
   const theme = settingsStore.getResolvedTheme();
   document.documentElement.setAttribute('data-theme', theme);
@@ -50,6 +54,7 @@ export const App = {
 
     // Apply theme
     applyTheme();
+    applyContentWidth();
 
     // Create editor pane
     const editorPane = el('div', { className: 'editor-pane' });
@@ -133,6 +138,7 @@ export const App = {
     historyManager.init();
 
     eventBus.on('settings:theme', applyTheme);
+    eventBus.on('settings:contentWidth', applyContentWidth);
 
     // Initialize Find & Replace
     await initFindBar({ editorContainer: main, milkdown });
