@@ -131,6 +131,8 @@ export const milkdown = {
       return {
         ...base,
         attrs: { ...base.attrs, alt: { default: '', validate: 'string' } },
+        // Pastes go through the DOM, so the alt must survive parseDOM too.
+        parseDOM: base.parseDOM.map(rule => ({ ...rule, getAttrs: dom => ({ ...rule.getAttrs(dom), alt: dom.getAttribute('alt') || '' }) })),
         parseMarkdown: {
           match: base.parseMarkdown.match,
           runner: (state, node, type) => state.addNode(type, { src: node.url, caption: node.title ?? '', alt: node.alt ?? '', ratio: 1 }),
@@ -219,8 +221,14 @@ export const milkdown = {
     if (!view) return;
     view.focus();
     const { state, dispatch } = view;
-    const linkMark = state.schema.marks.link.create({ href: url });
-    dispatch(state.tr.replaceSelectionWith(state.schema.text(text, [linkMark]), false).scrollIntoView());
+    const { from, to, empty } = state.selection;
+    const link = state.schema.marks.link;
+    if (!empty && state.doc.textBetween(from, to) === text) {
+      // Same text (e.g. only the URL was edited): relink it in place, keeping bold/italic/code inside.
+      dispatch(state.tr.removeMark(from, to, link).addMark(from, to, link.create({ href: url })).scrollIntoView());
+      return;
+    }
+    dispatch(state.tr.replaceSelectionWith(state.schema.text(text, [link.create({ href: url })]), false).scrollIntoView());
   },
 
   /** Run a Milkdown command (e.g. toggleStrongCommand.key) on the current selection. */

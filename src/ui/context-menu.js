@@ -33,9 +33,14 @@ function closeSub() {
 }
 
 function openSub(row, items, focus) {
-  if (sub?.dataset.for === row.textContent) return;
+  if (sub?.matches(':popover-open') && sub.dataset.for === row.textContent) {
+    if (focus) sub.querySelector('button')?.focus();
+    return;
+  }
   closeSub();
-  sub = el('div', { className: 'app-menu ctx-menu ctx-submenu', popover: 'auto', role: 'menu', dataset: { for: row.textContent } });
+  const own = sub = el('div', { className: 'app-menu ctx-menu ctx-submenu', popover: 'auto', role: 'menu', dataset: { for: row.textContent } });
+  // Closed by the popover itself (Esc, click elsewhere in the menu): forget it so it can reopen.
+  own.addEventListener('toggle', (e) => { if (e.newState === 'closed' && sub === own) closeSub(); });
   fill(sub, items);
   menu.appendChild(sub); // nested in the menu, so showing it keeps the menu open
   sub.showPopover();

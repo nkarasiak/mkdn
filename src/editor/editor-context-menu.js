@@ -259,9 +259,9 @@ function tableItems(view, { tablePos, table, row, col, align }) {
   };
   const name = table.child(0).child(col)?.textContent.trim();
   return [
-    !header && { section: 'Row' },
+    { section: 'Row' },
     !header && { label: 'Insert above', action: run(addRowBeforeCommand) },
-    !header && { label: 'Insert below', action: run(addRowAfterCommand) },
+    { label: 'Insert below', action: run(addRowAfterCommand) },
     !header && { label: 'Delete row', action: select(selectRowCommand) },
     { section: name ? `Column “${name}”` : 'Column' },
     { label: 'Insert left', action: run(addColBeforeCommand) },
@@ -275,11 +275,16 @@ function tableItems(view, { tablePos, table, row, col, align }) {
     'sep',
     { label: 'Copy for spreadsheet', hint: 'Excel, Sheets', action: () => writeClipboard({ text: toTsv(tableRows(table)) }) },
     { label: 'Delete table', action: () => deleteTable(view, tablePos) },
+    'sep',
+    ...clipboardItems(view),
   ];
 }
 
 async function imageBlob(src) {
-  return (await fetch(src)).blob();
+  const res = await fetch(src);
+  const blob = res.ok && await res.blob();
+  if (!blob?.type.startsWith('image/')) throw new Error(res.ok ? 'not an image' : `HTTP ${res.status}`);
+  return blob;
 }
 
 async function copyImage(src) {
