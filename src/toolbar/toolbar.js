@@ -83,6 +83,11 @@ export function createToolbar() {
   eventBus.on('settings:contentWidth', syncWidth);
   syncWidth();
 
+  const showDialog = async (title, builder) => {
+    const [{ showInfo }, content] = await Promise.all([import('../ui/modal.js'), import('../ui/about-content.js')]);
+    showInfo(title, content[builder]());
+  };
+
   // Install App: only offered once the browser says the PWA is installable
   let installPrompt = null;
   const installItem = item('Install App…', '', async () => {
@@ -115,12 +120,8 @@ export function createToolbar() {
     item('Print…', 'Ctrl+P', () => printDocument()),
     sep(),
     installItem,
-    item('Keyboard Shortcuts', '', async () => {
-      const [{ showInfo }, { buildAboutContent }] = await Promise.all([
-        import('../ui/modal.js'), import('../ui/about-content.js'),
-      ]);
-      showInfo('mkdn', buildAboutContent());
-    }),
+    item('Keyboard Shortcuts', '', () => showDialog('Keyboard Shortcuts', 'buildShortcutsContent')),
+    item('About MKDN', '', () => showDialog('About MKDN', 'buildAboutContent')),
   );
   document.body.appendChild(menu);
 

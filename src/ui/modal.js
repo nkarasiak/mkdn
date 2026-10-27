@@ -225,6 +225,14 @@ injectStyles(`
   max-width: 560px;
 }
 .about-content { font-size: var(--font-size-sm); }
+.about-logo {
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 10px;
+  border-radius: 9px;
+  box-shadow: 0 0 0 1px var(--border-color); /* black logo on a dark dialog */
+}
 .about-description {
   margin-bottom: 8px;
   color: var(--text-secondary);
