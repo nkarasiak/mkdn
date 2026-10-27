@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Image descriptions were lost** — an image on its own line was saved with its description replaced by "1.00".
 - **☰ menu flash** — the first time it opened, the menu flashed in the top-left corner before jumping under the button.
 
 ## [3.2.1] - 2026-10-27

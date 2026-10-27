@@ -14,6 +14,7 @@ import { editorViewCtx, commandsCtx, serializerCtx } from '@milkdown/core';
 import { replaceAll, $prose } from '@milkdown/utils';
 import { TextSelection, Plugin } from '@milkdown/prose/state';
 import { toggleLinkCommand } from '@milkdown/components/link-tooltip';
+import { imageBlockSchema } from '@milkdown/components/image-block';
 import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
@@ -92,6 +93,28 @@ export const milkdown = {
       .addFeature(placeholder, { text: 'Start writing...', mode: 'doc' })
       .addFeature(codeMirror, { theme: oneDark, languages })
       .addFeature(table);
+
+    // Crepe's image block reads a standalone image's alt as its resize ratio and writes the
+    // ratio back (`![Sunset](a.png)` → `![1.00](a.png)`). Keep the alt; sizes aren't saved anyway.
+    crepe.editor.config(ctx => ctx.update(imageBlockSchema.key, prev => c => {
+      const base = prev(c);
+      return {
+        ...base,
+        attrs: { ...base.attrs, alt: { default: '', validate: 'string' } },
+        parseMarkdown: {
+          match: base.parseMarkdown.match,
+          runner: (state, node, type) => state.addNode(type, { src: node.url, caption: node.title ?? '', alt: node.alt ?? '', ratio: 1 }),
+        },
+        toMarkdown: {
+          match: base.toMarkdown.match,
+          runner: (state, node) => {
+            state.openNode('paragraph');
+            state.addNode('image', undefined, undefined, { url: node.attrs.src, title: node.attrs.caption, alt: node.attrs.alt });
+            state.closeNode();
+          },
+        },
+      };
+    }));
 
     crepe.editor.use($prose(syncPlugin));
     crepe.editor.use($prose(() => createFindReplacePlugin()));
