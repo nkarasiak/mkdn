@@ -43,6 +43,11 @@ injectStyles(`
   gap: 8px;
   pointer-events: none;
 }
+.toast-action {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
 .toast {
   padding: 8px 16px;
   border-radius: var(--radius-md);

@@ -37,8 +37,11 @@ export default defineConfig(() => ({
   },
   plugins: [
     preloadEditor(),
-    !isTauri && VitePWA({
-      registerType: 'autoUpdate',
+    VitePWA({
+      disable: isTauri, // keeps `virtual:pwa-register` importable (as a no-op)
+      // A new version waits until the user reloads (pwa-manager.js): the running page
+      // keeps its own lazy chunks instead of 404ing on files the new version removed.
+      registerType: 'prompt',
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
@@ -90,7 +93,7 @@ export default defineConfig(() => ({
         categories: ['productivity', 'utilities'],
       },
     }),
-  ].filter(Boolean),
+  ],
   build: {
     outDir: 'dist',
     sourcemap: false,
