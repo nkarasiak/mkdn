@@ -91,8 +91,10 @@ export const sessionStore = {
       // IndexedDB unavailable — fall back to localStorage
     }
 
-    if (!saved || saved.markdown == null) {
-      saved = storage.get(STORAGE_SESSION);
+    // localStorage can be newer: it's written synchronously on pagehide, IndexedDB may not finish
+    const local = storage.get(STORAGE_SESSION);
+    if (!saved || saved.markdown == null || (local?.savedAt ?? 0) > (saved.savedAt ?? 0)) {
+      saved = local;
     }
 
     if (saved && saved.markdown != null) {
@@ -107,6 +109,7 @@ export const sessionStore = {
     });
 
     eventBus.on('file:opened', save);
+    addEventListener('pagehide', save); // reload / close: don't lose the last 2 s of typing
     eventBus.on('file:saved', save);
 
     eventBus.on('file:new', () => {

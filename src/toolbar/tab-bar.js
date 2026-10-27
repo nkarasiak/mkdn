@@ -157,6 +157,7 @@ export function initTabs() {
     clearTimeout(_persistTimer);
     _persistTimer = setTimeout(() => tabStore.persist(), 800);
   });
+  addEventListener('pagehide', () => tabStore.persist());
 
   // Restore tabs from previous session
   const persisted = tabStore.loadPersistedTabs();
