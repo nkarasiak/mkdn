@@ -55,7 +55,7 @@ The version lives in `package.json` only (`npm version X.Y.Z --no-git-tag-versio
 
 1. On `dev`: bump `package.json`, rename `[Unreleased]` → `## [x.y.z] - YYYY-MM-DD`, commit `feat|fix(release): bump version to x.y.z`.
 2. Merge `dev` into `main` (`--no-ff`), tag `vx.y.z`, push `main --tags`, push `dev`. Pushing `main` deploys GitHub Pages; the tag runs `release-desktop.yml`.
-3. `release-desktop.yml` builds Linux/Windows/macOS and creates a **draft** release `MKDN vx.y.z`. When it's done, publish it with the CHANGELOG section as notes and mark it **Latest**: `gh release edit vx.y.z --draft=false --latest --notes-file <notes>`. The desktop updater reads `releases/latest/download/latest.json`, so an unpublished draft means no desktop update. Not yet produced (as of 3.2.0): it needs `bundle.createUpdaterArtifacts: true` in `tauri.conf.json` and the `TAURI_SIGNING_PRIVATE_KEY` repo secret matching the updater `pubkey`.
+3. `release-desktop.yml` builds Linux/Windows/macOS and creates a **draft** release `MKDN vx.y.z`. When it's done, publish it with the CHANGELOG section as notes and mark it **Latest**: `gh release edit vx.y.z --draft=false --latest --notes-file <notes>`. The desktop updater reads `releases/latest/download/latest.json`, so an unpublished draft means no desktop update. Built since 3.2.0 (`bundle.createUpdaterArtifacts`), signed with `~/.tauri/mkdn.key` (password-protected; matches the updater `pubkey`). It must be in the repo secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, or the desktop build fails. Lose that key and installed apps can never auto-update again — keep a backup.
 
 ### CHANGELOG.md
 
