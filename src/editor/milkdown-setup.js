@@ -187,7 +187,7 @@ export const milkdown = {
       clearTimeout(syncTimer);
       crepe.editor.action(replaceAll(markdown));
       loaded = markdown;
-    } catch { /* editor may not be ready */ }
+    } catch (err) { console.warn('setContent failed', err); } // e.g. editor not ready
     finally {
       updating = false;
     }

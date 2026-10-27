@@ -1,6 +1,6 @@
 // Right-click menu content: what was clicked (detectContext) → which items (one builder per kind).
 // Loaded on the first right-click (see installContextMenu in milkdown-setup.js).
-import { NodeSelection, AllSelection } from '@milkdown/prose/state';
+import { NodeSelection, AllSelection, TextSelection } from '@milkdown/prose/state';
 import { DOMSerializer } from '@milkdown/prose/model';
 import {
   toggleStrongCommand, toggleEmphasisCommand, toggleInlineCodeCommand, turnIntoTextCommand,
@@ -10,11 +10,15 @@ import {
 import { toggleStrikethroughCommand, insertTableCommand } from '@milkdown/preset-gfm';
 import { milkdown } from './milkdown-setup.js';
 import { cut, copy, paste, pastePlain, writeClipboard } from './clipboard.js';
+import { slugify } from './context-menu-utils.js';
 import { openContextMenu } from '../ui/context-menu.js';
 import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 import { isTauri } from '../platform/tauri-bridge.js';
 import { icons } from '../toolbar/toolbar-icons.js';
+import { fileSaver } from '../save/file-saver.js';
+import { TEXT_EXTENSIONS } from '../local/local-fs.js';
+import { toast } from '../ui/toast.js';
 
 const run = (cmd, payload) => () => milkdown.runCommand(cmd.key, payload);
 const linkPopover = (anchor, values) => () => import('../ui/link-popover.js').then(m => m.openLinkPopover(anchor, values));
@@ -168,7 +172,82 @@ function defaultItems(view) {
   ];
 }
 
-const builders = { selection: selectionItems, default: defaultItems };
+function goToSection(view, slug) {
+  let target = null;
+  view.state.doc.descendants((node, pos) => {
+    if (target === null && node.type.name === 'heading' && slugify(node.textContent) === slug) target = pos;
+    return target === null;
+  });
+  if (target === null) return toast('Section not found');
+  view.focus();
+  view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(target + 1))).scrollIntoView());
+}
+
+// Desktop only: the browser has no access to the document's folder.
+async function openLinkedFile(href) {
+  const fileId = documentStore.getFileId();
+  try {
+    const { dirname, resolve } = await import('@tauri-apps/api/path');
+    await fileSaver.openHandle(await resolve(await dirname(fileId), decodeURI(href.split('#')[0])));
+  } catch (err) {
+    toast(`Failed to open: ${err.message ?? err}`, 'error');
+  }
+}
+
+function openLinkItem(view, href) {
+  if (/^(https?:|mailto:)/i.test(href)) return { label: 'Open link', hint: 'Ctrl+Click', action: () => openExternal(href) };
+  if (href.startsWith('#')) return { label: 'Go to section', action: () => goToSection(view, decodeURIComponent(href.slice(1))) };
+  const ext = href.split('#')[0].split('.').pop().toLowerCase();
+  const local = /^(\/|[A-Za-z]:[\\/])/.test(documentStore.getFileId() ?? '');
+  if (isTauri() && local && !/^[a-z][a-z0-9+.-]*:/i.test(href) && TEXT_EXTENSIONS.includes(ext)) {
+    return { label: 'Open in a new tab', action: () => openLinkedFile(href) };
+  }
+  return null;
+}
+
+function linkItems(view, { href, from, to }) {
+  const text = view.state.doc.textBetween(from, to);
+  return [
+    { info: href, mono: true },
+    openLinkItem(view, href),
+    { label: 'Edit link…', hint: 'Ctrl+L', action: () => {
+      view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, from, to)));
+      linkPopover(undefined, { text, url: href })();
+    } },
+    { label: 'Copy link address', action: () => writeClipboard({ text: href }) },
+    { label: 'Remove link', hint: 'keeps the text', action: () => view.dispatch(view.state.tr.removeMark(from, to, view.state.schema.marks.link)) },
+    'sep',
+    ...clipboardItems(view),
+  ];
+}
+
+// From the heading to the next heading of the same or a higher level (or the end).
+function selectSection(view, { pos, level, node }) {
+  const { doc } = view.state;
+  let end = doc.content.size;
+  doc.nodesBetween(pos + node.nodeSize, doc.content.size, (n, p) => {
+    if (end === doc.content.size && n.type.name === 'heading' && n.attrs.level <= level) end = p;
+    return false; // top-level blocks only
+  });
+  view.focus();
+  view.dispatch(view.state.tr.setSelection(TextSelection.between(doc.resolve(pos + 1), doc.resolve(end))));
+}
+
+function headingItems(view, ctx) {
+  const slug = slugify(ctx.node.textContent);
+  return [
+    { strip: [
+      { text: '¶', title: 'Paragraph', action: run(turnIntoTextCommand) },
+      ...[1, 2, 3, 4].map(level => ({ text: `H${level}`, title: `Heading ${level}`, active: ctx.level === level, action: run(wrapInHeadingCommand, level) })),
+    ] },
+    { label: 'Copy link to section', hint: `#${slug}`, mono: true, action: () => writeClipboard({ text: `#${slug}` }) },
+    { label: 'Select section', action: () => selectSection(view, ctx) },
+    'sep',
+    ...clipboardItems(view),
+  ];
+}
+
+const builders = { selection: selectionItems, link: linkItems, heading: headingItems, default: defaultItems };
 
 export function openEditorMenu(view, x, y) {
   const ctx = detectContext(view);
