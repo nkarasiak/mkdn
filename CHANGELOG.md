@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.1] - 2026-10-27
+
+### Fixed
+
+- **Desktop auto-update** — releases now ship signed update files, so the desktop app updates itself from here on. Apps from 3.2.0 or earlier need one manual reinstall to get it.
+
 ## [3.2.0] - 2026-10-27
 
 ### Added
