@@ -54,6 +54,10 @@ export const tabStore = {
     const idx = tabs.findIndex(t => t.id === id);
     if (idx === -1) return null;
 
+    // Last tab: open a fresh Untitled one (already active, nothing to activate).
+    const wasLast = tabs.length === 1;
+    if (wasLast) documentStore.newDocument();
+
     const closed = tabs[idx];
     closedTabs.push({ ...closed });
     if (closedTabs.length > 20) closedTabs.shift();
@@ -71,7 +75,7 @@ export const tabStore = {
     }
 
     eventBus.emit('tabs:changed', { tabs, activeTabId });
-    return this.getActiveTab();
+    return wasLast ? null : this.getActiveTab();
   },
 
   /** Switch to a tab by id */

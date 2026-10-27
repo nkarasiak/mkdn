@@ -20,9 +20,7 @@ const bindings = {
   'n': () => documentStore.newDocument(),
   't': () => documentStore.newDocument(),
   'shift+t': () => activate(tabStore.reopenTab()),
-  'w': () => {
-    if (tabStore.getTabs().length > 1) activate(tabStore.closeTab(tabStore.getActiveTabId()));
-  },
+  'w': () => activate(tabStore.closeTab(tabStore.getActiveTabId())),
   'tab': () => activate(tabStore.nextTab()),
   'shift+tab': () => activate(tabStore.prevTab()),
   'l': () => import('../ui/link-popover.js').then(m => m.openLinkPopover()),
