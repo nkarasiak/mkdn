@@ -15,6 +15,8 @@ import { initFindBar } from './find-replace/find-bar.js';
 import { isTauri, initTauri, initTauriEvents, restoreTauriFile } from './platform/tauri-bridge.js';
 import { createTabBar, initTabs } from './toolbar/tab-bar.js';
 import { initPWA } from './pwa/pwa-manager.js';
+import { storage } from './storage/local-storage.js';
+import { STORAGE_SNAPSHOT } from './constants.js';
 
 function applyContentWidth() {
   document.documentElement.style.setProperty('--content-max-width', `${settingsStore.get('contentWidth')}px`);
@@ -127,8 +129,16 @@ export const App = {
       await restoreTauriFile(documentStore.getFileId());
     }
 
+    // Paint the last rendered document while the editor chunk loads: content at first paint.
+    const snapshot = storage.get(STORAGE_SNAPSHOT);
+    const preview = snapshot?.markdown === documentStore.getMarkdown()
+      ? el('div', { className: 'milkdown', inert: '', unsafeHTML: snapshot.html })
+      : null;
+    if (preview) editorPane.appendChild(preview);
+
     const { milkdown } = await milkdownReady;
     await milkdown.init(editorPane);
+    preview?.remove();
 
     // Initialize tab system
     initTabs();

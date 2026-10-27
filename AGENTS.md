@@ -107,7 +107,15 @@ eventBus.on('content:changed', ({ source }) => {
 });
 ```
 
-Additionally, `milkdown-setup.js` uses an `updating` flag: when `setContent()` is called, the `markdownUpdated` callback is suppressed to prevent re-emitting.
+Additionally, `milkdown-setup.js` uses an `updating` flag so its own `setContent()` isn't synced back, and skips `setContent()` for the markdown it already shows.
+
+### Editor → store sync
+
+The editor serializes to markdown lazily (on a typing pause; the first edit syncs at once for the `*`). `documentStore.getMarkdown()` / `getState()` / `setFile()` / `newDocument()` and the tab store flush pending edits first (`documentStore.setFlusher`), so any read sees the latest text.
+
+### Startup snapshot
+
+The editor's rendered HTML is saved to `mkdn-snapshot` (with its markdown) and painted inert by `app.js` while the editor chunk loads, only when it matches the restored document; the live editor replaces it in the same task.
 
 ### Editor (Milkdown/ProseMirror)
 
