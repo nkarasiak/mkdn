@@ -9,8 +9,8 @@ function shortcutRow(keys, desc) {
   );
 }
 
-export function buildAboutContent() {
-  const shortcuts = el('table', { className: 'about-shortcuts' },
+export function buildShortcutsContent() {
+  return el('table', { className: 'about-shortcuts' },
     el('tbody', {},
       shortcutRow(['Ctrl', 'O'], 'Open file'),
       shortcutRow(['Ctrl', 'S'], 'Save'),
@@ -32,7 +32,9 @@ export function buildAboutContent() {
       shortcutRow(['Ctrl', '0'], 'Reset zoom'),
     ),
   );
+}
 
+export function buildAboutContent() {
   const issueLink = el('a', {
     href: 'https://github.com/nkarasiak/mkdn/issues',
     target: '_blank',
@@ -41,13 +43,12 @@ export function buildAboutContent() {
   }, 'github.com/nkarasiak/mkdn/issues');
 
   return el('div', { className: 'about-content' },
+    el('img', { className: 'about-logo', src: './favicon.svg', alt: '' }),
     el('p', { className: 'about-description' }, 'A minimal markdown editor.'),
-    el('h4', { className: 'about-section-title' }, 'Keyboard shortcuts'),
-    shortcuts,
+    el('p', { className: 'about-version' }, `v${__APP_VERSION__}`),
     el('h4', { className: 'about-section-title' }, 'Report an issue'),
     el('p', {}, issueLink),
     el('h4', { className: 'about-section-title' }, 'Credits'),
     el('p', {}, 'Created by Nicolas Karasiak & Claude'),
-    el('p', { className: 'about-version' }, `v${__APP_VERSION__}`),
   );
 }

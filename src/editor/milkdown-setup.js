@@ -10,13 +10,16 @@ import { placeholder } from '@milkdown/crepe/feature/placeholder';
 import { table } from '@milkdown/crepe/feature/table';
 import { languages } from '@codemirror/language-data';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { editorViewCtx, commandsCtx } from '@milkdown/core';
+import { editorViewCtx, commandsCtx, serializerCtx } from '@milkdown/core';
 import { replaceAll, $prose } from '@milkdown/utils';
-import { TextSelection } from '@milkdown/prose/state';
+import { TextSelection, Plugin } from '@milkdown/prose/state';
 import { toggleLinkCommand } from '@milkdown/components/link-tooltip';
 import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
 import { eventBus } from '../store/event-bus.js';
+import { storage } from '../storage/local-storage.js';
+import { debounce } from '../utils/debounce.js';
+import { STORAGE_SNAPSHOT } from '../constants.js';
 import { createFindReplacePlugin } from '../find-replace/find-replace-plugin.js';
 import { createImagePastePlugin } from './image-paste-plugin.js';
 import { createSmartPastePlugin } from './smart-paste-plugin.js';
@@ -36,6 +39,46 @@ import '@milkdown/crepe/theme/frame.css';
 let crepe = null;
 let updating = false;
 
+// Editor → store sync. Serializing is the costly part, so it waits for a typing pause,
+// but the first edit syncs at once (instant "*") and every store read flushes first
+// (documentStore.setFlusher): a save or tab switch never sees stale or misrouted text.
+let pending = false;
+let syncTimer = null;
+let loaded = null; // markdown the editor shows, untouched since (null once edited)
+
+function flush() {
+  if (!pending) return;
+  pending = false;
+  clearTimeout(syncTimer);
+  const doc = crepe.editor.ctx.get(editorViewCtx).state.doc;
+  documentStore.setMarkdown(crepe.editor.ctx.get(serializerCtx)(doc), 'milkdown');
+}
+
+// Rendered HTML of the document, painted by app.js at the next start while this chunk loads.
+function saveSnapshot() {
+  const view = milkdown.getView();
+  if (!view || settingsStore.get('sourceMode')) return; // editor DOM is stale in source mode
+  const html = view.dom.outerHTML;
+  if (html.length > 500_000) storage.remove(STORAGE_SNAPSHOT); // e.g. pasted images: not worth the quota
+  else storage.set(STORAGE_SNAPSHOT, { markdown: documentStore.getMarkdown(), html });
+}
+
+const syncPlugin = () => new Plugin({
+  state: {
+    init: () => null,
+    apply(tr) {
+      if (updating || !tr.docChanged || tr.getMeta('addToHistory') === false) return null;
+      pending = true;
+      loaded = null;
+      clearTimeout(syncTimer);
+      // After the dispatch (view.state is current then), not inside it.
+      if (documentStore.isDirty()) syncTimer = setTimeout(flush, 300);
+      else queueMicrotask(flush);
+      return null;
+    },
+  },
+});
+
 const sourceTextarea = () => document.querySelector('.source-editor');
 
 export const milkdown = {
@@ -50,20 +93,22 @@ export const milkdown = {
       .addFeature(codeMirror, { theme: oneDark, languages })
       .addFeature(table);
 
-    // Listen for content changes from Milkdown
-    crepe.on((api) => {
-      api.markdownUpdated((_ctx, markdown) => {
-        if (updating) return;
-        if (markdown !== documentStore.getMarkdown()) {
-          documentStore.setMarkdown(markdown, 'milkdown');
-        }
-      });
-    });
-
+    crepe.editor.use($prose(syncPlugin));
     crepe.editor.use($prose(() => createFindReplacePlugin()));
     crepe.editor.use($prose(() => createImagePastePlugin()));
     crepe.editor.use($prose(() => createSmartPastePlugin()));
     await crepe.create();
+    documentStore.setFlusher(flush);
+    loaded = documentStore.getMarkdown();
+
+    eventBus.on('content:changed', debounce(saveSnapshot, 2000));
+    addEventListener('pagehide', saveSnapshot);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveSnapshot(); });
+
+    // No spellcheck / autocorrect / autocapitalize (WebKit honours the last two).
+    for (const [k, v] of [['spellcheck', 'false'], ['autocorrect', 'off'], ['autocapitalize', 'off']]) {
+      this.getView().dom.setAttribute(k, v);
+    }
 
     // Route Milkdown's link command (Mod-K) to our link popover.
     const cmds = crepe.editor.ctx.get(commandsCtx);
@@ -80,10 +125,13 @@ export const milkdown = {
   },
 
   setContent(markdown) {
-    if (!crepe) return;
+    if (!crepe || markdown === loaded) return; // already shown (e.g. tab restore at startup): skip the re-parse
     try {
       updating = true;
+      pending = false; // edits to the replaced document were already flushed (or are discarded)
+      clearTimeout(syncTimer);
       crepe.editor.action(replaceAll(markdown));
+      loaded = markdown;
     } catch { /* editor may not be ready */ }
     finally {
       updating = false;

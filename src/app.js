@@ -15,10 +15,19 @@ import { initFindBar } from './find-replace/find-bar.js';
 import { isTauri, initTauri, initTauriEvents, restoreTauriFile } from './platform/tauri-bridge.js';
 import { createTabBar, initTabs } from './toolbar/tab-bar.js';
 import { initPWA } from './pwa/pwa-manager.js';
+import { storage } from './storage/local-storage.js';
+import { STORAGE_SNAPSHOT } from './constants.js';
+
+function applyContentWidth() {
+  document.documentElement.style.setProperty('--content-max-width', `${settingsStore.get('contentWidth')}px`);
+}
 
 function applyTheme() {
   const theme = settingsStore.getResolvedTheme();
   document.documentElement.setAttribute('data-theme', theme);
+  // Browser / installed-app title bar matches the header
+  document.querySelector('meta[name="theme-color"]').content =
+    getComputedStyle(document.documentElement).getPropertyValue('--toolbar-bg').trim();
 }
 
 // Listen for OS dark/light mode changes when theme is 'auto'
@@ -50,12 +59,13 @@ export const App = {
 
     // Apply theme
     applyTheme();
+    applyContentWidth();
 
     // Create editor pane
     const editorPane = el('div', { className: 'editor-pane' });
 
     // Create source editor (raw markdown textarea)
-    const sourceEditor = el('textarea', { className: 'source-editor', spellcheck: false });
+    const sourceEditor = el('textarea', { className: 'source-editor', spellcheck: false, autocorrect: 'off', autocapitalize: 'off' });
     const sourceWrapper = el('div', { className: 'source-editor-wrapper' }, sourceEditor);
 
     const toolbar = createToolbar();
@@ -119,8 +129,16 @@ export const App = {
       await restoreTauriFile(documentStore.getFileId());
     }
 
+    // Paint the last rendered document while the editor chunk loads: content at first paint.
+    const snapshot = storage.get(STORAGE_SNAPSHOT);
+    const preview = snapshot?.markdown === documentStore.getMarkdown()
+      ? el('div', { className: 'milkdown', inert: '', unsafeHTML: snapshot.html })
+      : null;
+    if (preview) editorPane.appendChild(preview);
+
     const { milkdown } = await milkdownReady;
     await milkdown.init(editorPane);
+    preview?.remove();
 
     // Initialize tab system
     initTabs();
@@ -133,6 +151,7 @@ export const App = {
     historyManager.init();
 
     eventBus.on('settings:theme', applyTheme);
+    eventBus.on('settings:contentWidth', applyContentWidth);
 
     // Initialize Find & Replace
     await initFindBar({ editorContainer: main, milkdown });

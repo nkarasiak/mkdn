@@ -53,6 +53,11 @@ export const tabStore = {
   closeTab(id) {
     const idx = tabs.findIndex(t => t.id === id);
     if (idx === -1) return null;
+    documentStore.flush();
+
+    // Last tab: open a fresh Untitled one (already active, nothing to activate).
+    const wasLast = tabs.length === 1;
+    if (wasLast) documentStore.newDocument();
 
     const closed = tabs[idx];
     closedTabs.push({ ...closed });
@@ -71,7 +76,7 @@ export const tabStore = {
     }
 
     eventBus.emit('tabs:changed', { tabs, activeTabId });
-    return this.getActiveTab();
+    return wasLast ? null : this.getActiveTab();
   },
 
   /** Switch to a tab by id */
@@ -140,6 +145,7 @@ export const tabStore = {
 
   /** Persist dirty flag of active tab before switching away. Content/name kept in sync via event listeners. */
   _saveCurrentTab() {
+    documentStore.flush();
     const tab = this.getActiveTab();
     if (tab) {
       tab.dirty = documentStore.isDirty();

@@ -2,7 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [3.2.0] - 2026-10-27
+
+### Added
+
+- **About MKDN** — ☰ menu entry with the logo, version, issue link and credits; *Keyboard Shortcuts* now shows only the shortcuts.
+- **Text width** — ☰ menu row to make the text column narrower / wider (480–1600 px, 80 px steps); click the value to reset to the default 820 px.
+
+### Changed
+
+- **Black & white logo** — favicon, PWA and desktop icons match the app's monochrome look.
+- **Installed web app: no extra title bar** — the header is the title bar (window controls overlay, like the desktop app), and the window/browser bar colour follows the light/dark theme instead of blue.
+- **Closing the last tab** opens a fresh *Untitled* document instead of being refused.
+- **No spellcheck / autocorrect** in the editor and source view.
+- **Faster start** — the last document is painted at first paint (~115 ms instead of ~265 ms) while the editor loads, and is no longer parsed twice at startup.
+- **Less typing lag on long documents** — the document is converted to markdown once per typing pause instead of after every keystroke.
+- **Web app updates** — a new version now shows a *MKDN was updated — Reload* toast instead of applying silently on the next launch; the open window keeps working on its version until then.
+
+### Fixed
+
+- **Lazy features could fail after an update** — History, Find, Export… could 404 in a window still running the previous version once the new one took over.
+- **Last seconds of typing lost on reload / close** — the session and tabs are now saved when the page is closed.
+- **Edits could land in the wrong tab** — text typed just before switching, closing or opening a tab arrived ~200 ms late and was written into the newly active document (and marked it modified); Ctrl+S right after typing could save the text without the last keystrokes.
 
 ## [3.1.3] - 2026-10-22
 

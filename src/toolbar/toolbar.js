@@ -71,6 +71,23 @@ export function createToolbar() {
   eventBus.on('settings:editorZoom', syncZoom);
   syncZoom();
 
+  // Text width row: [−] 820px [+], click the value to reset
+  const setWidth = (w) => settingsStore.set('contentWidth', Math.max(480, Math.min(1600, w)));
+  const widthLabel = el('button', { title: 'Reset text width', onClick: () => setWidth(820) });
+  const widthRow = el('div', { className: 'app-menu-zoom' },
+    el('button', { title: 'Narrower text', 'aria-label': 'Narrower text', onClick: () => setWidth(settingsStore.get('contentWidth') - 80) }, '⇥⇤'),
+    widthLabel,
+    el('button', { title: 'Wider text', 'aria-label': 'Wider text', onClick: () => setWidth(settingsStore.get('contentWidth') + 80) }, '⇤⇥'),
+  );
+  const syncWidth = () => { widthLabel.textContent = `${settingsStore.get('contentWidth')}px`; };
+  eventBus.on('settings:contentWidth', syncWidth);
+  syncWidth();
+
+  const showDialog = async (title, builder) => {
+    const [{ showInfo }, content] = await Promise.all([import('../ui/modal.js'), import('../ui/about-content.js')]);
+    showInfo(title, content[builder]());
+  };
+
   // Install App: only offered once the browser says the PWA is installable
   let installPrompt = null;
   const installItem = item('Install App…', '', async () => {
@@ -88,6 +105,7 @@ export function createToolbar() {
   menu.append(
     themeRow,
     zoomRow,
+    widthRow,
     sep(),
     item('New Tab', 'Ctrl+T', () => documentStore.newDocument()),
     item('Save As…', 'Shift+Ctrl+S', () => fileSaver.saveAs()),
@@ -102,12 +120,8 @@ export function createToolbar() {
     item('Print…', 'Ctrl+P', () => printDocument()),
     sep(),
     installItem,
-    item('Keyboard Shortcuts', '', async () => {
-      const [{ showInfo }, { buildAboutContent }] = await Promise.all([
-        import('../ui/modal.js'), import('../ui/about-content.js'),
-      ]);
-      showInfo('mkdn', buildAboutContent());
-    }),
+    item('Keyboard Shortcuts', '', () => showDialog('Keyboard Shortcuts', 'buildShortcutsContent')),
+    item('About MKDN', '', () => showDialog('About MKDN', 'buildAboutContent')),
   );
   document.body.appendChild(menu);
 

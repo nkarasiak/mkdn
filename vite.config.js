@@ -37,8 +37,11 @@ export default defineConfig(() => ({
   },
   plugins: [
     preloadEditor(),
-    !isTauri && VitePWA({
-      registerType: 'autoUpdate',
+    VitePWA({
+      disable: isTauri, // keeps `virtual:pwa-register` importable (as a no-op)
+      // A new version waits until the user reloads (pwa-manager.js): the running page
+      // keeps its own lazy chunks instead of 404ing on files the new version removed.
+      registerType: 'prompt',
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
@@ -69,8 +72,10 @@ export default defineConfig(() => ({
         start_url: './',
         scope: './',
         display: 'standalone',
+        // The header doubles as the title bar (like the desktop app); see toolbar.css
+        display_override: ['window-controls-overlay'],
         background_color: '#ffffff',
-        theme_color: '#2563eb',
+        theme_color: '#f6f6f6',
         icons: [
           { src: './icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: './icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -88,7 +93,7 @@ export default defineConfig(() => ({
         categories: ['productivity', 'utilities'],
       },
     }),
-  ].filter(Boolean),
+  ],
   build: {
     outDir: 'dist',
     sourcemap: false,

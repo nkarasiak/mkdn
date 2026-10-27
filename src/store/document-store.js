@@ -17,8 +17,21 @@ let state = {
   lastModifiedOnDisk: null,
 };
 
+// The editor syncs to the store lazily; it registers a flush so every read sees the latest edit.
+let flushEditor = () => {};
+
 export const documentStore = {
+  setFlusher(fn) {
+    flushEditor = fn;
+  },
+
+  /** Push pending editor edits into the store (call before switching documents). */
+  flush() {
+    flushEditor();
+  },
+
   getMarkdown() {
+    flushEditor();
     return state.markdown;
   },
 
@@ -47,6 +60,7 @@ export const documentStore = {
   },
 
   setFile(id, name, content, source = null, lastModifiedOnDisk = null) {
+    flushEditor();
     state.fileId = id;
     state.fileName = name;
     state.markdown = content;
@@ -81,6 +95,7 @@ export const documentStore = {
   },
 
   newDocument() {
+    flushEditor();
     state.fileId = null;
     state.fileSource = null;
     state.fileName = 'Untitled.md';
@@ -109,6 +124,7 @@ export const documentStore = {
   },
 
   getState() {
+    flushEditor();
     return { ...state };
   },
 };
