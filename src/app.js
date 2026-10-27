@@ -63,7 +63,7 @@ export const App = {
     const editorPane = el('div', { className: 'editor-pane' });
 
     // Create source editor (raw markdown textarea)
-    const sourceEditor = el('textarea', { className: 'source-editor', spellcheck: false });
+    const sourceEditor = el('textarea', { className: 'source-editor', spellcheck: false, autocorrect: 'off', autocapitalize: 'off' });
     const sourceWrapper = el('div', { className: 'source-editor-wrapper' }, sourceEditor);
 
     const toolbar = createToolbar();

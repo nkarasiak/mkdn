@@ -65,6 +65,11 @@ export const milkdown = {
     crepe.editor.use($prose(() => createSmartPastePlugin()));
     await crepe.create();
 
+    // No spellcheck / autocorrect / autocapitalize (WebKit honours the last two).
+    for (const [k, v] of [['spellcheck', 'false'], ['autocorrect', 'off'], ['autocapitalize', 'off']]) {
+      this.getView().dom.setAttribute(k, v);
+    }
+
     // Route Milkdown's link command (Mod-K) to our link popover.
     const cmds = crepe.editor.ctx.get(commandsCtx);
     cmds.create(toggleLinkCommand.key, () => () => {
