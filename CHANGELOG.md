@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **☰ menu flash** — the first time it opened, the menu flashed in the top-left corner before jumping under the button.
+
 ## [3.2.1] - 2026-10-27
 
 ### Fixed
