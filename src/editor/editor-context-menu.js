@@ -7,10 +7,14 @@ import {
   wrapInHeadingCommand, wrapInBlockquoteCommand, wrapInBulletListCommand, wrapInOrderedListCommand,
   createCodeBlockCommand, insertHrCommand,
 } from '@milkdown/preset-commonmark';
-import { toggleStrikethroughCommand, insertTableCommand } from '@milkdown/preset-gfm';
+import {
+  toggleStrikethroughCommand, insertTableCommand, addRowBeforeCommand, addRowAfterCommand, addColBeforeCommand,
+  addColAfterCommand, selectRowCommand, selectColCommand, deleteSelectedCellsCommand, setAlignCommand,
+} from '@milkdown/preset-gfm';
 import { milkdown } from './milkdown-setup.js';
 import { cut, copy, paste, pastePlain, writeClipboard } from './clipboard.js';
-import { slugify } from './context-menu-utils.js';
+import { slugify, toTsv } from './context-menu-utils.js';
+import { tableRows, sortTable, deleteTable } from './table-ops.js';
 import { openContextMenu } from '../ui/context-menu.js';
 import { documentStore } from '../store/document-store.js';
 import { settingsStore } from '../store/settings-store.js';
@@ -247,7 +251,88 @@ function headingItems(view, ctx) {
   ];
 }
 
-const builders = { selection: selectionItems, link: linkItems, heading: headingItems, default: defaultItems };
+function tableItems(view, { tablePos, table, row, col, align }) {
+  const header = row === 0; // markdown tables need their header row
+  const select = (cmd) => () => {
+    milkdown.runCommand(cmd.key, { index: cmd === selectRowCommand ? row : col });
+    milkdown.runCommand(deleteSelectedCellsCommand.key);
+  };
+  const name = table.child(0).child(col)?.textContent.trim();
+  return [
+    !header && { section: 'Row' },
+    !header && { label: 'Insert above', action: run(addRowBeforeCommand) },
+    !header && { label: 'Insert below', action: run(addRowAfterCommand) },
+    !header && { label: 'Delete row', action: select(selectRowCommand) },
+    { section: name ? `Column “${name}”` : 'Column' },
+    { label: 'Insert left', action: run(addColBeforeCommand) },
+    { label: 'Insert right', action: run(addColAfterCommand) },
+    { strip: [['left', 'alignLeft'], ['center', 'alignCenter'], ['right', 'alignRight']].map(([a, icon]) => ({
+      icon: icons[icon], title: `Align ${a}`, active: align === a, action: run(setAlignCommand, a),
+    })) },
+    { label: 'Sort ascending', hint: 'A → Z', action: () => sortTable(view, tablePos, col, 1) },
+    { label: 'Sort descending', hint: 'Z → A', action: () => sortTable(view, tablePos, col, -1) },
+    { label: 'Delete column', action: select(selectColCommand) },
+    'sep',
+    { label: 'Copy for spreadsheet', hint: 'Excel, Sheets', action: () => writeClipboard({ text: toTsv(tableRows(table)) }) },
+    { label: 'Delete table', action: () => deleteTable(view, tablePos) },
+  ];
+}
+
+async function imageBlob(src) {
+  return (await fetch(src)).blob();
+}
+
+async function copyImage(src) {
+  try {
+    let blob = await imageBlob(src);
+    if (blob.type !== 'image/png') { // the clipboard only takes PNG
+      const bitmap = await createImageBitmap(blob);
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      canvas.getContext('2d').drawImage(bitmap, 0, 0);
+      blob = await canvas.convertToBlob({ type: 'image/png' });
+    }
+    if (isTauri()) await (await import('@tauri-apps/plugin-clipboard-manager')).writeImage(new Uint8Array(await blob.arrayBuffer()));
+    else await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    toast('Copied');
+  } catch {
+    writeClipboard({ text: src }, 'Copied the image address');
+  }
+}
+
+async function saveImage(src) {
+  try {
+    const blob = await imageBlob(src);
+    const last = src.startsWith('data:') ? '' : decodeURIComponent(new URL(src, location.href).pathname.split('/').pop());
+    const ext = { jpeg: 'jpg', 'svg+xml': 'svg' }[blob.type.split('/')[1]] ?? (blob.type.split('/')[1] || 'png');
+    const name = /\.\w+$/.test(last) ? last : `image.${ext}`;
+    if (isTauri()) {
+      const path = await (await import('@tauri-apps/plugin-dialog')).save({ defaultPath: name });
+      if (path) await (await import('@tauri-apps/plugin-fs')).writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+    } else {
+      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: name });
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+  } catch (err) {
+    toast(`Save failed: ${err.message}`, 'error');
+  }
+}
+
+function imageItems(view, { pos, node }) {
+  const { src } = node.attrs;
+  return [
+    { label: 'Copy image', action: () => copyImage(src) },
+    { label: 'Save image as…', action: () => saveImage(src) },
+    /^https?:/i.test(src) && { label: 'Open image in a new window', action: () => openExternal(src) },
+    { label: 'Remove image', hint: 'Del', action: () => view.dispatch(view.state.tr.delete(pos, pos + node.nodeSize)) },
+    'sep',
+    ...clipboardItems(view),
+  ];
+}
+
+const builders = {
+  selection: selectionItems, link: linkItems, image: imageItems, table: tableItems, heading: headingItems, default: defaultItems,
+};
 
 export function openEditorMenu(view, x, y) {
   const ctx = detectContext(view);

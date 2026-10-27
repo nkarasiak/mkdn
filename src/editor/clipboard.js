@@ -54,7 +54,7 @@ export async function pastePlain(view) {
   }
 }
 
-export async function writeClipboard({ html, text }) {
+export async function writeClipboard({ html, text }, done = 'Copied') {
   try {
     if (isTauri()) {
       const c = await tauri();
@@ -66,7 +66,7 @@ export async function writeClipboard({ html, text }) {
         'text/plain': blob('text/plain', text),
       })]);
     }
-    toast('Copied');
+    toast(done);
   } catch {
     toast('Copy failed', 'error');
   }
